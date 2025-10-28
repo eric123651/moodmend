@@ -611,7 +611,7 @@
                     },
                     body: JSON.stringify({ 
                         input, 
-                        email: currentUser,
+                        email: currentUser?.email || currentUser,
                         task_completed: taskCompleted
                     })
                 });
@@ -701,7 +701,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        email: currentUser,
+                        email: currentUser?.email || currentUser,
                         emotion: currentPackage.emotion,
                         task: currentPackage.package.daily_task,
                         nft: badge,
@@ -736,7 +736,7 @@
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
                 
-                let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(currentUser)}&limit=${limit}&offset=${offset}`;
+                let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(currentUser?.email || currentUser)}&limit=${limit}&offset=${offset}`;
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
                 
@@ -840,7 +840,7 @@
         // 更新統計信息
         async function updateStats() {
             try {
-                const response = await fetch(`http://localhost:5000/api/get-stats?email=${encodeURIComponent(currentUser)}`);
+                const response = await fetch(`http://localhost:5000/api/get-stats?email=${encodeURIComponent(currentUser?.email || currentUser)}`);
                 const data = await response.json();
                 
                 if (data.success) {

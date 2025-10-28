@@ -17,10 +17,33 @@ import threading
 from functools import wraps
 
 # 配置日志
+# 设置默认编码为UTF-8
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
+# 创建自定义的StreamHandler，确保UTF-8编码
+class UnicodeStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            stream.write(msg + self.terminator)
+            self.flush()
+        except UnicodeEncodeError:
+            # 尝试编码为系统默认编码，替换无法编码的字符
+            msg = self.format(record)
+            if hasattr(stream, 'encoding'):
+                msg = msg.encode(stream.encoding, errors='replace').decode(stream.encoding)
+            stream.write(msg + self.terminator)
+            self.flush()
+
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('moodmend.log'),
-                              logging.StreamHandler()])
+                    handlers=[logging.FileHandler('moodmend.log', encoding='utf-8'),
+                              UnicodeStreamHandler()])
 logger = logging.getLogger('moodmend_backend')
 
 # Flask应用配置
@@ -55,6 +78,14 @@ def init_db():
                     last_login TEXT
                 )
             ''')
+            
+            # 检查并添加缺失的user_name列（兼容旧数据库）
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN user_name TEXT NOT NULL DEFAULT '用户'")
+                conn.commit()
+            except:
+                # 如果列已存在，忽略错误
+                pass
             # 创建日志表
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS logs (
@@ -238,12 +269,6 @@ def generate_transition_nft(prev_emotion, current_emotion):
     
     return None
 
-# 生成特殊轉移NFT
-def generate_transition_nft(prev_emotion, current_emotion):
-    if prev_emotion in NEGATIVE_EMOTIONS and current_emotion in POSITIVE_EMOTIONS:
-        return '🌟 成功緩和徽章 - 從傷心到平靜的轉變'
-    return None
-
 # 工具函数: 验证邮箱格式
 def is_valid_email(email):
     email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -253,7 +278,7 @@ def is_valid_email(email):
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(DB_NAME)
-        g.db.row_factory = sqlite3.Row
+        # 移除row_factory设置，让查询返回元组格式
     return g.db
 
 # API: 註冊
@@ -424,6 +449,45 @@ def process_emotion():
         email = data.get('email')
         task_completed = data.get('task_completed', False)
         
+        # 增强的输入类型验证和处理
+        # 确保data是字典
+        if not isinstance(data, dict):
+            data = {}
+        
+        # 重新获取user_input，确保正确的变量引用
+        user_input = data.get('input', '')
+        
+        # 确保user_input是字符串 - 全面的类型处理
+        if user_input is None:
+            user_input = ''
+        elif not isinstance(user_input, str):
+            # 如果是字典，尝试各种方式提取字符串内容
+            if isinstance(user_input, dict):
+                # 1. 尝试获取text字段
+                if 'text' in user_input:
+                    user_input = user_input['text']
+                # 2. 尝试获取第一个非空值
+                elif user_input:
+                    for key, value in user_input.items():
+                        if isinstance(value, str) and value.strip():
+                            user_input = value
+                            break
+                    # 如果没有找到合适的值，使用第一个值
+                    else:
+                        first_value = next(iter(user_input.values()), '')
+                        user_input = str(first_value)
+                else:
+                    user_input = ''
+            # 对于其他非字符串类型，转换为字符串
+            else:
+                try:
+                    user_input = str(user_input)
+                except:
+                    user_input = ''
+        
+        # 去除首尾空白字符
+        user_input = user_input.strip()
+        
         # 验证输入
         if not user_input:
             return jsonify({
@@ -452,7 +516,7 @@ def process_emotion():
         # 从数据库获取上次情绪
         cursor.execute('SELECT last_emotion FROM user_emotions WHERE user_id = (SELECT user_id FROM users WHERE email = ?)', (email,))
         result = cursor.fetchone()
-        prev_emotion = result['last_emotion'] if result else None
+        prev_emotion = result[0] if result else None
         
         # 或者从内存中获取
         if not prev_emotion and email in user_last_emotion:
@@ -469,7 +533,7 @@ def process_emotion():
         cursor.execute('SELECT user_id FROM users WHERE email = ?', (email,))
         user_result = cursor.fetchone()
         if user_result:
-            user_id = user_result['user_id']
+            user_id = user_result[0]
             cursor.execute(
                 'INSERT OR REPLACE INTO user_emotions (user_id, last_emotion, last_update) VALUES (?, ?, ?)',
                 (user_id, emotion, datetime.now().isoformat())
@@ -542,7 +606,7 @@ def add_log():
                 'message': '用户不存在'
             }), 404
         
-        user_id = user_result['user_id']
+        user_id = user_result[0]
         
         cursor.execute(
             '''INSERT INTO logs 
@@ -627,12 +691,12 @@ def get_logs():
         logs = []
         for row in cursor.fetchall():
             log = {
-                'log_id': row['log_id'],
-                'time': row['time'],
-                'emotion': row['emotion'],
-                'task': row['task'],
-                'nft': row['nft'],
-                'completed': row['completed'] == 1
+                'log_id': row[0],
+                'time': row[1],
+                'emotion': row[2],
+                'task': row[3],
+                'nft': row[4],
+                'completed': row[5] == 1
             }
             logs.append(log)
         
@@ -649,7 +713,7 @@ def get_logs():
             count_params.append(f"{date_filter}%")
         
         cursor.execute(count_query, count_params)
-        total = cursor.fetchone()['count']
+        total = cursor.fetchone()[0]  # 使用索引访问而不是字典访问，因为没有设置row_factory
         
         logger.info(f"获取日志成功: 用户={email}, 数量={len(logs)}, 总数={total}")
         
@@ -720,7 +784,7 @@ def get_stats():
             WHERE email = ? AND nft LIKE ? {time_filter}
         """
         cursor.execute(transition_query, params + ['%成功緩和%'])
-        transitions = cursor.fetchone()['count']
+        transitions = cursor.fetchone()[0]
         
         # 查询情绪分布
         emotion_query = f"""
@@ -741,7 +805,7 @@ def get_stats():
         
         for row in cursor.fetchall():
             if row['emotion'] in chart_data:
-                chart_data[row['emotion']] = row['count']
+                chart_data[row[0]] = row[1]
         
         # 计算完成率
         completion_rate = round((completed/total)*100) if total > 0 else 0
@@ -754,7 +818,7 @@ def get_stats():
             ORDER BY log_date DESC
         """
         cursor.execute(streak_query, [email])
-        dates = [row['log_date'] for row in cursor.fetchall()]
+        dates = [row[0] for row in cursor.fetchall()]
         
         streak = 0
         current_date = datetime.now().date()
@@ -792,9 +856,9 @@ def load_users_from_db():
         cursor = conn.cursor()
         cursor.execute('SELECT user_id, email, password FROM users')
         for row in cursor.fetchall():
-            users_db[row['email']] = {
-                'user_id': row['user_id'],
-                'password': row['password']
+            users_db[row[1]] = {
+                'user_id': row[0],
+                'password': row[2]
             }
         conn.close()
         logger.info(f"从数据库加载用户成功，共{len(users_db)}个用户")
@@ -810,13 +874,13 @@ def load_recent_logs_from_db():
         cursor.execute('SELECT log_id, time, email, emotion, task, nft, completed FROM logs ORDER BY time DESC LIMIT 100')
         for row in cursor.fetchall():
             log_entry = {
-                'log_id': row['log_id'],
-                'time': row['time'],
-                'email': row['email'],
-                'emotion': row['emotion'],
-                'task': row['task'],
-                'nft': row['nft'],
-                'completed': row['completed'] == 1
+                'log_id': row[0],
+                'time': row[1],
+                'email': row[2],
+                'emotion': row[3],
+                'task': row[4],
+                'nft': row[5],
+                'completed': row[6] == 1
             }
             logs_db.append(log_entry)
         conn.close()
@@ -835,7 +899,7 @@ def load_user_emotions_from_db():
             JOIN users u ON ue.user_id = u.user_id
         ''')
         for row in cursor.fetchall():
-            user_last_emotion[row['email']] = row['last_emotion']
+            user_last_emotion[row[1]] = row[2]
         conn.close()
         logger.info(f"从数据库加载用户情绪数据成功，共{len(user_last_emotion)}条")
     except Exception as e:
