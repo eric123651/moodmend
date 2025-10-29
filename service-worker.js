@@ -7,13 +7,13 @@ const DYNAMIC_CACHE = 'moodmend-dynamic-v3';
 // 需要缓存的核心资源
 const STATIC_ASSETS = [
   '/',  // 根路径也需要缓存，确保离线时能访问
-  './moodmend_ui_demo.html',
-  './manifest.json',
-  './icon-192x192.svg',
-  './icon-512x512.svg',
-  './icon-1024x1024.svg',
-  './icon-emotion.svg',
-  './icon-history.svg',
+  './src/frontend/moodmend_ui_demo.html',
+  './config/manifest.json',
+  './icons/icon-192x192.svg',
+  './icons/icon-512x512.svg',
+  './icons/icon-1024x1024.svg',
+  './icons/icon-emotion.svg',
+  './icons/icon-history.svg',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
               }
               // 如果没有特定路径的缓存，返回主页
               console.log('Service Worker: 尝试返回主页作为后备');
-              return caches.match('./moodmend_ui_demo.html');
+              return caches.match('./src/frontend/moodmend_ui_demo.html');
             });
         })
     );
@@ -121,7 +121,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // 对于SVG图标，确保有回退
             if (event.request.url.endsWith('.svg')) {
-              return caches.match('./icon-192x192.svg');
+              return caches.match('./icons/icon-192x192.svg');
             }
             // 对于Chart.js，尝试返回缓存
             if (event.request.url.includes('chart.js')) {
@@ -220,11 +220,11 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || 'MoodMend 有新的情緒建議等待查看',
-      icon: './icon-192x192.svg',
-      badge: './icon-192x192.svg',
+      icon: './icons/icon-192x192.svg',
+      badge: './icons/icon-192x192.svg',
       vibrate: [100, 50, 100],
       data: {
-        url: data.url || './moodmend_ui_demo.html'
+        url: data.url || './src/frontend/moodmend_ui_demo.html'
       },
       actions: [
         {

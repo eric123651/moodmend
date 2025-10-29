@@ -774,8 +774,8 @@ def get_stats():
         """
         cursor.execute(query, params)
         result = cursor.fetchone()
-        total = result['total'] or 0
-        completed = result['completed'] or 0
+        total = result[0] or 0
+        completed = result[1] or 0
         
         # 查询情绪转移数
         transition_query = f"""
@@ -804,7 +804,7 @@ def get_stats():
         }
         
         for row in cursor.fetchall():
-            if row['emotion'] in chart_data:
+            if row[0] in chart_data:
                 chart_data[row[0]] = row[1]
         
         # 计算完成率

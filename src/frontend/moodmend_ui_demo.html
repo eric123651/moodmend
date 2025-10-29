@@ -10,19 +10,32 @@
     <meta name="theme-color" content="#6A82FB">
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-moodmend.svg">
-    <link rel="mask-icon" href="icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="icon-moodmend.svg">
+    <link rel="manifest" href="../config/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-moodmend.svg">
+    <link rel="mask-icon" href="/icons/icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="/icons/icon-moodmend.svg">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PWA 整合 (v1.0.3 擴充) -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icons/MoodMend_Logo_Option4.svg">
+    <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
     <style>
-        /* 基础重置和APP样式 */
-        * { -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --hero-gradient: linear-gradient(135deg, #FF69B4 0%, #8A2BE2 40%, #FFD700 70%, #4169E1 100%); /* SVG 4色漸層 */ 
+            --card-bg: rgba(255,255,255,0.92); /* 毛玻璃 */ 
+            --shadow-sparkle: 0 8px 32px rgba(255,215,0,0.2); /* 金陰影 */ 
+            --transition-magic: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94); /* 奢華緩動 */ 
+        }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #6A82FB 0%, #FC5C7D 100%); 
+            background: var(--hero-gradient); 
             min-height: 100vh; 
             margin: 0; 
             padding: 0; 
@@ -30,6 +43,67 @@
             -webkit-overflow-scrolling: touch;
             position: relative;
         }
+        .container { 
+            backdrop-filter: blur(16px); 
+            box-shadow: var(--shadow-sparkle); 
+            border-radius: 0 0 32px 32px; 
+        }
+        h1 { 
+            background: var(--hero-gradient); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            font-size: 32px; 
+        }
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid rgba(255,105,180,0.1); 
+            transition: var(--transition-magic); 
+        }
+        .card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: var(--shadow-sparkle); 
+        }
+        .emotion-badge { 
+            background: var(--hero-gradient); 
+            border-radius: 30px; 
+            padding: 10px 20px; 
+            color: white; 
+            font-weight: 600; 
+        }
+        .log-entry { 
+            border-left: 5px solid #FF69B4; 
+            margin-left: 40px; 
+            position: relative; 
+        } /* 粉邊時間線 */
+        .log-timeline::before { 
+            content: ''; 
+            position: absolute; 
+            left: 20px; 
+            top: 0; 
+            bottom: 0; 
+            width: 2px; 
+            background: var(--hero-gradient); 
+        } /* 波浪線靈感 */
+        #logChart { 
+            height: 320px; 
+            border-radius: 20px; 
+            background: var(--card-bg); 
+            padding: 24px; 
+            box-shadow: var(--shadow-sparkle); 
+        }
+        .hero-logo { 
+            width: 120px; 
+            animation: float 3s ease-in-out infinite; 
+            margin: 20px auto; 
+            display: block; 
+        } /* Logo 浮動 */
+        @keyframes float { 
+            0%, 100% { transform: translateY(0px); } 
+            50% { transform: translateY(-10px); } 
+        }
+        /* 基础重置和APP样式 */
+        * { -webkit-tap-highlight-color: transparent; }
         /* 功能菜单样式 */
         .menu-container {
             position: absolute;
@@ -229,6 +303,10 @@
             gap: 12px; 
             margin-bottom: 20px; 
         }
+        .filter-bar select { 
+            border-radius: 30px; 
+            padding: 14px 20px; 
+        }
         .filter-bar select, .filter-bar input { 
             flex: 1; 
             min-width: 0; 
@@ -265,15 +343,40 @@
             padding: 12px;
             background: rgba(106, 130, 251, 0.1);
             border-radius: 16px;
-        }
+        } 
+        /* Page 1 改善：SVG 療癒 Bar */ 
+        #page1 .container { 
+            background: rgba(255,255,255,0.95); /* 恢复原始背景色 */ 
+            backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 12px 40px rgba(255,105,180,0.2); 
+            max-width: 400px; margin: 0 auto; padding: 40px 24px; /* 中央 bar */ 
+        } 
+        #page1 h1 { background: linear-gradient(135deg, #FF69B4, #8A2BE2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 28px; margin-bottom: 20px; } 
+        #page1 .login-form { position: relative; overflow: hidden; } /* 波浪容器 */ 
+        #page1 input { border: 2px solid transparent; border-radius: 12px; padding: 16px; margin: 12px 0; background: rgba(255,255,255,0.9); transition: all 0.3s ease; font-size: 16px; } 
+        #page1 input:focus { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.3); transform: scale(1.02); } /* 金脈動 */ 
+        #page1 input::placeholder { color: #8A2BE2; opacity: 0.7; } /* 紫 placeholder */ 
+        #page1 button { background: linear-gradient(135deg, #4169E1, #8A2BE2); color: white; border: none; border-radius: 12px; padding: 16px; width: 100%; font-weight: 600; margin: 8px 0; position: relative; overflow: hidden; } 
+        #page1 button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.5s; } 
+        #page1 button:hover::before { left: 100%; } /* 閃光波浪 */ 
+        #page1 button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(65,105,225,0.4); } 
+        #page1 .tab-bar { display: flex; justify-content: center; margin-bottom: 20px; } /* 註冊/登入 tab */ 
+        #page1 .tab { padding: 10px 20px; border-radius: 25px; background: rgba(255,105,180,0.2); color: #FF69B4; cursor: pointer; margin: 0 5px; transition: all 0.3s; } 
+        #page1 .tab.active { background: #FF69B4; color: white; transform: scale(1.05); } 
+        #page1 .hero-logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 4px 20px rgba(255,215,0,0.3); animation: float 3s infinite; } /* Logo 浮動 */ 
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } 
+        #page1 .slogan { text-align: center; color: #8A2BE2; font-size: 14px; margin-bottom: 20px; opacity: 0.8; }
     </style>
 </head>
 <body>
     <!-- 頁1: 登錄 -->
     <div id="page1" class="page active">
         <div class="container">
+            <div class="hero-section" style="text-align: center; padding: 20px;">
+                <img src="/icons/MoodMend_Logo_Option4.svg" alt="MoodMend" class="hero-logo">
+                <h1>讓每一次情緒，都成為療癒起點</h1>
+            </div>
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
             </div>
             <h1>MoodMend 歡迎</h1>
             <div class="card">
@@ -290,7 +393,7 @@
     <div id="pageRegister" class="page">
         <div class="container">
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
             </div>
             <h1>創建新帳號</h1>
             <div class="card">
@@ -317,7 +420,7 @@
                 </div>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 120px; height: 120px; object-fit: contain;">
+                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 120px; height: 120px; object-fit: contain;">
             </div>
             <h1>歡迎來到 MoodMend</h1>
             <p id="welcomeMessage" class="welcome-message" style="text-align: center; font-size: 18px; color: #6A82FB; margin-bottom: 20px;"></p>
@@ -387,6 +490,9 @@
             </div>
             <div class="stats" id="stats">本週完成率：0% | 轉移成就：0</div>
             <canvas id="logChart"></canvas>
+            <div class="log-timeline" id="logTimeline">
+                <!-- loadLogs 會渲染這裡 -->
+            </div>
             <div id="logSection"></div>
             <!-- 移除nav中的返回互動按鈕，僅留空間若未來加新CTA -->
         </div>
@@ -514,7 +620,7 @@
                 // 显示加载状态
                 const loginButton = document.querySelector('#page1 button');
                 const originalText = loginButton.textContent;
-                loginButton.textContent = '登錄中...';
+                loginButton.textContent = '登入中...';
                 loginButton.disabled = true;
                 
                 console.log('正在发送登录请求:', email);
@@ -829,7 +935,7 @@
                 
                 userLogs.forEach(log => {
                     const entry = document.createElement('div');
-                    entry.className = 'log-entry';
+                    entry.className = 'log-entry card';
                     
                     // 情緒顏色映射
                     const emotionColors = {
@@ -974,6 +1080,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '60%',
+                    animation: { duration: 2000, easing: 'easeInOutQuart' }, // 奢華動畫
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -983,7 +1090,8 @@
                                     size: 14
                                 },
                                 usePointStyle: true,
-                                pointStyle: 'circle'
+                                pointStyle: 'circle',
+                                color: '#FFD700' // 金色
                             }
                         },
                         tooltip: {
@@ -1286,7 +1394,7 @@
                     
                     // 重新注册Service Worker
                     setTimeout(() => {
-                        navigator.serviceWorker.register('service-worker.js', { scope: '/' })
+                        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                             .then(registration => {
                                 console.log('Service Worker 注册成功:', registration.scope);
                                 
@@ -1469,6 +1577,26 @@
                 loadLogs(1);
                 updateStats();
             }
+        });
+        
+        // 徽章浮動（SVG 波浪靈感）
+        function animateWave(element) {
+            element.style.animation = 'wave 2s ease-in-out infinite';
+        }
+        
+        // 添加波浪动画样式
+        const waveStyle = document.createElement('style');
+        waveStyle.textContent = `
+            @keyframes wave { 
+                0%, 100% { transform: translateX(0) rotate(0deg); } 
+                50% { transform: translateX(10px) rotate(2deg); } 
+            }
+        `;
+        document.head.appendChild(waveStyle);
+        
+        // 呼叫：document.querySelectorAll('.emotion-badge').forEach(animateWave);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.emotion-badge').forEach(animateWave);
         });
         
         // 监听beforeinstallprompt事件，允许自定义安装提示
