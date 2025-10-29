@@ -2,6 +2,14 @@
 
 ## 版本历史
 
+### V1.0.3 - 品牌和UI更新
+
+- 添加新的品牌Logo和图标资源，提升视觉识别度
+- 更新登录页、注册页和欢迎页，添加居中显示的品牌Logo
+- 统一HTML头部的图标引用，使用新的品牌Logo
+- 调整界面主题颜色，优化品牌一致性
+- 添加MoodMend_Logo_Option4.svg和icon-moodmend.svg资源文件
+
 ### V1.0.2 - 错误修复和稳定性提升
 
 - 修复"ReferenceError: Cannot access 'currentUser' before initialization"登录错误
