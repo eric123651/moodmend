@@ -2,6 +2,14 @@
 
 ## 版本历史
 
+### V1.0.2 - 错误修复和稳定性提升
+
+- 修复"ReferenceError: Cannot access 'currentUser' before initialization"登录错误
+- 解决"后台同步注册失败: UnknownError: Background Sync is disabled"的兼容性问题
+- 修复"未找到App容器元素!"的错误日志显示问题
+- 增强Service Worker错误处理，提升离线功能的健壮性
+- 改进前端变量作用域管理，确保应用在各种环境下稳定运行
+
 ### V1.0.1 - 功能修复和优化
 
 - 修复数据库users表缺少user_name列的问题，解决注册功能500错误

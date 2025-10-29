@@ -110,9 +110,9 @@ def init_db():
                 )
             ''')
             conn.commit()
-        logger.info("数据库初始化成功")
+        logger.info("資料庫初始化成功")
     except Exception as e:
-        logger.error(f"数据库初始化失败: {e}")
+        logger.error(f"資料庫初始化失敗: {e}")
 
 # 增强的情緒關鍵字字典 (包含强度权重)
 EMOTION_KEYWORDS = {
@@ -295,32 +295,32 @@ def register():
         if not email or not password or not user_name:
             return jsonify({
                 'success': False,
-                'message': '邮箱、密码和用户名不能为空'
-            }), 400
+                'message': '電子郵件、密碼和使用者名稱不能為空'
+                }), 400
         
         if not is_valid_email(email):
             return jsonify({
                 'success': False,
-                'message': '请输入有效的邮箱地址'
+                'message': '請輸入有效的電子郵件地址'
             }), 400
         
         if len(password) < 6:
             return jsonify({
                 'success': False,
-                'message': '密码长度不能少于6位'
+                'message': '密碼長度不能少於6位'
             }), 400
             
         if len(user_name) < 2 or len(user_name) > 20:
             return jsonify({
                 'success': False,
-                'message': '用户名长度应在2-20个字符之间'
+                'message': '使用者名稱長度應在2-20個字符之間'
             }), 400
             
         # 验证确认密码
         if confirm_password is not None and password != confirm_password:
             return jsonify({
                 'success': False,
-                'message': '两次输入的密码不一致'
+                'message': '两次輸入的密碼不一致'
             }), 400
         
         # 检查邮箱是否已存在
@@ -330,7 +330,7 @@ def register():
         if cursor.fetchone():
             return jsonify({
                 'success': False,
-                'message': '该邮箱已被注册'
+                'message': '該電子郵件已被註冊'
             }), 409
         
         # 密码加密
@@ -351,7 +351,7 @@ def register():
             'user_name': user_name
         }
         
-        logger.info(f"新用户注册成功: {email}, 用户名: {user_name}")
+        logger.info(f"新用戶註冊成功: {email}, 使用者名稱: {user_name}")
         
         return jsonify({
             'success': True,
@@ -361,10 +361,10 @@ def register():
         }), 201
         
     except Exception as e:
-        logger.error(f"注册失败: {e}")
+        logger.error(f"註冊失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '注册失败，请稍后重试'
+            'message': '註冊失敗，請稍後重試'   
         }), 500
 
 # API: 登錄
@@ -379,18 +379,18 @@ def login():
         if not email or not password:
             return jsonify({
                 'success': False,
-                'message': '邮箱和密码不能为空'
+                'message': '電子郵件和密碼不能為空'
             }), 400
         
         # 优先处理测试账号
         if email == 'test@test.com' and password == '123':
-            logger.info("演示账号登录成功")
+            logger.info("演示用戶登錄成功")
             return jsonify({
                 'success': True,
                 'user_id': '1',
                 'email': email,
-                'user_name': '测试用户',
-                'message': '演示账号登录成功'
+                'user_name': '測試用戶',
+                'message': '演示用戶登錄成功'
             })
         
         # 检查用户
@@ -402,7 +402,7 @@ def login():
         if not user:
             return jsonify({
                 'success': False,
-                'message': '邮箱或密码错误'
+                'message': '電子郵件或密碼錯誤'
             }), 401
         
         # 验证密码
@@ -410,21 +410,21 @@ def login():
             if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
                 return jsonify({
                     'success': False,
-                    'message': '邮箱或密码错误'
+                    'message': '電子郵件或密碼錯誤'
                 }), 401
         except Exception as e:
-            logger.error(f"密码验证失败: {e}")
+            logger.error(f"密碼驗證失敗: {e}")
             return jsonify({
                 'success': False,
-                'message': '密码验证失败，请联系管理员'
+                'message': '密碼驗證失敗，請聯繫管理員'
             }), 500
         
-        # 更新最后登录时间
+        # 更新最後登錄時間
         cursor.execute('UPDATE users SET last_login = ? WHERE user_id = ?',
                       (datetime.now().isoformat(), user['user_id']))
         conn.commit()
         
-        logger.info(f"用户登录成功: {email}, 用户名: {user['user_name']}")
+        logger.info(f"用戶登錄成功: {email}, 用戶名稱: {user['user_name']}")
         
         return jsonify({
             'success': True,
@@ -434,10 +434,10 @@ def login():
         })
         
     except Exception as e:
-        logger.error(f"登录失败: {e}")
+        logger.error(f"登錄失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '登录失败，请稍后重试'
+            'message': '登錄失敗，請稍後重試'
         }), 500
 
 # API: 處理情緒輸入
@@ -492,13 +492,13 @@ def process_emotion():
         if not user_input:
             return jsonify({
                 'success': False,
-                'message': '请输入情绪描述'
+                'message': '情緒描述不能為空'
             }), 400
         
         if not email or not is_valid_email(email):
             return jsonify({
                 'success': False,
-                'message': '无效的用户信息'
+                'message': '無效的用戶信息'
             }), 401
         
         # 偵測情緒
@@ -543,7 +543,7 @@ def process_emotion():
         # 更新内存中的上次情绪
         user_last_emotion[email] = emotion
         
-        logger.info(f"处理情绪成功: 用户={email}, 输入='{user_input[:30]}...', 检测情绪={emotion}")
+        logger.info(f"處理情緒成功: 用戶={email}, 輸入='{user_input[:30]}...', 檢測情緒={emotion}")
         
         return jsonify({
             'success': True,
@@ -560,10 +560,10 @@ def process_emotion():
         })
         
     except Exception as e:
-        logger.error(f"处理情绪失败: {e}")
+        logger.error(f"處理情緒失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '处理情绪失败，请稍后重试'
+            'message': '處理情緒失敗，請稍後重試'
         }), 500
 
 # API: 記錄日誌
@@ -581,16 +581,16 @@ def add_log():
         if not all([email, emotion, task, badge]):
             return jsonify({
                 'success': False,
-                'message': '缺少必要的日志信息'
+                'message': '缺少必要的日誌信息'
             }), 400
         
         if not is_valid_email(email):
             return jsonify({
                 'success': False,
-                'message': '无效的用户信息'
+                'message': '無效的用戶信息'
             }), 401
         
-        # 生成日志ID和时间戳
+        # 生成日誌ID和時間戳
         log_id = str(uuid.uuid4())
         timestamp = datetime.now().isoformat()
         
@@ -603,7 +603,7 @@ def add_log():
         if not user_result:
             return jsonify({
                 'success': False,
-                'message': '用户不存在'
+                'message': '用戶不存在'
             }), 404
         
         user_id = user_result[0]
@@ -632,7 +632,7 @@ def add_log():
         if len(logs_db) > 1000:
             logs_db.pop(0)
         
-        logger.info(f"日志记录成功: 用户={email}, 情绪={emotion}")
+        logger.info(f"日誌記錄成功: 用戶={email}, 情緒={emotion}")
         
         return jsonify({
             'success': True,
@@ -640,10 +640,10 @@ def add_log():
         })
         
     except Exception as e:
-        logger.error(f"记录日志失败: {e}")
+        logger.error(f"記錄日誌失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '记录日志失败，请稍后重试'
+            'message': '記錄日誌失敗，請稍後重試'
         }), 500
 
 # API: 获取日志列表
@@ -660,20 +660,20 @@ def get_logs():
         if not email or not is_valid_email(email):
             return jsonify({
                 'success': False,
-                'message': '无效的用户信息'
+                'message': '無效的用戶信息'
             }), 401
         
-        # 构建查询
+        # 构建查詢
         conn = get_db()
         cursor = conn.cursor()
         
-        # 基础查询
+        # 基礎查詢
         query = '''SELECT log_id, time, emotion, task, nft, completed 
                   FROM logs 
                   WHERE email = ?''' 
         params = [email]
         
-        # 添加过滤条件
+        # 添加過濾條件
         if emotion_filter:
             query += " AND emotion = ?"
             params.append(emotion_filter)
@@ -715,7 +715,7 @@ def get_logs():
         cursor.execute(count_query, count_params)
         total = cursor.fetchone()[0]  # 使用索引访问而不是字典访问，因为没有设置row_factory
         
-        logger.info(f"获取日志成功: 用户={email}, 数量={len(logs)}, 总数={total}")
+        logger.info(f"查詢日誌成功: 用戶={email}, 數量={len(logs)}, 總數={total}")
         
         return jsonify({
             'success': True,
@@ -726,10 +726,10 @@ def get_logs():
         })
         
     except Exception as e:
-        logger.error(f"获取日志失败: {e}")
+        logger.error(f"查詢日誌失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '获取日志失败，请稍后重试'
+            'message': '查詢日誌失敗，請稍後重試'
         }), 500
 
 # API: 获取统计数据
@@ -743,13 +743,13 @@ def get_stats():
         if not email or not is_valid_email(email):
             return jsonify({
                 'success': False,
-                'message': '无效的用户信息'
+                'message': '無效的用戶信息'
             }), 401
         
         conn = get_db()
         cursor = conn.cursor()
         
-        # 构建时间过滤条件
+        # 构建時間過濾條件
         time_filter = ""
         params = [email]
         
@@ -830,7 +830,7 @@ def get_stats():
             else:
                 break
         
-        logger.info(f"获取统计数据成功: 用户={email}, 完成率={completion_rate}%, 转移次数={transitions}")
+        logger.info(f"查詢統計數據成功: 用戶={email}, 完成率={completion_rate}%, 轉移次數={transitions}")
         
         return jsonify({
             'success': True,
@@ -843,10 +843,10 @@ def get_stats():
         })
         
     except Exception as e:
-        logger.error(f"获取统计数据失败: {e}")
+        logger.error(f"查詢統計數據失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '获取统计数据失败，请稍后重试'
+            'message': '查詢統計數據失敗，請稍後重試'
         }), 500
 
 # 从数据库加载用户数据
@@ -863,14 +863,14 @@ def load_users_from_db():
         conn.close()
         logger.info(f"从数据库加载用户成功，共{len(users_db)}个用户")
     except Exception as e:
-        logger.error(f"加载用户数据失败: {e}")
-
-# 从数据库加载最近的日志
+        logger.error(f"從數據庫加載用戶數據失敗: {e}")
+        
+# 從數據庫加載最近的日誌
 def load_recent_logs_from_db():
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        # 只加载最近100条日志到内存
+        # 只加載最近100條日誌到內存
         cursor.execute('SELECT log_id, time, email, emotion, task, nft, completed FROM logs ORDER BY time DESC LIMIT 100')
         for row in cursor.fetchall():
             log_entry = {
@@ -884,11 +884,11 @@ def load_recent_logs_from_db():
             }
             logs_db.append(log_entry)
         conn.close()
-        logger.info(f"从数据库加载日志成功，共{len(logs_db)}条")
+        logger.info(f"從數據庫加載日誌成功，共{len(logs_db)}條")
     except Exception as e:
-        logger.error(f"加载日志数据失败: {e}")
+        logger.error(f"加載日誌數據失敗: {e}")
 
-# 从数据库加载用户情绪数据
+# 從數據庫加載用戶情緒數據
 def load_user_emotions_from_db():
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -901,37 +901,37 @@ def load_user_emotions_from_db():
         for row in cursor.fetchall():
             user_last_emotion[row[1]] = row[2]
         conn.close()
-        logger.info(f"从数据库加载用户情绪数据成功，共{len(user_last_emotion)}条")
+        logger.info(f"從資料庫載入使用者情緒資料成功，共{len(user_last_emotion)}條")
     except Exception as e:
-        logger.error(f"加载用户情绪数据失败: {e}")
+        logger.error(f"從數據庫加載用戶情緒資料失敗: {e}")
 
-# 定期清理过期的内存缓存
+# 定期清理过期的內存緩存
 def cleanup_memory_cache():
     try:
-        # 限制内存中的日志数量
+        # 限制內存中的日誌數量
         global logs_db
         if len(logs_db) > 500:
-            # 只保留最近的300条
+            # 只保留最近的300條
             logs_db = logs_db[:300]
         
-        # 清理长时间未活动的用户情绪数据
+        # 清理長時間未活動的用戶情緒資料
         global user_last_emotion
-        # 这里可以根据需要实现更复杂的清理逻辑
+        # 這裡可以根據需要實現更複雜的清理邏輯
         
-        logger.info(f"内存缓存清理完成，当前日志数: {len(logs_db)}, 用户情绪数据数: {len(user_last_emotion)}")
+        logger.info(f"內存緩存清理完成，當前日誌數: {len(logs_db)}, 用戶情緒資料數: {len(user_last_emotion)}")  
     except Exception as e:
-        logger.error(f"清理内存缓存失败: {e}")
+        logger.error(f"清理內存緩存失敗: {e}")
 
-# 应用上下文处理器
+# 應用上下文處理器
 @app.teardown_appcontext
 def close_db(error):
     if 'db' in g:
         g.db.close()
 
-# 根路径
+# 根路徑
 @app.route('/')
 def index():
-    return "MoodMend 后端服务正在运行"
+    return "MoodMend 後端服務正在運行"  
 
 # 健康检查端点
 @app.route('/api/health', methods=['GET'])
@@ -948,33 +948,33 @@ def health_check():
             'version': '2.0'
         })
     except Exception as e:
-        logger.error(f"健康检查失败: {e}")
+        logger.error(f"健康檢查失敗: {e}")
         return jsonify({
             'status': 'unhealthy',
             'error': str(e)
         }), 500
 
-# 数据库备份端点
+# 數據庫備份端點
 @app.route('/api/backup-db', methods=['POST'])
 def backup_database():
     try:
-        # 简单的数据库备份逻辑
+        # 簡單的數據庫備份邏輯
         backup_file = f'moodmend_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
         import shutil
         shutil.copy2(DB_NAME, backup_file)
         
-        logger.info(f"数据库备份成功: {backup_file}")
+        logger.info(f"數據庫備份成功: {backup_file}")
         
         return jsonify({
             'success': True,
-            'message': '数据库备份成功',
+            'message': '數據庫備份成功',
             'backup_file': backup_file
         })
     except Exception as e:
-        logger.error(f"数据库备份失败: {e}")
+        logger.error(f"數據庫備份失敗: {e}")
         return jsonify({
             'success': False,
-            'message': '数据库备份失败'
+            'message': '數據庫備份失敗'
         }), 500
 
 # 定时任务初始化
@@ -1004,12 +1004,12 @@ if __name__ == '__main__':
         # 注册程序退出时的清理函数
         atexit.register(cleanup_memory_cache)
         
-        logger.info("MoodMend后端服务启动")
+        logger.info("MoodMend後端服務啟動")
         
-        # 在生产环境中，应该使用适当的WSGI服务器
-        # 这里为了演示，使用Flask的开发服务器
+        # 在生產環境中，應該使用適當的WSGI服務器
+        # 這裡為了演示，使用Flask的開發服務器
         app.run(debug=True, port=5000, host='0.0.0.0')
         
     except Exception as e:
-        logger.critical(f"服务启动失败: {e}")
+        logger.critical(f"服務啟動失敗: {e}")
         raise e

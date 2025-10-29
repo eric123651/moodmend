@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <circle cx="96" cy="96" r="96" fill="#FC5C7D" />
+  <!-- 心形图标 -->
+  <path d="M96,40 C66,40 40,66 40,100 C40,134 96,172 96,172 C96,172 152,134 152,100 C152,66 126,40 96,40 Z" 
+        fill="white" opacity="0.9" />
+  <!-- 心跳线 -->
+  <path d="M70,90 Q80,70 96,85 Q112,70 122,90" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" />
+  <path d="M70,100 Q80,80 96,95 Q112,80 122,100" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" />
+  <path d="M70,110 Q80,90 96,105 Q112,90 122,110" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" />
+</svg>

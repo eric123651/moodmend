@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MoodMend">
     <meta name="theme-color" content="#6A82FB">
+    <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
+    <!-- PWA配置 -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.svg">
+    <link rel="mask-icon" href="icon-192x192.svg" color="#6A82FB">
+    <link rel="shortcut icon" href="icon-192x192.svg">
+    <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -376,14 +384,15 @@
     </div>
 
     <script>
+        // 全局变量定义 - 确保在所有使用前初始化
+        window.currentUser = null;
+        let currentPackage = null;
+        let userLogs = [];
+        
         // 修复iOS Safari中状态栏覆盖问题
         if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
             document.documentElement.style.paddingTop = env(safe-area-inset-top) + 'px';
         }
-
-        let currentUser = null;
-        let currentPackage = null;
-        let userLogs = [];
 
         // 功能菜单切换
         function toggleMenu(buttonId) {
@@ -514,11 +523,11 @@
                 
                 if (data.success) {
                     // 保存用户信息（包含用户名）
-                    currentUser = {
+                    window.currentUser = {
                         email: data.email,
                         user_name: data.user_name
                     };
-                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    localStorage.setItem('user', JSON.stringify(window.currentUser));
                     // 清空输入框
                     document.getElementById('loginEmail').value = '';
                     document.getElementById('loginPassword').value = '';
@@ -604,6 +613,13 @@
                 
                 showLoading('packageCard');
                 
+                // 检查网络连接
+                if (!navigator.onLine) {
+                    // 离线模式 - 提示用户
+                    showError('当前处于离线状态，请检查网络连接后重试。');
+                    return;
+                }
+                
                 const response = await fetch('http://localhost:5000/api/process-emotion', {
                     method: 'POST',
                     headers: {
@@ -611,7 +627,7 @@
                     },
                     body: JSON.stringify({ 
                         input, 
-                        email: currentUser?.email || currentUser,
+                        email: window.currentUser?.email || window.currentUser,
                         task_completed: taskCompleted
                     })
                 });
@@ -693,36 +709,67 @@
                 };
             });
             
+            // 准备日志数据
+            const logData = {
+                email: window.currentUser?.email || window.currentUser,
+                emotion: currentPackage.emotion,
+                task: currentPackage.package.daily_task,
+                nft: badge,
+                completed: completed,
+                timestamp: new Date().toISOString()
+            };
+            
             try {
-                // 保存日誌
-                await fetch('http://localhost:5000/api/add-log', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: currentUser?.email || currentUser,
-                        emotion: currentPackage.emotion,
-                        task: currentPackage.package.daily_task,
-                        nft: badge,
-                        completed: completed
-                    })
-                });
+                // 检查网络连接
+                if (navigator.onLine) {
+                    // 在线模式 - 直接保存到服务器
+                    const response = await fetch('http://localhost:5000/api/add-log', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(logData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        // 保存失败，尝试保存到本地
+                        saveLogToOffline(logData);
+                        showError('保存到服务器失败，记录已保存到本地。');
+                    }
+                } else {
+                    // 离线模式 - 保存到本地
+                    saveLogToOffline(logData);
+                    showError('当前处于离线状态，记录已保存，将在网络恢复后同步。');
+                    
+                    // 注册后台同步
+                    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                        const sw = await navigator.serviceWorker.ready;
+                        try {
+                            await sw.sync.register('sync-logs');
+                        } catch (err) {
+                            console.error('后台同步注册失败:', err);
+                        }
+                    }
+                }
                 
                 // 重置界面
-            document.getElementById('emotionInput').value = '';
-            document.getElementById('taskComplete').checked = false;
-            document.getElementById('taskText').textContent = '正在加載任務...';
-            const nftButton = document.getElementById('nftButton');
-            nftButton.style.backgroundColor = '#FC5C7D';
-            nftButton.style.boxShadow = '0 4px 12px rgba(252, 92, 125, 0.3)';
-            document.getElementById('packageCard').style.display = 'none';
-            document.getElementById('taskSection').style.display = 'none';
-            currentPackage = null;
+                document.getElementById('emotionInput').value = '';
+                document.getElementById('taskComplete').checked = false;
+                document.getElementById('taskText').textContent = '正在加載任務...';
+                const nftButton = document.getElementById('nftButton');
+                nftButton.style.backgroundColor = '#FC5C7D';
+                nftButton.style.boxShadow = '0 4px 12px rgba(252, 92, 125, 0.3)';
+                document.getElementById('packageCard').style.display = 'none';
+                document.getElementById('taskSection').style.display = 'none';
+                currentPackage = null;
                 
                 switchPage('page3');
             } catch (error) {
-                showError('保存日誌失敗');
+                // 保存失败，尝试保存到本地
+                saveLogToOffline(logData);
+                showError('保存日誌失敗，已尝试保存到本地。');
             }
         }
 
@@ -736,7 +783,7 @@
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
                 
-                let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(currentUser?.email || currentUser)}&limit=${limit}&offset=${offset}`;
+                let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(window.currentUser?.email || window.currentUser)}&limit=${limit}&offset=${offset}`;
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
                 
@@ -840,15 +887,35 @@
         // 更新統計信息
         async function updateStats() {
             try {
-                const response = await fetch(`http://localhost:5000/api/get-stats?email=${encodeURIComponent(currentUser?.email || currentUser)}`);
+                // 首先检查网络状态
+                if (!navigator.onLine) {
+                    // 离线模式：尝试使用本地缓存的统计数据
+                    const cachedStats = localStorage.getItem('cached_stats');
+                    if (cachedStats) {
+                        document.getElementById('stats').innerText = cachedStats;
+                    } else {
+                        document.getElementById('stats').innerText = '離線模式：無法更新統計';
+                    }
+                    return;
+                }
+                
+                const response = await fetch(`http://localhost:5000/api/get-stats?email=${encodeURIComponent(window.currentUser?.email || window.currentUser)}`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('stats').innerText = 
-                        `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
+                    const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
+                    document.getElementById('stats').innerText = statsText;
+                    // 缓存统计数据用于离线查看
+                    localStorage.setItem('cached_stats', statsText);
+                } else if (data.offline) {
+                    // 显示离线提示
+                    document.getElementById('stats').innerText = '離線模式：無法更新統計';
                 }
             } catch (error) {
                 console.error('更新統計失敗:', error);
+                // 错误时尝试使用缓存或显示离线消息
+                const cachedStats = localStorage.getItem('cached_stats');
+                document.getElementById('stats').innerText = cachedStats || '離線模式：無法更新統計';
             }
         }
 
@@ -926,8 +993,10 @@
             });
         }
 
-        // 初始化 - 添加更多移动端适配
+        // 初始化 - 添加更多移动端适配和PWA支持
         function init() {
+            console.log('开始初始化应用 - 增强PWA支持');
+            
             // 禁用iOS双击缩放
             document.addEventListener('touchstart', function preventZoom(e) {
                 if (e.touches.length === 2) {
@@ -945,21 +1014,80 @@
                 lastTouchEnd = now;
             }, { passive: false });
             
+            // 显示加载指示器
+            showLoadingIndicator();
+            
+            // 清除旧的Service Worker缓存（如果存在）
+            if ('caches' in window) {
+                console.log('尝试清除旧缓存...');
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        if (cacheName.startsWith('moodmend-') && !cacheName.includes('v3')) {
+                            console.log('删除旧缓存:', cacheName);
+                            caches.delete(cacheName);
+                        }
+                    });
+                });
+            }
+            
+            // 立即注册Service Worker，不再等待load事件
+            registerServiceWorker();
+            
+            // 监听页面可见性变化，确保在页面重新可见时更新数据
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    console.log('页面变为可见，检查更新...');
+                    // 如果已登录，刷新数据
+                    if (window.currentUser) {
+                        loadLogs(1);
+                        updateStats();
+                    }
+                }
+            });
+            
             // 检查用户登录状态
             const savedUser = localStorage.getItem('user');
             if (savedUser) {
+                console.log('检测到已保存的用户信息');
                 try {
                     // 尝试解析用户对象
-                    currentUser = JSON.parse(savedUser);
+                    window.currentUser = JSON.parse(savedUser);
                 } catch (e) {
                     // 兼容旧的存储方式
-                    currentUser = {
+                    window.currentUser = {
                         email: savedUser,
                         user_name: '用户'
                     };
+                    console.error('用户数据格式不匹配，使用默认值:', e);
                 }
-                switchPage('pageWelcome');
+                console.log('用户信息:', window.currentUser);
+                
+                // 延迟切换页面，确保Service Worker有时间初始化
+                setTimeout(() => {
+                    switchPage('pageWelcome');
+                    // 延迟加载数据，确保页面已渲染
+                    setTimeout(() => {
+                        console.log('开始加载用户数据...');
+                        loadLogs(1);
+                        updateStats();
+                        hideLoadingIndicator();
+                    }, 500);
+                }, 500);
+            } else {
+                console.log('未检测到用户登录信息');
+                hideLoadingIndicator();
             }
+            
+            // 初始化完成后，检查页面是否正常显示
+            setTimeout(() => {
+                console.log('初始化完成，检查页面状态...');
+                const activePage = document.querySelector('.page.active');
+                if (activePage) {
+                    console.log('当前激活页面:', activePage.id, '，状态正常');
+                } else {
+                    console.log('页面初始化完成');
+                }
+            }, 2000);
         }
 
         // 登出函数
@@ -968,7 +1096,7 @@
             localStorage.removeItem('user');
             
             // 重置用户相关变量
-            currentUser = null;
+            window.currentUser = null;
             currentPackage = null;
             userLogs = [];
             
@@ -979,6 +1107,343 @@
             alert('登出成功');
         }
 
+        // 保存日志到离线存储
+        function saveLogToOffline(logData) {
+            try {
+                let offlineLogs = JSON.parse(localStorage.getItem('offline_logs') || '[]');
+                offlineLogs.push(logData);
+                localStorage.setItem('offline_logs', JSON.stringify(offlineLogs));
+                console.log('日志已保存到离线存储');
+            } catch (error) {
+                console.error('保存离线日志失败:', error);
+            }
+        }
+        
+        // 同步离线日志到服务器
+        async function syncOfflineLogs() {
+            try {
+                // 确保在线状态
+                if (!navigator.onLine) {
+                    console.log('当前离线，无法同步日志');
+                    return;
+                }
+                
+                let offlineLogs = JSON.parse(localStorage.getItem('offline_logs') || '[]');
+                
+                if (offlineLogs.length === 0) return;
+                
+                // 过滤出当前用户的日志
+                const userEmail = window.currentUser?.email || window.currentUser;
+                const userLogs = offlineLogs.filter(log => log.email === userEmail);
+                
+                if (userLogs.length === 0) return;
+                
+                // 尝试同步每条日志
+                const syncedLogs = [];
+                
+                for (const log of userLogs) {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/add-log', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(log)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            syncedLogs.push(log);
+                        }
+                    } catch (error) {
+                        console.error('同步单条日志失败:', error);
+                    }
+                }
+                
+                // 从离线存储中移除已同步的日志
+                const remainingLogs = offlineLogs.filter(log => 
+                    !syncedLogs.some(synced => 
+                        synced.email === log.email && 
+                        synced.timestamp === log.timestamp
+                    )
+                );
+                
+                localStorage.setItem('offline_logs', JSON.stringify(remainingLogs));
+                
+                // 通知Service Worker同步完成
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SYNC_COMPLETED',
+                        data: { synced: syncedLogs.length }
+                    });
+                }
+                
+                console.log(`成功同步了 ${syncedLogs.length} 条离线日志`);
+                
+                // 更新UI显示
+                if (syncedLogs.length > 0) {
+                    loadLogs(1);
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('同步离线日志失败:', error);
+            }
+        }
+        
+        // 检查并显示网络状态
+        function checkNetworkStatus() {
+            const isOnline = navigator.onLine;
+            console.log(isOnline ? '网络已连接' : '网络已断开');
+            return isOnline;
+        }
+        
+        // 监听在线状态变化
+        window.addEventListener('online', () => {
+            checkNetworkStatus();
+            // 尝试同步离线日志
+            syncOfflineLogs();
+            
+            // 显示在线状态提示
+            showToast('网络已恢复，正在同步离线数据...');
+        });
+        
+        window.addEventListener('offline', () => {
+            checkNetworkStatus();
+            // 显示离线状态提示
+            showToast('当前处于离线模式，数据将在网络恢复后同步');
+        });
+        
+        // 初始检查网络状态
+        checkNetworkStatus();
+        
+        // 增强的提示消息函数
+        function showToast(message, duration = 3000) {
+            // 确保DOM已加载
+            if (!document.body) {
+                setTimeout(() => showToast(message, duration), 100);
+                return;
+            }
+            
+            // 检查是否已存在toast元素
+            let toast = document.getElementById('toast-message');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-message';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                toast.style.color = 'white';
+                toast.style.padding = '12px 20px';
+                toast.style.borderRadius = '20px';
+                toast.style.zIndex = '10000';
+                toast.style.fontSize = '14px';
+                toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                toast.style.transition = 'opacity 0.3s ease';
+                document.body.appendChild(toast);
+            }
+            
+            // 重置显示
+            toast.style.display = 'block';
+            toast.style.opacity = '1';
+            toast.textContent = message;
+            
+            // 清除之前的定时器
+            if (toast.timer) {
+                clearTimeout(toast.timer);
+            }
+            
+            // 设置新的定时器隐藏
+            toast.timer = setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 300);
+            }, duration);
+        }
+        
+        // Service Worker注册函数
+        function registerServiceWorker() {
+            console.log('开始注册Service Worker');
+            if ('serviceWorker' in navigator) {
+                // 清除之前可能存在的Service Worker
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for(let registration of registrations) {
+                        console.log('注销旧的Service Worker:', registration.scope);
+                        registration.unregister();
+                    }
+                    
+                    // 重新注册Service Worker
+                    setTimeout(() => {
+                        navigator.serviceWorker.register('service-worker.js', { scope: '/' })
+                            .then(registration => {
+                                console.log('Service Worker 注册成功:', registration.scope);
+                                
+                                // 确保立即控制页面
+                                registration.addEventListener('updatefound', () => {
+                                    const newWorker = registration.installing;
+                                    console.log('发现新的Service Worker版本');
+                                    newWorker.addEventListener('statechange', () => {
+                                        console.log('Service Worker状态变更:', newWorker.state);
+                                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                            console.log('有新版本的Service Worker可用，等待激活');
+                                            // 强制激活新版本
+                                            if (newWorker.waiting) {
+                                                newWorker.waiting.postMessage({ type: 'SKIP_WAITING' });
+                                            }
+                                        } else if (newWorker.state === 'activated') {
+                                            console.log('Service Worker已激活');
+                                            // 刷新缓存
+                                            registration.active.postMessage({ type: 'REFRESH_CACHE' });
+                                        }
+                                    });
+                                });
+                                
+                                // 检查后台同步支持并添加更好的错误处理
+                                if ('SyncManager' in window && 'sync' in registration) {
+                                    console.log('浏览器支持后台同步');
+                                    // 尝试同步离线日志，使用Promise链而非async/await避免语法错误
+                                    navigator.permissions.query({ name: 'periodic-background-sync' })
+                                        .then(permission => permission.state === 'granted')
+                                        .catch(() => true) // 如果权限查询失败，仍然尝试注册
+                                        .then(canUseSync => {
+                                            if (canUseSync) {
+                                                return registration.sync.register('sync-logs');
+                                            }
+                                            return Promise.reject(new Error('权限未授予或被禁用'));
+                                        })
+                                        .then(() => {
+                                            console.log('后台同步已注册');
+                                        })
+                                        .catch(err => {
+                                            console.log('后台同步注册失败或不可用:', err.message || '未知错误');
+                                            // 静默处理错误，不影响应用正常运行
+                                        });
+                                } else {
+                                    console.log('浏览器不支持后台同步');
+                                }
+                                
+                                // 如果已经有控制的Service Worker，通知它刷新缓存
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('发送缓存刷新消息到现有Service Worker');
+                                    navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_CACHE' });
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Service Worker 注册失败:', error);
+                                showToast('离线功能初始化失败');
+                                // 显示加载指示器
+                                showLoadingIndicator(false);
+                            });
+                    }, 1000);
+                }).catch(err => {
+                    console.error('获取Service Worker注册失败:', err);
+                });
+            } else {
+                console.log('浏览器不支持Service Worker');
+                showToast('您的浏览器不支持离线功能');
+            }
+        }
+        
+        // 显示加载指示器
+        function showLoadingIndicator(show) {
+            let loader = document.getElementById('loading-indicator');
+            if (!loader && show) {
+                loader = document.createElement('div');
+                loader.id = 'loading-indicator';
+                loader.style.position = 'fixed';
+                loader.style.top = '0';
+                loader.style.left = '0';
+                loader.style.width = '100%';
+                loader.style.height = '100%';
+                loader.style.display = 'flex';
+                loader.style.justifyContent = 'center';
+                loader.style.alignItems = 'center';
+                loader.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                loader.style.zIndex = '9999';
+                loader.innerHTML = '<div style="text-align: center;"><div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #6A82FB; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div><p style="margin-top: 15px;">加载中...</p></div>';
+                
+                // 添加旋转动画
+                const style = document.createElement('style');
+                style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+                document.head.appendChild(style);
+                
+                document.body.appendChild(loader);
+            } else if (loader) {
+                loader.style.display = show ? 'flex' : 'none';
+            }
+        }
+        
+        // 显示加载指示器
+        function showLoadingIndicator() {
+            let loader = document.getElementById('app-loader');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'app-loader';
+                loader.style.position = 'fixed';
+                loader.style.top = '0';
+                loader.style.left = '0';
+                loader.style.width = '100%';
+                loader.style.height = '100%';
+                loader.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                loader.style.display = 'flex';
+                loader.style.alignItems = 'center';
+                loader.style.justifyContent = 'center';
+                loader.style.zIndex = '9999';
+                
+                const spinner = document.createElement('div');
+                spinner.style.width = '50px';
+                spinner.style.height = '50px';
+                spinner.style.border = '5px solid #f3f3f3';
+                spinner.style.borderTop = '5px solid #6A82FB';
+                spinner.style.borderRadius = '50%';
+                spinner.style.animation = 'spin 1s linear infinite';
+                
+                const style = document.createElement('style');
+                style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+                document.head.appendChild(style);
+                
+                loader.appendChild(spinner);
+                document.body.appendChild(loader);
+            }
+            loader.style.display = 'flex';
+        }
+        
+        // 隐藏加载指示器
+        function hideLoadingIndicator() {
+            const loader = document.getElementById('app-loader');
+            if (loader) {
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        // 监听Service Worker消息
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data) {
+                    switch(event.data.type) {
+                        case 'SYNC_COMPLETED':
+                            console.log('离线日志同步完成');
+                            showToast('数据同步完成');
+                            // 同步完成后刷新数据
+                            if (currentUser) {
+                                loadLogs(1);
+                                updateStats();
+                            }
+                            break;
+                        case 'SW_UPDATED':
+                            console.log('Service Worker 已更新');
+                            showToast('应用已更新');
+                            break;
+                    }
+                }
+            });
+        }
+        
         // 页面加载完成后初始化
         window.addEventListener('DOMContentLoaded', init);
         
@@ -987,6 +1452,25 @@
             if (userLogs.length > 0) {
                 setTimeout(drawChart, 300);
             }
+        });
+        
+        // 监听页面可见性变化，在页面重新可见时刷新数据
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && currentUser) {
+                loadLogs(1);
+                updateStats();
+            }
+        });
+        
+        // 监听beforeinstallprompt事件，允许自定义安装提示
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 阻止Chrome 67及更早版本自动显示安装提示
+            e.preventDefault();
+            // 保存事件以便稍后触发
+            deferredPrompt = e;
+            // 可以在这里显示自定义的安装按钮
+            console.log('应用可以被安装');
         });
     </script>
 </body>
