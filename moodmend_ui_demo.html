@@ -11,9 +11,9 @@
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.svg">
-    <link rel="mask-icon" href="icon-192x192.svg" color="#6A82FB">
-    <link rel="shortcut icon" href="icon-192x192.svg">
+    <link rel="apple-touch-icon" href="icon-moodmend.svg">
+    <link rel="mask-icon" href="icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="icon-moodmend.svg">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -272,7 +272,10 @@
     <!-- 頁1: 登錄 -->
     <div id="page1" class="page active">
         <div class="container">
-            <h1>🌟 MoodMend 歡迎</h1>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+            </div>
+            <h1>MoodMend 歡迎</h1>
             <div class="card">
                 <input type="email" id="loginEmail" placeholder="Email">
                 <input type="password" id="loginPassword" placeholder="Password">
@@ -286,7 +289,10 @@
     <!-- 頁5: 註冊 -->
     <div id="pageRegister" class="page">
         <div class="container">
-            <h1>📝 創建新帳號</h1>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+            </div>
+            <h1>創建新帳號</h1>
             <div class="card">
                 <input type="text" id="registerUserName" placeholder="用户名 (2-20个字符)">
                 <input type="email" id="registerEmail" placeholder="Email">
@@ -310,7 +316,10 @@
                     <button onclick="logout()">👤 登出</button>
                 </div>
             </div>
-            <h1>🌈 歡迎來到 MoodMend</h1>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="icon-moodmend.svg" alt="MoodMend Logo" style="width: 120px; height: 120px; object-fit: contain;">
+            </div>
+            <h1>歡迎來到 MoodMend</h1>
             <p id="welcomeMessage" class="welcome-message" style="text-align: center; font-size: 18px; color: #6A82FB; margin-bottom: 20px;"></p>
             <div class="card" style="text-align: center; padding: 30px 15px; margin-top: 40px;">
                 <p style="font-size: 18px; margin-bottom: 30px; font-weight: 500;">「每一種情緒都值得被理解和關照」</p>
