@@ -27,14 +27,14 @@
 
 ## 项目结构
 
-## 项目结构
-
-- `moodmend_ui_demo.html` - 前端界面文件
-- `moodmend_backend.py` - 后端API服务
-- `moodmend_demo.html` - 日志显示演示页面
-- `moodmend.db` - SQLite数据库文件
-- `init_test_data.py` - 测试数据初始化脚本
+- `src/frontend/moodmend_ui_demo.html` - 前端界面文件
+- `src/backend/moodmend_backend.py` - 后端API服务
+- `icons/` - 应用图标和Logo资源
+- `config/` - 配置文件目录
+- `docs/` - 文档目录（包含本README）
 - `requirements.txt` - 项目依赖
+- `service-worker.js` - Service Worker实现
+- `manifest.json` - Web应用清单
 
 ## 使用说明
 
@@ -48,7 +48,12 @@
 
 要访问互动界面，请按照以下步骤操作：
 
-1. 在文件资源管理器中找到 `moodmend_ui_demo.html` 文件
+1. 确保已经启动了HTTP服务器（在项目根目录运行 `python -m http.server 8000`）
+2. 在浏览器中访问 http://localhost:8000/src/frontend/moodmend_ui_demo.html
+
+或者，你也可以直接打开文件：
+
+1. 在文件资源管理器中找到 `src/frontend/moodmend_ui_demo.html` 文件
 2. 双击该文件直接在浏览器中打开，或
 3. 右键点击文件，选择「打开方式」→ 选择你的浏览器
 
@@ -163,18 +168,18 @@ MoodMend使用SQLite作为数据库存储，通过Flask后端提供API接口供�
    - 应用不同情绪的样式和图标
    - 实现分页控件
 
-### 演示页面使用
+### 演示功能访问
 
-我们提供了一个专门的演示页面 `moodmend_demo.html`，展示如何正确实现"我的療癒紀錄"功能：
+日志显示功能已经集成到主应用中，你可以通过以下方式访问：
 
-1. 确保后端服务正在运行
-2. 打开 `moodmend_demo.html` 文件
+1. 确保后端服务正在运行（http://127.0.0.1:5000）
+2. 启动HTTP服务器并访问 http://localhost:8000/src/frontend/moodmend_ui_demo.html
 3. 使用测试账号登录
-4. 查看日志列表和统计数据
+4. 在主界面中导航到日志记录部分
 
-这个演示页面包含完整的功能：
+主应用包含完整的日志功能：
 - 用户登录验证
 - 日志列表展示
 - 时间和情绪筛选
-- 分页功能
-- 统计数据可视化
+- 任务完成跟踪
+- NFT徽章展示
