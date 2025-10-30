@@ -60,6 +60,61 @@ self.addEventListener('install', (event) => {
 
 // 资源请求策略：混合策略，优化离线体验
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+  
+  // 处理SVG图标请求
+  if (url.includes('/icons/') && url.endsWith('.svg')) {
+    // 提取图标文件名
+    const iconName = url.split('/').pop();
+    // 构建正确的图标路径
+    const correctIconPath = `../../icons/${iconName}`;
+    
+    event.respondWith(
+      fetch(correctIconPath)
+        .then(response => {
+          if (response.ok) {
+            return response;
+          }
+          console.error('SVG图标未找到:', correctIconPath);
+          return new Response('SVG图标未找到', { status: 404 });
+        })
+        .catch(error => {
+          console.error('获取SVG图标失败:', error);
+          return new Response('获取SVG图标失败', { status: 500 });
+        })
+    );
+    return;
+  }
+  
+  // 拦截favicon.ico请求，重定向到我们的SVG图标
+  if (url.includes('favicon.ico')) {
+    event.respondWith(
+      caches.match('../../icons/icon-moodmend.svg')
+        .then(cachedResponse => {
+          if (cachedResponse) return cachedResponse;
+          return fetch('/icons/icon-moodmend.svg')
+            .catch(() => {
+              // 如果都失败，返回一个基本的响应
+              return new Response('Not Found', { status: 404 });
+            });
+        })
+    );
+    return;
+  }
+  
+  // 处理/@vite/client请求，避免404错误
+  if (event.request.url.includes('@vite/client')) {
+    event.respondWith(
+      new Response('Vite Client Not Available in Production', {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/javascript'
+        }
+      })
+    );
+    return;
+  }
+  
   // 对于HTML页面，使用网络优先但回退到缓存的策略
   if (event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(

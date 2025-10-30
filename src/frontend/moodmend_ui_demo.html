@@ -10,20 +10,21 @@
     <meta name="theme-color" content="#6A82FB">
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
-    <link rel="manifest" href="../config/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/icon-moodmend.svg">
-    <link rel="mask-icon" href="/icons/icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="/icons/icon-moodmend.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="../../icons/icon-moodmend.svg">
+    <link rel="mask-icon" href="../../icons/icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="../../icons/icon-moodmend.svg">
+    <link rel="icon" type="image/svg+xml" href="../../icons/MoodMend_Logo_Option4.svg">
+    <link rel="icon" href="../../icons/icon-moodmend.svg" type="image/svg+xml">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PWA 整合 (v1.0.3 擴充) -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icons/MoodMend_Logo_Option4.svg">
     <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+        // 暂时禁用service worker，以便测试SVG路径
+// if ('serviceWorker' in navigator) {
+// navigator.serviceWorker.register('sw.js');
+// }
         }
     </script>
     <style>
@@ -93,6 +94,7 @@
         }
         .hero-logo { 
             width: 120px; 
+            height: 120px; 
             animation: float 3s ease-in-out infinite; 
             margin: 20px auto; 
             display: block; 
@@ -349,7 +351,7 @@
             backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 12px 40px rgba(255,105,180,0.2); 
             max-width: 400px; margin: 0 auto; padding: 40px 24px; /* 中央 bar */ 
         } 
-        #page1 h1 { background: linear-gradient(135deg, #FF69B4, #8A2BE2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 28px; margin-bottom: 20px; } 
+        #page1 h1 { background: linear-gradient(135deg, #FF69B4, #8A2BE2); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 28px; margin-bottom: 20px; } 
         #page1 .login-form { position: relative; overflow: hidden; } /* 波浪容器 */ 
         #page1 input { border: 2px solid transparent; border-radius: 12px; padding: 16px; margin: 12px 0; background: rgba(255,255,255,0.9); transition: all 0.3s ease; font-size: 16px; } 
         #page1 input:focus { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.3); transform: scale(1.02); } /* 金脈動 */ 
@@ -556,21 +558,238 @@
  }
  
  /* 深色模式下用户中心样式 */
- @media (prefers-color-scheme: dark) {
-     .menu-item:hover {
-         background-color: rgba(106, 130, 251, 0.2);
+     @media (prefers-color-scheme: dark) {
+         .menu-item:hover {
+             background-color: rgba(106, 130, 251, 0.2);
+         }
+         
+         .menu-divider {
+             background-color: rgba(255, 255, 255, 0.1);
+         }
+         
+         .menu-arrow {
+             color: #666;
+         }
+         
+         .language-option:hover {
+             background-color: rgba(106, 130, 251, 0.2);
+         }
      }
      
-     .menu-divider {
-         background-color: rgba(255, 255, 255, 0.1);
+     /* Modal 样式 (V1.0.4 新增) */
+     .modal {
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background: rgba(0, 0, 0, 0.5);
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         z-index: 1000;
+         backdrop-filter: blur(5px);
      }
      
-     .menu-arrow {
+     .modal-content {
+         background: white;
+         border-radius: 20px;
+         padding: 24px;
+         width: 90%;
+         max-width: 340px;
+         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+         animation: modalSlideIn 0.3s ease-out;
+     }
+     
+     @keyframes modalSlideIn {
+         from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+         to { opacity: 1; transform: translateY(0) scale(1); }
+     }
+     
+     .modal-content .close {
+         position: absolute;
+         top: 16px;
+         right: 16px;
+         font-size: 24px;
+         cursor: pointer;
          color: #666;
+         background: none;
+         border: none;
+         width: 30px;
+         height: 30px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
      }
      
-     .language-option:hover {
-         background-color: rgba(106, 130, 251, 0.2);
+     /* Page3 優化樣式 */ 
+     .recording-indicator { text-align: center; padding: 20px; }
+     .progress-bar { width: 100%; height: 8px; background: #eee; border-radius: 4px; margin: 10px 0; overflow: hidden; }
+     .progress-fill { height: 100%; background: linear-gradient(#6A82FB, #FC5C7D); transition: width 0.2s; }
+     .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+     .modal-content { background: white; padding: 24px; border-radius: 16px; max-width: 90%; position: relative; max-height: 80vh; overflow-y: auto; }
+     .close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #666; }
+     .modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+     .emotion-badge.large { font-size: 28px; padding: 16px; }
+     .nft-card { background: linear-gradient(135deg, #96CEB4, #FFEAA7); color: #333; padding: 16px; border-radius: 12px; text-align: center; animation: pulse 1s infinite; }
+     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+     #waveformCanvas { border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; display: block; margin: 10px auto; }
+     .active-step { border: 2px solid #6A82FB; animation: fadeIn 0.5s; }
+     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+ 
+ .modal-content .close:hover {
+     background-color: rgba(0, 0, 0, 0.1);
+ }
+ 
+ .modal-buttons {
+     display: flex;
+     gap: 12px;
+     margin-top: 20px;
+ }
+ 
+ .modal-buttons button {
+     flex: 1;
+ }
+ 
+ /* 錄音指示器样式 */
+ .recording-indicator {
+     background: rgba(255, 105, 180, 0.1);
+     border: 2px solid rgba(255, 105, 180, 0.3);
+     border-radius: 16px;
+     padding: 16px;
+     margin: 16px 0;
+     text-align: center;
+ }
+ 
+ .progress-bar {
+     width: 100%;
+     height: 8px;
+     background: rgba(255, 105, 180, 0.2);
+     border-radius: 4px;
+     overflow: hidden;
+     margin-bottom: 12px;
+ }
+ 
+ .progress-fill {
+     height: 100%;
+     background: linear-gradient(90deg, #FF69B4, #6A82FB);
+     transition: width 1s linear;
+     border-radius: 4px;
+ }
+ 
+ /* 徽章样式扩展 */
+ .emotion-badge.large {
+     font-size: 18px;
+     padding: 12px 24px;
+     margin: 16px 0;
+     text-align: center;
+     display: inline-block;
+     min-width: 120px;
+ }
+ 
+ /* 步驟卡片样式 */
+ .active-step {
+     border: 2px solid #6A82FB;
+     box-shadow: 0 8px 25px rgba(106, 130, 251, 0.2);
+ }
+ 
+ /* NFT 卡片样式 */
+ .nft-card {
+     background: linear-gradient(135deg, #6A82FB, #FC5C7D);
+     color: white;
+     padding: 20px;
+     border-radius: 16px;
+     text-align: center;
+     font-weight: bold;
+     font-size: 18px;
+     margin-top: 20px;
+     animation: nftGlow 2s ease-in-out infinite;
+ }
+ 
+ @keyframes nftGlow {
+     0%, 100% { box-shadow: 0 0 20px rgba(106, 130, 251, 0.5); }
+     50% { box-shadow: 0 0 30px rgba(252, 92, 125, 0.5); }
+ }
+ 
+ /* 副标题样式 */
+ .subtitle {
+     text-align: center;
+     color: #666;
+     margin-bottom: 24px;
+     font-size: 16px;
+ }
+ 
+ /* 按钮类型扩展 */
+ .button.primary {
+     background: linear-gradient(135deg, #6A82FB, #FC5C7D);
+     color: white;
+     border: none;
+     padding: 16px 24px;
+     border-radius: 12px;
+     font-size: 16px;
+     font-weight: bold;
+     cursor: pointer;
+     width: 100%;
+     margin: 12px 0;
+     transition: all 0.3s ease;
+     box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);
+ }
+ 
+ .button.primary:hover {
+     transform: translateY(-2px);
+     box-shadow: 0 6px 16px rgba(106, 130, 251, 0.4);
+ }
+ 
+ .button.secondary {
+     background: white;
+     color: #6A82FB;
+     border: 2px solid #6A82FB;
+     padding: 14px 24px;
+     border-radius: 12px;
+     font-size: 16px;
+     font-weight: bold;
+     cursor: pointer;
+     width: 100%;
+     margin: 12px 0;
+     transition: all 0.3s ease;
+ }
+ 
+ .button.secondary:hover {
+     background: rgba(106, 130, 251, 0.1);
+ }
+ 
+ /* 深色模式下的新UI元素样式 */
+ @media (prefers-color-scheme: dark) {
+     .modal-content {
+         background: #1E293B;
+         color: white;
+     }
+     
+     .modal-content .close {
+         color: #aaa;
+     }
+     
+     .recording-indicator {
+         background: rgba(255, 105, 180, 0.05);
+         border: 2px solid rgba(255, 105, 180, 0.2);
+     }
+     
+     .progress-bar {
+         background: rgba(255, 105, 180, 0.1);
+     }
+     
+     .subtitle {
+         color: #aaa;
+     }
+     
+     .button.secondary {
+         background: transparent;
+         color: #818CF8;
+         border-color: #818CF8;
+     }
+     
+     .button.secondary:hover {
+         background: rgba(106, 130, 251, 0.1);
      }
  }
 </style>
@@ -639,26 +858,68 @@
     </div>
 
     <!-- 頁3: 情緒輸入 -->
-    <div id="page3" class="page">
-        <div class="container">
+    <!-- Page3: 情緒輸入 (V1.0.4 優化：沉浸互動) --> 
+    <div id="page3" class="page"> 
+        <div class="container"> 
             <!-- 用户中心 -->
             <div class="menu-container">
                 <button id="userButton3" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
-            <h1>今天的心情？</h1>
-            <input type="text" id="emotionInput" placeholder="例如：我感到焦慮">
-            <button onclick="processEmotion()">開始調節</button>
-            <div id="packageCard" class="card" style="display: none;"></div>
-            <div style="display: none;" id="taskSection">
-                <h3 style="color: #6A82FB; margin-top: 30px; margin-bottom: 20px;">今天的任務</h3>
-                <div class="todo-item">
-                    <input type="checkbox" id="taskComplete" class="todo-checkbox" onchange="checkCompletion()">
-                    <span class="todo-text" id="taskText">正在加載任務...</span>
+            <h1>🌟 情緒輸入與療癒</h1> 
+            <p class="subtitle">分享 30 秒心情，讓 AI 生成個人化任務</p> 
+            
+            <!-- 確認 Modal (新增，美化版) --> 
+            <div id="confirmModal" class="modal" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true" style="display: none;"> 
+                <div class="modal-content"> 
+                    <span class="close" onclick="closeConfirmModal()" aria-label="關閉確認">&times;</span> 
+                    <h3 id="confirmTitle">AI 偵測結果</h3> 
+                    <div id="confirmContent"></div> 
+                    <div class="modal-buttons"> 
+                        <button class="button primary" onclick="handleConfirm(true)">確認</button> 
+                        <button class="button secondary" onclick="handleConfirm(false)">修改</button> 
+                    </div> 
+                </div> 
+            </div> 
+            
+            <!-- 步驟 1: 輸入區 (V1.0.4 升級：語音 + 文字) --> 
+            <div id="inputStep" class="card active-step"> 
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="voiceBtn" onclick="startVoiceInput()" class="button primary">
+                        <img src="../../icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">
+                        開始語音輸入 (30s)
+                    </button>
+                    <button id="stopVoiceBtn" onclick="stopVoiceInput()" class="button secondary" style="display: none;">
+                        結束語音
+                    </button>
                 </div>
-                <button onclick="showNFT()" id="nftButton" style="margin-top: 20px;">生成徽章</button>
-            </div>
-            <!-- 移除底部的查看Log按钮，功能已整合到顶部菜单 -->
-        </div>
+                <div id="recordingIndicator" class="recording-indicator" style="display: none;"> 
+                    <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div> 
+                    <p>錄音中... <span id="timer">30</span>s</p> 
+                    <canvas id="waveformCanvas" width="300" height="50" aria-label="語音波形"></canvas> 
+                </div> 
+                <textarea id="moodText" placeholder="或直接輸入心情描述..." rows="3" onblur="analyzeTextInput()"></textarea> 
+            </div> 
+            
+            <!-- 步驟 2: 確認區 (隱藏，JS 顯示) --> 
+            <div id="confirmStep" class="card" style="display: none;"> 
+                <div id="emotionPreview" class="emotion-badge large"></div> 
+                <p id="quotePreview"></p> 
+                <p id="taskPreview"></p> 
+            </div> 
+            
+            <!-- 步驟 3: 任務區 (隱藏，JS 顯示) --> 
+            <div id="taskStep" class="card" style="display: none;"> 
+                <h2>你的療癒任務</h2> 
+                <p id="finalQuote"></p> 
+                <label class="todo-item"> 
+                    <input type="checkbox" id="taskCheck" class="todo-checkbox" onchange="completeTask(this)" aria-label="完成任務勾選"> 
+                    <span id="taskContent"></span> 
+                </label> 
+                <div id="nftResult" class="nft-card" style="display: none;">NFT 解鎖成功！</div> 
+            </div> 
+            
+            <button id="backToHome" onclick="switchPage('page2')" class="button secondary" style="display: none;">返回主頁</button> 
+        </div> 
     </div>
 
     <!-- 頁4: 情緒log -->
@@ -1693,6 +1954,9 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         
         // Service Worker注册函数
         function registerServiceWorker() {
+            // 暂时禁用service worker，以便测试SVG路径
+            console.log('Service Worker已暂时禁用，用于测试SVG路径');
+            /*
             console.log('开始注册Service Worker');
             if ('serviceWorker' in navigator) {
                 // 清除之前可能存在的Service Worker
@@ -1705,6 +1969,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     // 重新注册Service Worker
                     setTimeout(() => {
                         navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+            */
                             .then(registration => {
                                 console.log('Service Worker 注册成功:', registration.scope);
                                 
@@ -1998,6 +2263,368 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             }
         } 
         // 登入函數後呼叫 onLoginSuccess()
+        
+        // Page3 專屬變數與函數 (V1.0.4 相容：currentUser 從 localStorage)
+        let recognition, mediaRecorder, audioChunks = [], currentAnalysis = {}, originalEmotion = '';
+        const RECORD_TIME = 30000;
+        
+        // 初始化 Page3 (切換時呼叫)
+        function initPage3() {
+            if (!window.currentUser) {
+                const savedUser = localStorage.getItem('user');
+                if (savedUser) {
+                    window.currentUser = JSON.parse(savedUser);
+                } else {
+                    switchPage('page1'); // 檢查登入
+                }
+            }
+            const moodTextElement = document.getElementById('moodText');
+            if (moodTextElement) {
+                moodTextElement.value = ''; // 清空輸入
+            }
+            // 重置頁面狀態 - 添加存在性檢查
+            const inputStep = document.getElementById('inputStep');
+            const confirmStep = document.getElementById('confirmStep');
+            const taskStep = document.getElementById('taskStep');
+            const nftResult = document.getElementById('nftResult');
+            const backToHome = document.getElementById('backToHome');
+            
+            if (inputStep) inputStep.style.display = 'block';
+            if (confirmStep) confirmStep.style.display = 'none';
+            if (taskStep) taskStep.style.display = 'none';
+            if (nftResult) nftResult.style.display = 'none';
+            if (backToHome) backToHome.style.display = 'none';
+        }
+        
+        // 開始語音輸入 (V1.0.4 新增：Web Speech + MediaRecorder 備援 STT)
+        async function startVoiceInput() {
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'zh-TW';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    const moodTextElement = document.getElementById('moodText');
+                    if (moodTextElement) {
+                        moodTextElement.value = transcript;
+                    }
+                    if (!event.results[0].isFinal) return;
+                    analyzeMood(transcript);
+                };
+                recognition.onerror = () => fallbackToRecorder();
+                recognition.onend = () => stopRecordingUI();
+                recognition.start();
+                startRecordingUI();
+                setTimeout(() => stopVoiceInput(), RECORD_TIME);
+            } else {
+                fallbackToRecorder();
+            }
+        }
+        
+        // 新增停止語音輸入功能
+        async function stopVoiceInput() {
+            if (recognition) {
+                recognition.stop();
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            stopRecordingUI();
+        }
+        
+        // 備援錄音上傳 STT
+        async function fallbackToRecorder() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('audio', blob, 'mood.wav');
+                try {
+                    const res = await fetch('http://localhost:5000/api/speech-to-text', {
+                        method: 'POST', 
+                        body: formData 
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById('moodText').value = data.transcript;
+                        analyzeMood(data.transcript);
+                    }
+                } catch (e) { 
+                    alert('STT 失敗，使用文字輸入'); 
+                }
+                stream.getTracks().forEach(track => track.stop());
+            };
+            mediaRecorder.start();
+            startRecordingUI();
+        }
+        
+        // 錄音 UI (V1.0.4 新增動畫)
+        function startRecordingUI() {
+            document.getElementById('recordingIndicator').style.display = 'block';
+            document.getElementById('voiceBtn').style.display = 'none';
+            document.getElementById('stopVoiceBtn').style.display = 'block';
+            let timeLeft = 30;
+            const timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                const percent = ((30 - timeLeft) / 30) * 100;
+                document.getElementById('progressFill').style.width = percent + '%';
+                drawWaveform(percent);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    stopRecordingUI();
+                }
+            }, 1000);
+        }
+        
+        function stopRecordingUI() {
+            document.getElementById('recordingIndicator').style.display = 'none';
+            document.getElementById('voiceBtn').style.display = 'block';
+            document.getElementById('stopVoiceBtn').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+        
+        // 波形 Canvas 動畫
+        function drawWaveform(percent) {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = percent > 70 ? '#FF6B6B' : '#6A82FB';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x += 5) {
+                const y = canvas.height / 2 + Math.sin(x * 0.05 + Date.now() * 0.005) * (20 + percent / 5);
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        
+        // 文字輸入分析 (debounce)
+        let debounceTimer;
+        function analyzeTextInput() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const text = document.getElementById('moodText').value.trim();
+                if (text) analyzeMood(text);
+            }, 500);
+        }
+        
+        // AI 分析 (V1.0.4 API 呼叫)
+        async function analyzeMood(text) {
+            try {
+                showLoading('inputStep');
+                const res = await fetch('http://localhost:5000/api/analyze-mood', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text, 
+                        email: window.currentUser?.email || window.currentUser 
+                    })
+                });
+                currentAnalysis = await res.json();
+                if (currentAnalysis.success) {
+                    originalEmotion = currentAnalysis.emotion;
+                    showConfirmModal();
+                }
+            } catch (e) {
+                console.error('分析失敗', e);
+                // 模擬數據 - 後端不可用時使用
+                if (!currentAnalysis.success) {
+                    currentAnalysis = {
+                        success: true,
+                        emotion: 'anxious',
+                        mood_quote: '寧靜的心態，是最好的陪伴',
+                        daily_task: '今天花10分鐘冥想，放鬆心情'
+                    };
+                    originalEmotion = currentAnalysis.emotion;
+                    showConfirmModal();
+                }
+            } finally {
+                // 移除加載中狀態
+                const inputStep = document.getElementById('inputStep');
+                if (inputStep && inputStep.querySelector('.loading-indicator')) {
+                    inputStep.removeChild(inputStep.querySelector('.loading-indicator'));
+                }
+            }
+        }
+        
+        // 顯示確認 Modal
+        function showConfirmModal() {
+            document.getElementById('confirmContent').innerHTML = `
+                <span class="emotion-badge large ${currentAnalysis.emotion}">${getEmotionLabel(currentAnalysis.emotion)}</span><br>
+                <strong>心情小語：</strong>${currentAnalysis.mood_quote}<br>
+                <strong>每日任務：</strong>${currentAnalysis.daily_task}
+            `;
+            document.getElementById('confirmModal').style.display = 'flex';
+            document.getElementById('inputStep').style.opacity = '0.5';
+        }
+        
+        // 關閉 Modal
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+            document.getElementById('inputStep').style.opacity = '1';
+        }
+        
+        // 處理確認 (V1.0.4：若修改，prompt + 重新 API)
+        async function handleConfirm(confirmed) {
+            closeConfirmModal();
+            if (!confirmed) {
+                const manual = prompt('輸入正確情緒 (anxious/sad/angry/happy/neutral):') || 'neutral';
+                try {
+                    const res = await fetch('http://localhost:5000/api/analyze-mood', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            text: document.getElementById('moodText').value, 
+                            email: window.currentUser?.email || window.currentUser,
+                            confirmed_emotion: manual 
+                        })
+                    });
+                    currentAnalysis = await res.json();
+                    originalEmotion = manual;
+                } catch (e) {
+                    // 模擬數據
+                    currentAnalysis.emotion = manual;
+                }
+            }
+            
+            // 顯示確認步驟
+            showConfirmStep();
+        }
+        
+        // 顯示確認步驟
+        function showConfirmStep() {
+            document.getElementById('emotionPreview').textContent = getEmotionLabel(currentAnalysis.emotion);
+            document.getElementById('emotionPreview').className = `emotion-badge large ${currentAnalysis.emotion}`;
+            document.getElementById('quotePreview').textContent = currentAnalysis.mood_quote;
+            document.getElementById('taskPreview').textContent = currentAnalysis.daily_task;
+            
+            document.getElementById('inputStep').style.display = 'none';
+            document.getElementById('confirmStep').style.display = 'block';
+            
+            // 3秒後進入任務步驟
+            setTimeout(showTaskStep, 3000);
+        }
+        
+        // 顯示任務步驟 
+        function showTaskStep() { 
+            document.getElementById('inputStep').style.display = 'none'; 
+            document.getElementById('confirmStep').style.display = 'block'; 
+            setTimeout(() => { 
+                document.getElementById('confirmStep').style.display = 'none'; 
+                document.getElementById('taskStep').style.display = 'block'; 
+                document.getElementById('backToHome').style.display = 'block'; 
+                document.getElementById('finalQuote').textContent = currentAnalysis.mood_quote; 
+                document.getElementById('taskContent').textContent = currentAnalysis.daily_task; 
+            }, 1500); 
+        }
+        
+        // 任務完成 (V1.0.4：API + NFT + 跳 page4) 
+        async function completeTask(checkbox) { 
+            if (checkbox.checked) { 
+                const newEmotion = 'happy'; // 預設轉變 
+                try { 
+                    const res = await fetch('http://localhost:5000/api/complete-task', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ email: currentUser.email, original_emotion: originalEmotion, new_emotion: newEmotion, task: currentAnalysis.daily_task }) 
+                    }); 
+                    const data = await res.json(); 
+                    if (data.success) { 
+                        document.getElementById('nftResult').innerHTML = `🎉 ${data.nft}`; 
+                        document.getElementById('nftResult').style.display = 'block'; 
+                        // 傳 latestLog 至 page4 
+                        sessionStorage.setItem('latestLog', JSON.stringify({ 
+                            time: new Date().toISOString(), 
+                            emotion: originalEmotion, 
+                            quote: currentAnalysis.mood_quote, 
+                            task: currentAnalysis.daily_task, 
+                            nft: data.nft, 
+                            completed: true 
+                        })); 
+                        setTimeout(() => switchPage('page4'), 2000); // 自動跳 Log 
+                    } 
+                } catch (e) { 
+                    console.error('完成失敗', e); 
+                    checkbox.checked = false; 
+                } 
+            } else { 
+                // 未完成：基本 NFT 
+                const basicNft = generateBasicNft(originalEmotion); 
+                document.getElementById('nftResult').innerHTML = `🛡️ ${basicNft} (未完成)`; 
+                document.getElementById('nftResult').style.display = 'block'; 
+            } 
+        }
+        
+        // 基本 NFT (V1.0.4 utils 輔助) 
+        function generateBasicNft(emotion) { 
+            const badges = NFT_BADGES[emotion] || NFT_BADGES.neutral; // 假設全局 NFT_BADGES 
+            return badges; 
+        }
+        
+        // 保存情感日誌
+        async function saveEmotionLog(completed) {
+            const logData = {
+                email: window.currentUser?.email || window.currentUser,
+                emotion: currentAnalysis.emotion,
+                mood_quote: currentAnalysis.mood_quote,
+                daily_task: currentAnalysis.daily_task,
+                completed: completed,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                if (navigator.onLine) {
+                    await fetch('http://localhost:5000/api/save-log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(logData)
+                    });
+                } else {
+                    saveLogToOffline(logData);
+                }
+            } catch (e) {
+                saveLogToOffline(logData);
+            }
+        }
+        
+        // 獲取情感標籤中文顯示
+        function getEmotionLabel(emotion) {
+            const emotionMap = {
+                'happy': '開心',
+                'sad': '憂傷',
+                'anxious': '焦慮',
+                'angry': '憤怒',
+                'neutral': '平靜'
+            };
+            return emotionMap[emotion] || emotion;
+        }
+        
+        // 確保 switchPage 函數調用 initPage3
+        const originalSwitchPage = switchPage;
+        switchPage = function(id, event) {
+            originalSwitchPage(id, event);
+            if (id === 'page3') {
+                initPage3();
+            }
+        }
+        
+        // NFT徽章配置
+        const NFT_BADGES = {
+            anxious: '寧靜之心',
+            sad: '希望之光',
+            angry: '平和之盾',
+            happy: '喜悅之星',
+            neutral: '平衡之石'
+        }
     </script>
     <!-- 用户中心页面 -->
     <div id="userCenter" class="page">
