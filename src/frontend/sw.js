@@ -9,12 +9,11 @@ const STATIC_ASSETS = [
   '/',  // 根路径也需要缓存，确保离线时能访问
   './moodmend_ui_demo.html',
   './manifest.json',
-  '../../icons/icon-192x192.svg',
-  '../../icons/icon-512x512.svg',
-  '../../icons/icon-1024x1024.svg',
-  '../../icons/icon-emotion.svg',
-  '../../icons/icon-history.svg',
   '../../icons/MoodMend_Logo_Option4.svg',
+  '../../icons/MoodMend_Angry_Emotion.svg',
+  '../../icons/MoodMend_Happy_Emotion.svg',
+  '../../icons/MoodMend_Calm_Emotion.svg',
+  '../../icons/MoodMend_Sad_Emotion.svg',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
