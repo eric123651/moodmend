@@ -1008,7 +1008,7 @@ if __name__ == '__main__':
         
         # 在生产环境中，应该使用适当的WSGI服务器
         # 这里为了演示，使用Flask的开发服务器
-        app.run(debug=True, port=5000, host='0.0.0.0')
+        app.run(debug=True, port=3000, host='0.0.0.0')
         
     except Exception as e:
         logger.critical(f"服务启动失败: {e}")
