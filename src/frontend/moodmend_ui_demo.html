@@ -498,6 +498,81 @@
          color: rgba(255, 255, 255, 1); 
      } 
  }
+ 
+ /* 用户中心相关样式 */
+ .menu-item {
+     display: flex;
+     align-items: center;
+     padding: 15px 20px;
+     cursor: pointer;
+     transition: background-color 0.3s ease;
+ }
+ 
+ .menu-item:hover {
+     background-color: rgba(106, 130, 251, 0.1);
+ }
+ 
+ .menu-icon {
+     font-size: 18px;
+     margin-right: 15px;
+     width: 24px;
+     text-align: center;
+ }
+ 
+ .menu-text {
+     flex: 1;
+     font-size: 16px;
+ }
+ 
+ .menu-arrow {
+     color: #999;
+     font-size: 20px;
+     font-weight: bold;
+ }
+ 
+ .menu-divider {
+     height: 1px;
+     background-color: #eee;
+     margin: 0 20px;
+ }
+ 
+ /* 语言选择相关样式 */
+ .language-option {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     padding: 15px 20px;
+     cursor: pointer;
+     transition: background-color 0.3s ease;
+ }
+ 
+ .language-option:hover {
+     background-color: rgba(106, 130, 251, 0.1);
+ }
+ 
+ .language-option .checkmark {
+     color: #6A82FB;
+     font-weight: bold;
+ }
+ 
+ /* 深色模式下用户中心样式 */
+ @media (prefers-color-scheme: dark) {
+     .menu-item:hover {
+         background-color: rgba(106, 130, 251, 0.2);
+     }
+     
+     .menu-divider {
+         background-color: rgba(255, 255, 255, 0.1);
+     }
+     
+     .menu-arrow {
+         color: #666;
+     }
+     
+     .language-option:hover {
+         background-color: rgba(106, 130, 251, 0.2);
+     }
+ }
 </style>
 </head>
 <body>
@@ -543,14 +618,9 @@
     <!-- 頁2: 主頁 -->
     <div id="page2" class="page">
         <div class="container">
-            <!-- 功能菜单 -->
+            <!-- 用户中心 -->
             <div class="menu-container">
-                <button id="menuButtonWelcome" class="menu-button" onclick="toggleMenu('menuButtonWelcome')">☰</button>
-                <div id="menuWelcome" class="menu-dropdown">
-                    <button onclick="switchPage('page3', event)">💭 心情記錄</button>
-                    <button onclick="switchPage('page4', event)">📊 查看紀錄</button>
-                    <button onclick="logout()">👤 登出</button>
-                </div>
+                <button id="userButton2" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
                 <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 120px; height: 120px; object-fit: contain;">
@@ -571,14 +641,9 @@
     <!-- 頁3: 情緒輸入 -->
     <div id="page3" class="page">
         <div class="container">
-            <!-- 功能菜单 -->
+            <!-- 用户中心 -->
             <div class="menu-container">
-                <button id="menuButton2" class="menu-button" onclick="toggleMenu('menuButton2')">☰</button>
-                <div id="menu2" class="menu-dropdown">
-                    <button onclick="switchPage('page2', event)">🏠 回到主頁</button>
-                    <button onclick="switchPage('page4')">📊 查看紀錄</button>
-                    <button onclick="logout()">👤 登出</button>
-                </div>
+                <button id="userButton3" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
             <h1>今天的心情？</h1>
             <input type="text" id="emotionInput" placeholder="例如：我感到焦慮">
@@ -599,14 +664,9 @@
     <!-- 頁4: 情緒log -->
     <div id="page4" class="page">
         <div class="container">
-            <!-- 功能菜单 -->
+            <!-- 用户中心 -->
             <div class="menu-container">
-                <button id="menuButton3" class="menu-button" onclick="toggleMenu('menuButton3')">☰</button>
-                <div id="menu3" class="menu-dropdown">
-                    <button onclick="switchPage('page2')">🏠 回到主頁</button>
-                    <button onclick="switchPage('page3', event)">💭 心情記錄</button>
-                    <button onclick="logout()">👤 登出</button>
-                </div>
+                <button id="userButton4" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
             <h1>我的療癒紀錄</h1>
             <div class="filter-bar">
@@ -670,6 +730,83 @@
 
         // 页面切换函数已在下方扩展版本中定义
 
+        // 用户中心相关函数
+        async function showVersionInfo() {
+            try {
+                // 从后端获取版本信息
+                const response = await fetch('http://localhost:5000/api/health');
+                const data = await response.json();
+                
+                if (data.version) {
+                    showToast(`MoodMend ${data.version}`);
+                } else {
+                    showToast('MoodMend 版本信息获取失败');
+                }
+            } catch (error) {
+                console.error('获取版本信息错误:', error);
+                showToast('MoodMend V1.0.4');
+            }
+        }
+        
+        function showLanguageSelection() {
+            // 创建语言选择对话框
+            const dialog = document.createElement('div');
+            dialog.className = 'card';
+            dialog.style.position = 'fixed';
+            dialog.style.top = '50%';
+            dialog.style.left = '50%';
+            dialog.style.transform = 'translate(-50%, -50%)';
+            dialog.style.zIndex = '1000';
+            dialog.style.width = '90%';
+            dialog.style.maxWidth = '300px';
+            dialog.style.padding = '0';
+            
+            dialog.innerHTML = `
+                <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
+                    <h3>選擇語言</h3>
+                </div>
+                <div style="padding: 10px 0;">
+                    <div class="language-option" onclick="setLanguage('zh-CN')">
+                        <span>繁體中文</span>
+                        <span class="checkmark">✓</span>
+                    </div>
+                    <div class="language-option" onclick="setLanguage('en-US')">
+                        <span>English</span>
+                        <span class="checkmark"></span>
+                    </div>
+                </div>
+                <div style="padding: 15px; text-align: center;">
+                    <button onclick="this.parentNode.parentNode.remove()">確定</button>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+        }
+        
+        function setLanguage(lang) {
+            // 这里可以实现语言切换逻辑
+            localStorage.setItem('appLanguage', lang);
+            showToast('語言已設置為：' + (lang === 'zh-CN' ? '繁體中文' : 'English'));
+            
+            // 更新选中状态
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.querySelector('.checkmark').textContent = '';
+            });
+            event.currentTarget.querySelector('.checkmark').textContent = '✓';
+        }
+        
+        function showPrivacyPolicy() {
+            showToast('隱私政策頁面將在未來版本開放');
+        }
+        
+        function showTermsOfService() {
+            showToast('服務條款頁面將在未來版本開放');
+        }
+        
+        function showAbout() {
+            showToast('MoodMend - 您的心情調適助手');
+        }
+        
         // 显示加载中 - 改进加载动画
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
@@ -1806,6 +1943,25 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 }
             }
             
+            // 如果是用户中心页面，更新用户信息
+            if (id === 'userCenter' && currentUser) {
+                const userName = document.getElementById('userName');
+                const userEmail = document.getElementById('userEmail');
+                const userInitial = document.getElementById('userInitial');
+                
+                if (userName && currentUser.user_name) {
+                    userName.textContent = currentUser.user_name;
+                }
+                
+                if (userEmail && currentUser.email) {
+                    userEmail.textContent = currentUser.email;
+                }
+                
+                if (userInitial && currentUser.user_name) {
+                    userInitial.textContent = currentUser.user_name.charAt(0).toUpperCase();
+                }
+            }
+            
             // 如果切换到日志页，加载数据
             if (id === 'page4') {
                 // 使用setTimeout确保页面完全加载后再执行
@@ -1843,6 +1999,64 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         } 
         // 登入函數後呼叫 onLoginSuccess()
     </script>
+    <!-- 用户中心页面 -->
+    <div id="userCenter" class="page">
+        <div class="container">
+            <!-- 返回到主頁 -->
+            <div class="menu-container">
+                <button class="menu-button" onclick="switchPage('page2', event)">←</button>
+            </div>
+            <h1>用戶中心</h1>
+            
+            <!-- 用户信息卡片 -->
+            <div class="card" style="margin-bottom: 20px; text-align: center; padding: 20px;">
+                <div style="width: 80px; height: 80px; background-color: #6A82FB; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">
+                    <span id="userInitial">👤</span>
+                </div>
+                <h3 id="userName">用户名</h3>
+                <p id="userEmail" style="color: #666; font-size: 14px;">user@example.com</p>
+            </div>
+            
+            <!-- 用户中心选项 -->
+            <div class="card">
+                <div class="menu-item" onclick="showVersionInfo()">
+                    <span class="menu-icon">ℹ️</span>
+                    <span class="menu-text">版本資訊</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" onclick="showLanguageSelection()">
+                    <span class="menu-icon">🌐</span>
+                    <span class="menu-text">APP語言</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" onclick="showPrivacyPolicy()">
+                    <span class="menu-icon">🔒</span>
+                    <span class="menu-text">隱私政策</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" onclick="showTermsOfService()">
+                    <span class="menu-icon">📄</span>
+                    <span class="menu-text">服務條款</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" onclick="showAbout()">
+                    <span class="menu-icon">🏥</span>
+                    <span class="menu-text">關於MoodMend</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+            </div>
+            
+            <!-- 登出按钮 -->
+            <button onclick="logout()" style="width: 100%; margin-top: 20px; background-color: #ff4d4f; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);">
+                登出賬號
+            </button>
+        </div>
+    </div>
+    
     <!-- 3 表情 Bar (登入後顯示) -->
     <div class="nav-bar" id="navBar" style="display: none;">
         <!-- Angry: 主頁 -->

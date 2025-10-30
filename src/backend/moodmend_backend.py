@@ -946,7 +946,7 @@ def health_check():
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
-            'version': '2.0'
+            'version': 'V1.0.4'
         })
     except Exception as e:
         logger.error(f"健康檢查失敗: {e}")
