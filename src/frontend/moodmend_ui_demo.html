@@ -28,14 +28,13 @@
     </script>
     <style>
         :root { 
-            --hero-gradient: linear-gradient(135deg, #FF69B4 0%, #8A2BE2 40%, #FFD700 70%, #4169E1 100%); /* SVG 4色漸層 */ 
             --card-bg: rgba(255,255,255,0.92); /* 毛玻璃 */ 
             --shadow-sparkle: 0 8px 32px rgba(255,215,0,0.2); /* 金陰影 */ 
             --transition-magic: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94); /* 奢華緩動 */ 
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--hero-gradient); 
+            background: #f8f9fa; /* 浅灰色背景 */ 
             min-height: 100vh; 
             margin: 0; 
             padding: 0; 
@@ -365,7 +364,141 @@
         #page1 .hero-logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 4px 20px rgba(255,215,0,0.3); animation: float 3s infinite; } /* Logo 浮動 */ 
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } 
         #page1 .slogan { text-align: center; color: #8A2BE2; font-size: 14px; margin-bottom: 20px; opacity: 0.8; }
-    </style>
+    /* 3 表情 Bar：毛玻璃導航 */ 
+ .nav-bar { 
+     position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; 
+     background: rgba(52, 152, 219, 0.1); /* 藍灰毛玻璃 */ 
+     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+     border-top: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 0; z-index: 1000; 
+     box-shadow: 0 -4px 20px rgba(52, 152, 219, 0.1); 
+     transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; 
+ } 
+ .nav-item { 
+     width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); 
+     display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; 
+     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; 
+     padding: 5px; 
+ } 
+ .nav-item:hover, .nav-item.active { 
+     background: rgba(255, 215, 0, 0.3); 
+     transform: scale(1.1); 
+     box-shadow: 0 6px 24px rgba(255, 215, 0, 0.3); 
+ } 
+ .nav-item::before { 
+     content: ''; 
+     position: absolute; 
+     top: 50%; 
+     left: 50%; 
+     width: 0; 
+     height: 0; 
+     background: rgba(255, 255, 255, 0.5); 
+     border-radius: 50%; 
+     transform: translate(-50%, -50%); 
+     transition: width 0.3s, height 0.3s; 
+ } 
+ .nav-item:active::before { 
+     width: 100px; 
+     height: 100px; 
+ } 
+ .mood-icon { 
+     width: 32px; 
+     height: 32px; 
+     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); 
+     transition: all 0.3s ease; 
+ } /* SVG 圖標 */ 
+ .mood-icon-center { 
+     width: 48px; 
+     height: 48px; 
+ } /* 中間放大 */ 
+ .nav-item.active .mood-icon { 
+     filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.5)); 
+     transform: scale(1.1); 
+ } 
+ .nav-label { 
+     font-size: 12px; 
+     margin-top: 3px; 
+     opacity: 0.8; 
+     transition: opacity 0.3s ease; 
+ } 
+ .nav-item:hover .nav-label, .nav-item.active .nav-label { 
+     opacity: 1; 
+     font-weight: bold; 
+ } 
+ #page1 .nav-bar { display: none; } /* 登入前隱藏 */ 
+ .page { padding-bottom: 80px; } /* 避開 Bar */ 
+ 
+ /* 响应式设计 - 适配不同设备尺寸 */ 
+ @media (max-width: 375px) { 
+     .nav-bar { 
+         padding: 8px 0; 
+     } 
+     .nav-item { 
+         width: 50px; 
+         height: 50px; 
+     } 
+     .mood-icon { 
+         width: 28px; 
+         height: 28px; 
+     } 
+     .mood-icon-center { 
+         width: 40px; 
+         height: 40px; 
+     } 
+     .nav-label { 
+         font-size: 11px; 
+     } 
+     .page { 
+         padding-bottom: 70px; 
+     } 
+ } 
+ 
+ @media (min-width: 768px) { 
+     .nav-bar { 
+         padding: 12px 0; 
+     } 
+     .nav-item { 
+         width: 70px; 
+         height: 70px; 
+     } 
+     .mood-icon { 
+         width: 36px; 
+         height: 36px; 
+     } 
+     .mood-icon-center { 
+         width: 56px; 
+         height: 56px; 
+     } 
+     .nav-label { 
+         font-size: 14px; 
+     } 
+     .page { 
+         padding-bottom: 100px; 
+     } 
+ } 
+ 
+ /* 深色模式支持 */ 
+ @media (prefers-color-scheme: dark) { 
+     .nav-bar { 
+         background: rgba(30, 41, 59, 0.8); 
+         border-top: 1px solid rgba(255, 255, 255, 0.1); 
+         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3); 
+     } 
+     .nav-item { 
+         background: rgba(71, 85, 105, 0.5); 
+         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); 
+     } 
+     .nav-item:hover, .nav-item.active { 
+         background: rgba(255, 215, 0, 0.4); 
+         box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4); 
+     } 
+     .nav-label { 
+         color: rgba(255, 255, 255, 0.8); 
+     } 
+     .nav-item:hover .nav-label, .nav-item.active .nav-label { 
+         color: rgba(255, 255, 255, 1); 
+     } 
+ }
+</style>
 </head>
 <body>
     <!-- 頁1: 登錄 -->
@@ -383,7 +516,7 @@
                 <input type="email" id="loginEmail" placeholder="Email">
                 <input type="password" id="loginPassword" placeholder="Password">
                 <button onclick="login()">登錄</button>
-                <button onclick="switchPage('pageRegister')" style="background-color: #6A82FB; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">註冊新帳號</button>
+                <button onclick="switchPage('pageRegister', event)" style="background-color: #6A82FB; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">註冊新帳號</button>
                 <p style="text-align: center; font-size: 12px;">Demo: 用 test@test.com / 123 登入</p>
             </div>
         </div>
@@ -402,20 +535,20 @@
                 <input type="password" id="registerPassword" placeholder="密碼 (至少6位)">
                 <input type="password" id="confirmPassword" placeholder="確認密碼">
                 <button onclick="register()">註冊</button>
-                <button onclick="switchPage('page1')" style="background-color: #666; box-shadow: 0 4px 12px rgba(102, 102, 102, 0.3);">返回登錄</button>
+                <button onclick="switchPage('page1', event)" style="background-color: #666; box-shadow: 0 4px 12px rgba(102, 102, 102, 0.3);">返回登錄</button>
             </div>
         </div>
     </div>
 
-    <!-- 頁2: 歡迎頁面 -->
-    <div id="pageWelcome" class="page">
+    <!-- 頁2: 主頁 -->
+    <div id="page2" class="page">
         <div class="container">
             <!-- 功能菜单 -->
             <div class="menu-container">
                 <button id="menuButtonWelcome" class="menu-button" onclick="toggleMenu('menuButtonWelcome')">☰</button>
                 <div id="menuWelcome" class="menu-dropdown">
-                    <button onclick="switchPage('page2')">💭 心情記錄</button>
-                    <button onclick="switchPage('page3')">📊 查看紀錄</button>
+                    <button onclick="switchPage('page3', event)">💭 心情記錄</button>
+                    <button onclick="switchPage('page4', event)">📊 查看紀錄</button>
                     <button onclick="logout()">👤 登出</button>
                 </div>
             </div>
@@ -427,7 +560,7 @@
             <div class="card" style="text-align: center; padding: 30px 15px; margin-top: 40px;">
                 <p style="font-size: 18px; margin-bottom: 30px; font-weight: 500;">「每一種情緒都值得被理解和關照」</p>
                 <p style="margin-bottom: 40px; line-height: 1.6; font-size: 16px;">在這裡，我們將一起探索你的情緒世界，提供專屬的調適方案，幫助你度過每一個心情時刻。</p>
-                <button onclick="switchPage('page2')" style="margin-top: 20px; font-size: 18px; padding: 16px;">開始調適之旅</button>
+                <button onclick="switchPage('page3', event)" style="margin-top: 20px; font-size: 18px; padding: 16px;">開始調適之旅</button>
             </div>
             <div style="text-align: center; margin-top: 40px; padding: 0 20px;">
                 <p style="color: #666; font-size: 14px;">今天，你想如何照顧自己的心情？</p>
@@ -435,15 +568,15 @@
         </div>
     </div>
 
-    <!-- 頁3: 主要互動 -->
-    <div id="page2" class="page">
+    <!-- 頁3: 情緒輸入 -->
+    <div id="page3" class="page">
         <div class="container">
             <!-- 功能菜单 -->
             <div class="menu-container">
                 <button id="menuButton2" class="menu-button" onclick="toggleMenu('menuButton2')">☰</button>
                 <div id="menu2" class="menu-dropdown">
-                    <button onclick="switchPage('pageWelcome')">🏠 回到歡迎頁</button>
-                    <button onclick="switchPage('page3')">📊 查看紀錄</button>
+                    <button onclick="switchPage('page2', event)">🏠 回到主頁</button>
+                    <button onclick="switchPage('page4')">📊 查看紀錄</button>
                     <button onclick="logout()">👤 登出</button>
                 </div>
             </div>
@@ -463,15 +596,15 @@
         </div>
     </div>
 
-    <!-- 頁4: Log紀錄 -->
-    <div id="page3" class="page">
+    <!-- 頁4: 情緒log -->
+    <div id="page4" class="page">
         <div class="container">
             <!-- 功能菜单 -->
             <div class="menu-container">
                 <button id="menuButton3" class="menu-button" onclick="toggleMenu('menuButton3')">☰</button>
                 <div id="menu3" class="menu-dropdown">
-                    <button onclick="switchPage('pageWelcome')">🏠 回到歡迎頁</button>
-                    <button onclick="switchPage('page2')">💭 心情記錄</button>
+                    <button onclick="switchPage('page2')">🏠 回到主頁</button>
+                    <button onclick="switchPage('page3', event)">💭 心情記錄</button>
                     <button onclick="logout()">👤 登出</button>
                 </div>
             </div>
@@ -503,6 +636,9 @@
         window.currentUser = null;
         let currentPackage = null;
         let userLogs = [];
+        // 请求锁，避免重复请求
+        let isLoadingLogs = false;
+        let isUpdatingStats = false;
         
         // 修复iOS Safari中状态栏覆盖问题
         if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
@@ -532,37 +668,7 @@
             }
         });
 
-        // 頁面切換 - 添加平滑过渡
-        function switchPage(pageId) {
-            // 先关闭所有菜单
-            document.querySelectorAll('.menu-dropdown').forEach(menu => {
-                menu.classList.remove('show');
-            });
-            
-            // 隐藏所有页面
-            document.querySelectorAll('.page').forEach(p => {
-                p.classList.remove('active');
-            });
-            
-            // 显示目标页面
-            document.getElementById(pageId).classList.add('active');
-            
-            // 重置滚动位置
-            document.getElementById(pageId).scrollTop = 0;
-            
-            // 如果是欢迎页面，更新用户名显示
-            if (pageId === 'pageWelcome' && currentUser) {
-                const welcomeMessage = document.getElementById('welcomeMessage');
-                if (welcomeMessage && currentUser.user_name) {
-                    welcomeMessage.textContent = `嗨，${currentUser.user_name}！`;
-                }
-            }
-            
-            // 如果切换到日志页，加载数据
-            if (pageId === 'page3') {
-                loadLogs();
-            }
-        }
+        // 页面切换函数已在下方扩展版本中定义
 
         // 显示加载中 - 改进加载动画
         function showLoading(elementId) {
@@ -647,7 +753,7 @@
                     document.getElementById('loginEmail').value = '';
                     document.getElementById('loginPassword').value = '';
                     alert('登錄成功！');
-                    switchPage('pageWelcome');
+                    switchPage('page2');
                 } else {
                     alert(data.message || '登錄失敗，請檢查帳號密碼');
                 }
@@ -709,7 +815,7 @@
                     document.getElementById('registerEmail').value = '';
                     document.getElementById('registerPassword').value = '';
                     document.getElementById('confirmPassword').value = '';
-                    switchPage('pageWelcome');
+                    switchPage('page2');
                 } else {
                     alert(data.message || '註冊失敗，請稍後重試');
                 }
@@ -724,7 +830,8 @@
             if (!input) return alert('請輸入');
             
             try {
-                const taskCompleted = document.getElementById('taskComplete')?.checked || false;
+                const taskCompleteElem = document.getElementById('taskComplete');
+const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 
                 showLoading('packageCard');
                 
@@ -742,7 +849,7 @@
                     },
                     body: JSON.stringify({ 
                         input, 
-                        email: window.currentUser?.email || window.currentUser,
+                        email: window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser,
                         task_completed: taskCompleted
                     })
                 });
@@ -880,7 +987,7 @@
                 document.getElementById('taskSection').style.display = 'none';
                 currentPackage = null;
                 
-                switchPage('page3');
+                switchPage('page4');
             } catch (error) {
                 // 保存失败，尝试保存到本地
                 saveLogToOffline(logData);
@@ -890,7 +997,14 @@
 
         // 加載日誌
         async function loadLogs(page = 1) {
+            // 避免重复请求
+            if (isLoadingLogs) {
+                console.log('日志加载已在进行中，跳过重复请求');
+                return;
+            }
+            
             try {
+                isLoadingLogs = true;
                 showLoading('logSection');
                 
                 const emotionFilter = document.getElementById('emotionFilter').value;
@@ -898,11 +1012,19 @@
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
                 
-                let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(window.currentUser?.email || window.currentUser)}&limit=${limit}&offset=${offset}`;
+                const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
+let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
                 
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'GET'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.success) {
@@ -912,7 +1034,18 @@
                     updateStats();
                 }
             } catch (error) {
-                showError('加載日誌失敗');
+                console.error('加載日誌錯誤詳細信息:', error);
+                console.error('錯誤名稱:', error.name);
+                console.error('錯誤堆棧:', error.stack);
+                console.error('網絡狀態:', navigator.onLine);
+                if (error.name === 'AbortError') {
+                    showError('加載日誌超時，請檢查網絡連接');
+                } else {
+                    showError(`加載日誌失敗: ${error.message || '未知錯誤'}`);
+                }
+            } finally {
+                // 确保请求锁被释放
+                isLoadingLogs = false;
             }
         }
 
@@ -1001,7 +1134,14 @@
 
         // 更新統計信息
         async function updateStats() {
+            // 避免重复请求
+            if (isUpdatingStats) {
+                console.log('统计更新已在进行中，跳过重复请求');
+                return;
+            }
+            
             try {
+                isUpdatingStats = true;
                 // 首先检查网络状态
                 if (!navigator.onLine) {
                     // 离线模式：尝试使用本地缓存的统计数据
@@ -1014,7 +1154,18 @@
                     return;
                 }
                 
-                const response = await fetch(`http://localhost:5000/api/get-stats?email=${encodeURIComponent(window.currentUser?.email || window.currentUser)}`);
+                const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
+                const response = await fetch(
+                     `http://localhost:5000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
+                    { 
+                        method: 'GET'
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1027,10 +1178,29 @@
                     document.getElementById('stats').innerText = '離線模式：無法更新統計';
                 }
             } catch (error) {
-                console.error('更新統計失敗:', error);
+                console.error('更新統計失敗詳細信息:', error);
+                console.error('錯誤名稱:', error.name);
+                console.error('錯誤堆棧:', error.stack);
+                console.error('網絡狀態:', navigator.onLine);
                 // 错误时尝试使用缓存或显示离线消息
                 const cachedStats = localStorage.getItem('cached_stats');
-                document.getElementById('stats').innerText = cachedStats || '離線模式：無法更新統計';
+                if (error.name === 'AbortError') {
+                    console.error('更新統計超時');
+                    if (cachedStats) {
+                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
+                    } else {
+                        document.getElementById('stats').innerText = '統計更新超時，請檢查網絡連接';
+                    }
+                } else {
+                    if (cachedStats) {
+                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
+                    } else {
+                        document.getElementById('stats').innerText = `暫時無法更新統計數據: ${error.message || '未知錯誤'}`;
+                    }
+                }
+            } finally {
+                // 确保请求锁被释放
+                isUpdatingStats = false;
             }
         }
 
@@ -1155,9 +1325,12 @@
                 if (!document.hidden) {
                     console.log('页面变为可见，检查更新...');
                     // 如果已登录，刷新数据
-                    if (window.currentUser) {
-                        loadLogs(1);
-                        updateStats();
+                    if (window.currentUser && document.getElementById('page4').classList.contains('active')) {
+                        // 只在page4（日志页面）可见时加载数据
+                        setTimeout(() => {
+                            loadLogs(1);
+                            updateStats();
+                        }, 300);
                     }
                 }
             });
@@ -1181,7 +1354,7 @@
                 
                 // 延迟切换页面，确保Service Worker有时间初始化
                 setTimeout(() => {
-                    switchPage('pageWelcome');
+                    switchPage('page2');
                     // 延迟加载数据，确保页面已渲染
                     setTimeout(() => {
                         console.log('开始加载用户数据...');
@@ -1250,7 +1423,7 @@
                 if (offlineLogs.length === 0) return;
                 
                 // 过滤出当前用户的日志
-                const userEmail = window.currentUser?.email || window.currentUser;
+                const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 const userLogs = offlineLogs.filter(log => log.email === userEmail);
                 
                 if (userLogs.length === 0) return;
@@ -1571,13 +1744,7 @@
             }
         });
         
-        // 监听页面可见性变化，在页面重新可见时刷新数据
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && currentUser) {
-                loadLogs(1);
-                updateStats();
-            }
-        });
+        // 移除重复的visibilitychange监听器，避免重复请求
         
         // 徽章浮動（SVG 波浪靈感）
         function animateWave(element) {
@@ -1609,6 +1776,90 @@
             // 可以在这里显示自定义的安装按钮
             console.log('应用可以被安装');
         });
+        // Bar UX: 登入後顯示 + active 
+        function onLoginSuccess() { 
+            document.getElementById('navBar').style.display = 'flex'; 
+        } 
+        // 擴充 switchPage 
+        function switchPage(id, event = null) { 
+            // 先关闭所有菜单
+            document.querySelectorAll('.menu-dropdown').forEach(menu => {
+                menu.classList.remove('show');
+            });
+            
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            document.getElementById(id).classList.add('active');
+            
+            // 重置滚动位置
+            document.getElementById(id).scrollTop = 0;
+            
+            // 如果是主页，更新用户名显示
+            if (id === 'page2' && currentUser) {
+                const welcomeMessage = document.getElementById('welcomeMessage');
+                if (welcomeMessage && currentUser.user_name) {
+                    welcomeMessage.textContent = `嗨，${currentUser.user_name}！`;
+                }
+            }
+            
+            // 如果切换到日志页，加载数据
+            if (id === 'page4') {
+                // 使用setTimeout确保页面完全加载后再执行
+                setTimeout(() => {
+                    if (!isLoadingLogs) {
+                        loadLogs();
+                    }
+                    if (!isUpdatingStats) {
+                        updateStats();
+                    }
+                }, 300);
+            }
+            
+            // 导航栏相关逻辑
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // 修复event对象问题，只有当event和event.target存在时才执行
+            if (event && event.target) {
+                if (id === 'page2') {
+                    const navItem = event.target.closest('.nav-item');
+                    if (navItem) navItem.classList.add('active');
+                } else if (id === 'page4') {
+                    const navItem = event.target.closest('.nav-item');
+                    if (navItem) navItem.classList.add('active');
+                } 
+            }
+            
+            // 只在非登录页面显示导航栏
+            if (id !== 'page1') {
+                onLoginSuccess();
+            } else {
+                // 在登录页面隐藏导航栏
+                const navBar = document.getElementById('navBar');
+                if (navBar) navBar.style.display = 'none';
+            }
+        } 
+        // 登入函數後呼叫 onLoginSuccess()
     </script>
+    <!-- 3 表情 Bar (登入後顯示) -->
+    <div class="nav-bar" id="navBar" style="display: none;">
+        <!-- Angry: 主頁 -->
+        <div class="nav-item" onclick="switchPage('page2', event)" title="主頁">
+            <img src="/icons/MoodMend_Angry_Emotion.svg" alt="Angry" class="mood-icon">
+            <span class="nav-label"></span>
+        </div>
+        <!-- Happy: 中間放大，情緒輸入 -->
+        <div class="nav-item active" onclick="switchPage('page3', event);" title="情緒輸入">
+            <img src="/icons/MoodMend_Happy_Emotion.svg" alt="Happy" class="mood-icon mood-icon-center">
+            <span class="nav-label"></span>
+        </div>
+        <!-- Calm: Log 頁 -->
+        <div class="nav-item" onclick="switchPage('page4', event); loadLogs(1);" title="Log">
+            <img src="/icons/MoodMend_Calm_Emotion.svg" alt="Calm" class="mood-icon">
+            <span class="nav-label"></span>
+        </div>
+    </div>
 </body>
 </html>

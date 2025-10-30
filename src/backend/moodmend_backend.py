@@ -49,7 +49,8 @@ logger = logging.getLogger('moodmend_backend')
 # Flask应用配置
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)  # 为会话生成随机密钥
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # 配置跨域
+# 启用CORS，支持所有来源，允许所有方法和头部
+CORS(app, origins='*', methods=['GET', 'POST', 'OPTIONS'], allow_headers=['*'])
 
 # 数据库配置
 DB_NAME = 'moodmend.db'

@@ -1,5 +1,5 @@
 {
-  "name": "MoodMend - 情緒管理助手",
+  "name": "MoodMend",
   "short_name": "MoodMend",
   "description": "MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案",
   "start_url": "./moodmend_ui_demo.html",
@@ -9,34 +9,34 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "../icons/icon-192x192.svg",
-      "sizes": "192x192",
+      "src": "../icons/MoodMend_Logo_Option4.svg",
+      "sizes": "1024x1024",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "../icons/icon-512x512.svg",
+      "src": "../icons/MoodMend_Logo_Option4.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "../icons/icon-1024x1024.svg",
-      "sizes": "1024x1024",
+      "src": "../icons/MoodMend_Logo_Option4.svg",
+      "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
   "shortcuts": [
     {
-      "name": "MoodMend - 記錄情緒",
+      "name": "記錄情緒",
       "short_name": "記錄",
       "description": "記錄當前的情緒",
       "url": "./moodmend_ui_demo.html?page=page2",
       "icons": [{ "src": "../icons/icon-emotion.svg", "sizes": "192x192" }]
     },
     {
-      "name": "MoodMend - 查看記錄",
+      "name": "查看記錄",
       "short_name": "歷史",
       "description": "查看情緒記錄歷史",
       "url": "./moodmend_ui_demo.html?page=page3",
