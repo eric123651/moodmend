@@ -22,9 +22,63 @@
     <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
     <script>
         // 暂时禁用service worker，以便测试SVG路径
-// if ('serviceWorker' in navigator) {
-// navigator.serviceWorker.register('sw.js');
-// }
+        // if ('serviceWorker' in navigator) {
+        // navigator.serviceWorker.register('sw.js');
+        // }
+    </script>
+    <script>
+        // 登录函数提前定义，确保在调用前可用
+        async function login() {
+            const email = document.querySelector('#page1 input[type="email"]').value;
+            const password = document.querySelector('#page1 input[type="password"]').value;
+            
+            // 简单验证
+            if (!email || !password) {
+                showToast('請輸入電子郵件和密碼');
+                return;
+            }
+            
+            // 显示加载状态
+            const loginButton = document.querySelector('#page1 button');
+            const originalText = loginButton.textContent;
+            loginButton.textContent = '登錄中...';
+            loginButton.disabled = true;
+            
+            try {
+                // 发送登录请求
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userEmail', email);
+                    
+                    // 登录成功，跳转到情绪记录页面
+                    showToast('登錄成功', 'success');
+                    
+                    // 延迟跳转，让用户看到成功提示
+                    setTimeout(() => {
+                        switchPage('pageMoodTracking', event);
+                    }, 1500);
+                } else {
+                    // 登录失败
+                    showToast(data.message || '登錄失敗，請檢查您的憑證');
+                }
+            } catch (error) {
+                console.error('登錄請求錯誤:', error);
+                showToast('網絡錯誤，請檢查您的連接');
+            } finally {
+                // 恢复按钮状态
+                loginButton.textContent = originalText;
+                loginButton.disabled = false;
+            }
         }
     </script>
     <style>
@@ -366,15 +420,14 @@
         #page1 .hero-logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 4px 20px rgba(255,215,0,0.3); animation: float 3s infinite; } /* Logo 浮動 */ 
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } 
         #page1 .slogan { text-align: center; color: #8A2BE2; font-size: 14px; margin-bottom: 20px; opacity: 0.8; }
-    /* 3 表情 Bar：毛玻璃導航 */ 
- .nav-bar { 
-     position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; 
-     background: rgba(52, 152, 219, 0.1); /* 藍灰毛玻璃 */ 
-     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
-     border-top: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 0; z-index: 1000; 
-     box-shadow: 0 -4px 20px rgba(52, 152, 219, 0.1); 
-     transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; 
- } 
+    /* 3 表情 Bar：毛玻璃導航 */
+    .nav-bar {
+        position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center;
+        background: rgba(52, 152, 219, 0.1); /* 藍灰毛玻璃 */
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 0; z-index: 1000;
+        box-shadow: 0 -4px 20px rgba(52, 152, 219, 0.1);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; 
  .nav-item { 
      width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); 
      display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; 
@@ -995,7 +1048,7 @@
         async function showVersionInfo() {
             try {
                 // 从后端获取版本信息
-                const response = await fetch('http://localhost:5000/api/health');
+                const response = await fetch('http://localhost:3000/api/health');
                 const data = await response.json();
                 
                 if (data.version) {
@@ -1111,7 +1164,7 @@
             }, 3000);
         }
 
-        // 登錄
+        // 登錄函数提前定义，确保在调用前可用
         async function login() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
@@ -1128,7 +1181,7 @@
                 loginButton.disabled = true;
                 
                 console.log('正在发送登录请求:', email);
-                const response = await fetch('http://localhost:5000/api/login', {
+                const response = await fetch('http://localhost:3000/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1191,7 +1244,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:5000/api/register', {
+                const response = await fetch('http://localhost:3000/api/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1240,7 +1293,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                     return;
                 }
                 
-                const response = await fetch('http://localhost:5000/api/process-emotion', {
+                const response = await fetch('http://localhost:3000/api/process-emotion', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1343,7 +1396,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 // 检查网络连接
                 if (navigator.onLine) {
                     // 在线模式 - 直接保存到服务器
-                    const response = await fetch('http://localhost:5000/api/add-log', {
+                    const response = await fetch('http://localhost:3000/api/add-log', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -1411,7 +1464,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 const offset = (page - 1) * limit; // 计算偏移量
                 
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
+let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
                 
@@ -1554,7 +1607,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 
                 const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 const response = await fetch(
-                     `http://localhost:5000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
+                     `http://localhost:3000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
                     { 
                         method: 'GET'
                     }
@@ -1831,7 +1884,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 
                 for (const log of userLogs) {
                     try {
-                        const response = await fetch('http://localhost:5000/api/add-log', {
+                        const response = await fetch('http://localhost:3000/api/add-log', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -1956,88 +2009,8 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         function registerServiceWorker() {
             // 暂时禁用service worker，以便测试SVG路径
             console.log('Service Worker已暂时禁用，用于测试SVG路径');
-            /*
-            console.log('开始注册Service Worker');
-            if ('serviceWorker' in navigator) {
-                // 清除之前可能存在的Service Worker
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for(let registration of registrations) {
-                        console.log('注销旧的Service Worker:', registration.scope);
-                        registration.unregister();
-                    }
-                    
-                    // 重新注册Service Worker
-                    setTimeout(() => {
-                        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-            */
-                            .then(registration => {
-                                console.log('Service Worker 注册成功:', registration.scope);
-                                
-                                // 确保立即控制页面
-                                registration.addEventListener('updatefound', () => {
-                                    const newWorker = registration.installing;
-                                    console.log('发现新的Service Worker版本');
-                                    newWorker.addEventListener('statechange', () => {
-                                        console.log('Service Worker状态变更:', newWorker.state);
-                                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                            console.log('有新版本的Service Worker可用，等待激活');
-                                            // 强制激活新版本
-                                            if (newWorker.waiting) {
-                                                newWorker.waiting.postMessage({ type: 'SKIP_WAITING' });
-                                            }
-                                        } else if (newWorker.state === 'activated') {
-                                            console.log('Service Worker已激活');
-                                            // 刷新缓存
-                                            registration.active.postMessage({ type: 'REFRESH_CACHE' });
-                                        }
-                                    });
-                                });
-                                
-                                // 检查后台同步支持并添加更好的错误处理
-                                if ('SyncManager' in window && 'sync' in registration) {
-                                    console.log('浏览器支持后台同步');
-                                    // 尝试同步离线日志，使用Promise链而非async/await避免语法错误
-                                    navigator.permissions.query({ name: 'periodic-background-sync' })
-                                        .then(permission => permission.state === 'granted')
-                                        .catch(() => true) // 如果权限查询失败，仍然尝试注册
-                                        .then(canUseSync => {
-                                            if (canUseSync) {
-                                                return registration.sync.register('sync-logs');
-                                            }
-                                            return Promise.reject(new Error('权限未授予或被禁用'));
-                                        })
-                                        .then(() => {
-                                            console.log('后台同步已注册');
-                                        })
-                                        .catch(err => {
-                                            console.log('后台同步注册失败或不可用:', err.message || '未知错误');
-                                            // 静默处理错误，不影响应用正常运行
-                                        });
-                                } else {
-                                    console.log('浏览器不支持后台同步');
-                                }
-                                
-                                // 如果已经有控制的Service Worker，通知它刷新缓存
-                                if (navigator.serviceWorker.controller) {
-                                    console.log('发送缓存刷新消息到现有Service Worker');
-                                    navigator.serviceWorker.controller.postMessage({ type: 'REFRESH_CACHE' });
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Service Worker 注册失败:', error);
-                                showToast('离线功能初始化失败');
-                                // 显示加载指示器
-                                showLoadingIndicator(false);
-                            });
-                    }, 1000);
-                }).catch(err => {
-                    console.error('获取Service Worker注册失败:', err);
-                });
-            } else {
-                console.log('浏览器不支持Service Worker');
-                showToast('您的浏览器不支持离线功能');
-            }
         }
+        /* 修正：移除孤立的右花括号，此处应为样式表结尾，无需额外内容 */
         
         // 显示加载指示器
         function showLoadingIndicator(show) {
@@ -2347,7 +2320,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 const formData = new FormData();
                 formData.append('audio', blob, 'mood.wav');
                 try {
-                    const res = await fetch('http://localhost:5000/api/speech-to-text', {
+                    const res = await fetch('http://localhost:3000/api/speech-to-text', {
                         method: 'POST', 
                         body: formData 
                     });
@@ -2421,7 +2394,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         async function analyzeMood(text) {
             try {
                 showLoading('inputStep');
-                const res = await fetch('http://localhost:5000/api/analyze-mood', {
+                const res = await fetch('http://localhost:3000/api/analyze-mood', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -2479,7 +2452,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (!confirmed) {
                 const manual = prompt('輸入正確情緒 (anxious/sad/angry/happy/neutral):') || 'neutral';
                 try {
-                    const res = await fetch('http://localhost:5000/api/analyze-mood', {
+                    const res = await fetch('http://localhost:3000/api/analyze-mood', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -2532,7 +2505,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (checkbox.checked) { 
                 const newEmotion = 'happy'; // 預設轉變 
                 try { 
-                    const res = await fetch('http://localhost:5000/api/complete-task', { 
+                    const res = await fetch('http://localhost:3000/api/complete-task', { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ email: currentUser.email, original_emotion: originalEmotion, new_emotion: newEmotion, task: currentAnalysis.daily_task }) 
@@ -2583,7 +2556,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             
             try {
                 if (navigator.onLine) {
-                    await fetch('http://localhost:5000/api/save-log', {
+                    await fetch('http://localhost:3000/api/save-log', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(logData)
@@ -2615,7 +2588,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (id === 'page3') {
                 initPage3();
             }
-        }
+        };
         
         // NFT徽章配置
         const NFT_BADGES = {
@@ -2624,7 +2597,8 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             angry: '平和之盾',
             happy: '喜悅之星',
             neutral: '平衡之石'
-        }
+        };
+    });
     </script>
     <!-- 用户中心页面 -->
     <div id="userCenter" class="page">

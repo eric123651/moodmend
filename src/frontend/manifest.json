@@ -1,5 +1,6 @@
 {
   "name": "MoodMend",
+  "version": "v1.0.4.2",
   "short_name": "MoodMend",
   "description": "MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案",
   "start_url": "./moodmend_ui_demo.html",
