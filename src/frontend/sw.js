@@ -9,11 +9,11 @@ const STATIC_ASSETS = [
   '/',  // 根路径也需要缓存，确保离线时能访问
   './moodmend_ui_demo.html',
   './manifest.json',
-  '../../icons/MoodMend_Logo_Option4.svg',
-  '../../icons/MoodMend_Angry_Emotion.svg',
-  '../../icons/MoodMend_Happy_Emotion.svg',
-  '../../icons/MoodMend_Calm_Emotion.svg',
-  '../../icons/MoodMend_Sad_Emotion.svg',
+  '/icons/MoodMend_Logo_Option4.svg',
+  '/icons/MoodMend_Angry_Emotion.svg',
+  '/icons/MoodMend_Happy_Emotion.svg',
+  '/icons/MoodMend_Calm_Emotion.svg',
+  '/icons/MoodMend_Sad_Emotion.svg',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
@@ -67,7 +67,7 @@ self.addEventListener('fetch', (event) => {
     // 提取图标文件名
     const iconName = url.split('/').pop();
     // 构建正确的图标路径
-    const correctIconPath = `../../icons/${iconName}`;
+    const correctIconPath = `/icons/${iconName}`;
     
     event.respondWith(
       fetch(correctIconPath)
@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
   // 拦截favicon.ico请求，重定向到我们的SVG图标
   if (url.includes('favicon.ico')) {
     event.respondWith(
-      caches.match('../../icons/icon-moodmend.svg')
+      caches.match('/icons/icon-moodmend.svg')
         .then(cachedResponse => {
           if (cachedResponse) return cachedResponse;
           return fetch('/icons/icon-moodmend.svg')

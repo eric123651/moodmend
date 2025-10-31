@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
     // 提取图标文件名
     const iconName = url.split('/').pop();
     // 构建正确的图标路径
-    const correctIconPath = `../../icons/${iconName}`;
+    const correctIconPath = `/icons/${iconName}`;
     
     event.respondWith(
       fetch(correctIconPath)

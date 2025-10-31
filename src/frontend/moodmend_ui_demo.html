@@ -11,11 +11,11 @@
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="../../icons/icon-moodmend.svg">
-    <link rel="mask-icon" href="../../icons/icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="../../icons/icon-moodmend.svg">
-    <link rel="icon" type="image/svg+xml" href="../../icons/MoodMend_Logo_Option4.svg">
-    <link rel="icon" href="../../icons/icon-moodmend.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icons/icon-moodmend.svg">
+    <link rel="mask-icon" href="/icons/icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="/icons/icon-moodmend.svg">
+    <link rel="icon" type="image/svg+xml" href="/icons/MoodMend_Logo_Option4.svg">
+    <link rel="icon" href="/icons/icon-moodmend.svg" type="image/svg+xml">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +25,7 @@
 // if ('serviceWorker' in navigator) {
 // navigator.serviceWorker.register('sw.js');
 // }
-        }
+        
     </script>
     <style>
         :root { 
@@ -885,7 +885,7 @@
             <div id="inputStep" class="card active-step"> 
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <button id="voiceBtn" onclick="startVoiceInput()" class="button primary">
-                        <img src="../../icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">
+                        <img src="/icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">
                         開始語音輸入 (30s)
                     </button>
                     <button id="stopVoiceBtn" onclick="stopVoiceInput()" class="button secondary" style="display: none;">
@@ -1969,7 +1969,6 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     // 重新注册Service Worker
                     setTimeout(() => {
                         navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-            */
                             .then(registration => {
                                 console.log('Service Worker 注册成功:', registration.scope);
                                 
@@ -2037,6 +2036,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 console.log('浏览器不支持Service Worker');
                 showToast('您的浏览器不支持离线功能');
             }
+            */
         }
         
         // 显示加载指示器
