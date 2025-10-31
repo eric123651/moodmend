@@ -1,0 +1,9 @@
+/* Page4 優化樣式 */
+.chart-desc { font-size: 14px; color: #666; text-align: center; margin-top: 10px; }
+#trendChart { max-height: 300px; margin: 20px 0; }
+.nft-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.nft-card { background: linear-gradient(135deg, #6A82FB, #FC5C7D); color: white; padding: 12px; border-radius: 8px; text-align: center; }
+.latest-highlight { background: #e8f5e8 !important; border-left: 4px solid #27ae60; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 10px rgba(39, 174, 96, 0.5); } 50% { box-shadow: 0 0 20px rgba(39, 174, 96, 0.8); } }
+.filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+.filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }

@@ -651,11 +651,23 @@ def add_log():
 @app.route('/api/get-logs', methods=['GET'])
 def get_logs():
     try:
+        from datetime import datetime, timedelta
+        
         email = request.args.get('email')
         emotion_filter = request.args.get('emotion')
         date_filter = request.args.get('date')
+        period = request.args.get('period', '')
         limit = request.args.get('limit', default=50, type=int)
         offset = request.args.get('offset', default=0, type=int)
+        
+        # period映射，参考tme.py
+        period_map = {
+            'day': timedelta(days=1),
+            'week': timedelta(weeks=1),
+            'month': timedelta(days=30),
+            '6month': timedelta(days=180),
+            'year': timedelta(days=365)
+        }
         
         # 验证输入
         if not email or not is_valid_email(email):
@@ -682,6 +694,11 @@ def get_logs():
         if date_filter:
             query += " AND time LIKE ?"
             params.append(f"{date_filter}%")
+        
+        # 基于period添加时间过滤
+        if period in period_map:
+            query += " AND time >= ?"
+            params.append((datetime.now() - period_map[period]).isoformat())
         
         # 添加排序和分页
         query += " ORDER BY time DESC LIMIT ? OFFSET ?"
@@ -712,6 +729,11 @@ def get_logs():
         if date_filter:
             count_query += " AND time LIKE ?"
             count_params.append(f"{date_filter}%")
+        
+        # 基于period添加时间过滤（总数查询也需要）
+        if period in period_map:
+            count_query += " AND time >= ?"
+            count_params.append((datetime.now() - period_map[period]).isoformat())
         
         cursor.execute(count_query, count_params)
         total = cursor.fetchone()[0]  # 使用索引访问而不是字典访问，因为没有设置row_factory

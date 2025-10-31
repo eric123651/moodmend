@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, target-densitydpi=device-dpi">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,26 +27,186 @@
 // }
         
     </script>
+    <script>
+    // ... 現有全局 JS (switchPage, currentUser 等)
+    
+    // Page4 專屬變數與函數 (V1.0.4 相容)
+    let trendChart, userLogs = [], currentPeriod = 'week', emotionFilter = 'all';
+    const EMOTION_SCORES = { anxious: 8, sad: 7, angry: 9, happy: 2, neutral: 5 }; // 情緒分數映射 (0-10)
+    
+    // 初始化 Page4 (切換時呼叫)
+    function initPage4() {
+        if (!currentUser) switchPage('page1');
+        loadStats();
+        loadLogs(1);
+        updateChart(); // 初始折線圖
+        const latestLog = sessionStorage.getItem('latestLog');
+        if (latestLog) {
+            highlightLatest(JSON.parse(latestLog));
+            sessionStorage.removeItem('latestLog');
+        }
+    }
+    
+    // ... 其他函數 (loadStats, loadLogs, renderLogs, highlightLatest, renderPagination, renderNFTs, getEmotionFromScore)
+    
+    // 更新折線圖 (V1.0.5 進階動畫版)
+    async function updateChart() {
+        currentPeriod = document.getElementById('timePeriod').value;
+        emotionFilter = document.getElementById('emotionFilter').value;
+        await loadLogs(1); // 載入序列數據
+        
+        // 準備趨勢數據 (時間 x 情緒分數 y)
+        const chartData = userLogs
+            .filter(log => emotionFilter === 'all' || log.emotion === emotionFilter)
+            .sort((a, b) => new Date(a.time) - new Date(b.time))
+            .map(log => ({
+                x: new Date(log.time).toLocaleDateString('zh-TW'),
+                y: EMOTION_SCORES[log.emotion] || 5  // 情緒分數映射
+            }));
+        
+        const labels = chartData.map(d => d.x);
+        const dataPoints = chartData.map(d => d.y);
+        
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+        
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '情緒趨勢',
+                    data: dataPoints,
+                    borderColor: 'rgb(106, 130, 251)',
+                    backgroundColor: 'rgba(106, 130, 251, 0.1)',
+                    tension: 0.4,  // 初始曲線張力
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                // 進階動畫配置
+                animation: {
+                    duration: 800,  // 持續時間 (ms)
+                    easing: 'easeOutQuart',  // 自然減速
+                    delay: 100,  // 輕微延遲
+                    onProgress: (animation) => {
+                        // 同步 NFT 高亮 (e.g., 動畫進度 50% 時閃現最新 NFT)
+                        if (animation.currentStep / animation.numSteps > 0.5) {
+                            document.getElementById('nftGrid').style.opacity = '1';
+                        }
+                    },
+                    onComplete: () => {
+                        // 完成時滾動到最新 Log
+                        document.querySelector('.latest-highlight')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                },
+                // 屬性特定動畫 (漸進繪製線條)
+                animations: {
+                    x: {  // x 軸漸進 (左到右趨勢)
+                        type: 'number',
+                        duration: 1200,
+                        easing: 'linear',  // 均勻繪製
+                        from: 0
+                    },
+                    y: {  // y 軸彈出
+                        type: 'number',
+                        duration: 800,
+                        easing: 'easeOutBounce',  // 彈跳效果強調轉變
+                        from: 0
+                    },
+                    tension: {  // 循環張力 (強調波動)
+                        duration: 2000,
+                        easing: 'easeInOutSine',
+                        from: 0.1,
+                        to: 0.6,
+                        loop: true  // 無限循環，突出趨勢脈動
+                    },
+                    colors: {  // 顏色淡入 (負面紅線漸顯)
+                        type: 'color',
+                        duration: 600,
+                        easing: 'easeInExpo',
+                        from: 'transparent'
+                    }
+                },
+                // 互動轉場 (hover/圖例切換)
+                transitions: {
+                    show: {  // 顯示數據集時淡入
+                        animations: {
+                            x: { from: 0 },
+                            y: { from: 0 },
+                            colors: { from: 'transparent' }
+                        }
+                    },
+                    hide: {  // 隱藏時淡出
+                        animations: {
+                            x: { to: 0 },
+                            y: { to: 0 },
+                            colors: { to: 'transparent' }
+                        }
+                    },
+                    active: {  // Hover 互動短動畫
+                        animation: { duration: 400 }
+                    },
+                    resize: { animation: { duration: 0 } }  // 無動畫調整大小
+                },
+                scales: {
+                    y: { min: 0, max: 10, title: { display: true, text: '情緒分數 (0=快樂, 10=焦慮)' } },
+                    x: { title: { display: true, text: '時間' } }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `分數: ${ctx.parsed.y} (${getEmotionFromScore(ctx.parsed.y)})`
+                        }
+                    }
+                },
+                interaction: { intersect: false, mode: 'index' }  // 滑鼠互動
+            }
+        });
+        
+        renderNFTs();  // 更新 NFT 收藏
+    }
+    
+    // ... 其他 Page4 函數 (loadStats, loadLogs 等)
+    
+    // 在 switchPage 函數中添加：if (page === 'page4') initPage4();
+    </script>
     <style>
         :root { 
             --card-bg: rgba(255,255,255,0.92); /* 毛玻璃 */ 
             --shadow-sparkle: 0 8px 32px rgba(255,215,0,0.2); /* 金陰影 */ 
             --transition-magic: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94); /* 奢華緩動 */ 
         }
-        body { 
+        html, body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f8f9fa; /* 浅灰色背景 */ 
-            min-height: 100vh; 
+            height: 100vh; 
             margin: 0; 
-            padding: 0; 
+            padding: env(safe-area-inset-top, 20px) 0 env(safe-area-inset-bottom, 34px) 0; /* 适配iPhone安全区域 */
             color: #333;
             -webkit-overflow-scrolling: touch;
             position: relative;
+            overflow: hidden; /* 固定页面不滚动 */
+            font-size: 16px; /* 基础字体大小 */
         }
         .container { 
             backdrop-filter: blur(16px); 
             box-shadow: var(--shadow-sparkle); 
             border-radius: 0 0 32px 32px; 
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - env(safe-area-inset-top, 20px) - env(safe-area-inset-bottom, 34px));
+            max-width: 430px; /* iPhone 14 宽度 */
+            margin: 0 auto;
+        }
+        .content-wrapper {
+            padding: 1rem;
+            max-height: 100%;
+            box-sizing: border-box;
         }
         h1 { 
             background: var(--hero-gradient); 
@@ -84,7 +244,16 @@
             bottom: 0; 
             width: 2px; 
             background: var(--hero-gradient); 
-        } /* 波浪線靈感 */
+        }
+        /* Page4 優化樣式 (V1.0.4 相容) */
+        .chart-desc { font-size: 14px; color: #666; text-align: center; margin-top: 10px; }
+        #trendChart { max-height: 300px; margin: 20px 0; }
+        .nft-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .nft-card { background: linear-gradient(135deg, #6A82FB, #FC5C7D); color: white; padding: 12px; border-radius: 8px; text-align: center; }
+        .latest-highlight { background: #e8f5e8 !important; border-left: 4px solid #27ae60; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 10px rgba(39, 174, 96, 0.5); } 50% { box-shadow: 0 0 20px rgba(39, 174, 96, 0.8); } }
+        .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+        .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; } /* 波浪線靈感 */
         #logChart { 
             height: 320px; 
             border-radius: 20px; 
@@ -882,12 +1051,9 @@
             </div> 
             
             <!-- 步驟 1: 輸入區 (V1.0.4 升級：語音 + 文字) --> 
-            <div id="inputStep" class="card active-step"> 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <button id="voiceBtn" onclick="startVoiceInput()" class="button primary">
-                        <img src="/icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">
-                        開始語音輸入 (30s)
-                    </button>
+            <div id="inputStep" class="card active-step" style="width: 90%; max-width: 600px; margin: auto; padding: 30px; box-sizing: border-box; display: block;"> 
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <img id="voiceBtn" onclick="startVoiceInput()" src="/icons/MoodMend_Voice_Button_Simple.svg" alt="開始語音輸入 (30s)" style="width: 60px; height: 60px; cursor: pointer; padding: 10px; border-radius: 10px; transition: transform 0.1s;" title="開始語音輸入 (30s)" onmousedown="this.style.transform='scale(0.95)';" onmouseup="this.style.transform='scale(1)';" onmouseleave="this.style.transform='scale(1)';">
                     <button id="stopVoiceBtn" onclick="stopVoiceInput()" class="button secondary" style="display: none;">
                         結束語音
                     </button>
@@ -895,9 +1061,20 @@
                 <div id="recordingIndicator" class="recording-indicator" style="display: none;"> 
                     <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div> 
                     <p>錄音中... <span id="timer">30</span>s</p> 
-                    <canvas id="waveformCanvas" width="300" height="50" aria-label="語音波形"></canvas> 
+                    <div id="emotionWaveContainer" style="display: flex; justify-content: center; align-items: center; gap: 10px; height: 50px;">
+                        <img src="/icons/MoodMend_Angry_Emotion.svg" alt="憤怒" class="emotion-wave" style="width: 30px; height: 30px; transition: transform 0.3s ease-out;">
+                        <img src="/icons/MoodMend_Calm_Emotion.svg" alt="平靜" class="emotion-wave" style="width: 30px; height: 30px; transition: transform 0.3s ease-out;">
+                        <img src="/icons/MoodMend_Calm_Emotion.svg" alt="平靜" class="emotion-wave" style="width: 30px; height: 30px; transition: transform 0.3s ease-out;">
+                        <img src="/icons/MoodMend_Sad_Emotion.svg" alt="傷心" class="emotion-wave" style="width: 30px; height: 30px; transition: transform 0.3s ease-out;">
+                    </div>
                 </div> 
-                <textarea id="moodText" placeholder="或直接輸入心情描述..." rows="3" onblur="analyzeTextInput()"></textarea> 
+                <div style="display: flex; align-items: flex-end; gap: 10px;">
+                    <textarea id="moodText" placeholder="或直接輸入心情描述..." rows="3" style="flex: 1;"></textarea>
+                    <div id="sendButton" onclick="analyzeTextInput()" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 5px; border-radius: 5px; transition: transform 0.1s;" title="發送心情" onmousedown="this.style.transform='scale(0.95)';" onmouseup="this.style.transform='scale(1)';" onmouseleave="this.style.transform='scale(1)';">
+                        <img src="/icons/MoodMend_Happy_Emotion.svg" alt="發送心情" style="width: 40px; height: 40px;">
+                        <span style="font-size: 12px; margin-top: 2px;">Send</span>
+                    </div>
+                </div> 
             </div> 
             
             <!-- 步驟 2: 確認區 (隱藏，JS 顯示) --> 
@@ -923,32 +1100,56 @@
     </div>
 
     <!-- 頁4: 情緒log -->
+    <!-- Page4: Log 紀錄 (V1.0.4 優化：折線圖 + 時間區間) -->
     <div id="page4" class="page">
         <div class="container">
-            <!-- 用户中心 -->
-            <div class="menu-container">
-                <button id="userButton4" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
-            </div>
-            <h1>我的療癒紀錄</h1>
+            <h1>📊 療癒 Log 與趨勢</h1>
+            <p class="subtitle">回顧你的情緒旅程，追蹤進展</p>
+            
+            <!-- 統計小部件 (V1.0.4 保留) -->
+            <div class="stats" id="statsWidget">載入中... 完成率：0% | 轉移成就：0</div>
+            
+            <!-- 時間區間選擇器 (新增) -->
             <div class="filter-bar">
-                <select id="emotionFilter" style="flex: 1;">
-                    <option value="">所有情緒</option>
+                <label for="timePeriod">時間區間：</label>
+                <select id="timePeriod" onchange="updateChart()" aria-label="選擇時間區間">
+                    <option value="day">今日</option>
+                    <option value="week" selected>本週</option>
+                    <option value="month">本月</option>
+                    <option value="6month">6個月</option>
+                    <option value="year">今年</option>
+                </select>
+                <select id="emotionFilter" onchange="updateChart()" aria-label="情緒過濾">
+                    <option value="all">所有情緒</option>
                     <option value="anxious">焦慮</option>
                     <option value="sad">傷心</option>
-                    <option value="neutral">平靜</option>
-                    <option value="happy">快樂</option>
                     <option value="angry">生氣</option>
+                    <option value="happy">快樂</option>
+                    <option value="neutral">平靜</option>
                 </select>
-                <input type="date" id="dateFilter" style="flex: 1;">
-                <button onclick="filterLogs()" style="flex-shrink: 0; min-width: 80px;">過濾</button>
             </div>
-            <div class="stats" id="stats">本週完成率：0% | 轉移成就：0</div>
-            <canvas id="logChart"></canvas>
-            <div class="log-timeline" id="logTimeline">
-                <!-- loadLogs 會渲染這裡 -->
+            
+            <!-- 折線圖區 (取代圓餅圖) -->
+            <div class="card">
+                <h2>情緒趨勢圖</h2>
+                <canvas id="trendChart" width="400" height="250" aria-label="情緒趨勢折線圖"></canvas>
+                <p class="chart-desc">Y 軸：情緒分數 (0-10，負面高分=紅線) | X 軸：時間點</p>
             </div>
-            <div id="logSection"></div>
-            <!-- 移除nav中的返回互動按鈕，僅留空間若未來加新CTA -->
+            
+            <!-- NFT 收藏夾 (V1.0.4 保留，簡化) -->
+            <div class="card">
+                <h2>NFT 收藏</h2>
+                <div id="nftGrid" class="nft-grid"></div>
+            </div>
+            
+            <!-- Log 清單 (V1.0.4 保留，高亮最新) -->
+            <div class="card">
+                <h2>詳細紀錄</h2>
+                <div id="logList"></div>
+                <div id="pagination"></div>
+            </div>
+            
+            <button onclick="switchPage('page2')" class="button secondary">返回主頁</button>
         </div>
     </div>
 
@@ -1071,7 +1272,9 @@
         // 显示加载中 - 改进加载动画
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
-            element.innerHTML = '<div style="text-align: center; padding: 20px; color: #6A82FB;"><div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(106, 130, 251, 0.3); border-radius: 50%; border-top-color: #6A82FB; animation: spin 1s ease-in-out infinite;"></div><p style="margin-top: 10px;">加載中...</p></div>';
+            if (element) {
+                element.innerHTML = '<div style="text-align: center; padding: 20px; color: #6A82FB;"><div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(106, 130, 251, 0.3); border-radius: 50%; border-top-color: #6A82FB; animation: spin 1s ease-in-out infinite;"></div><p style="margin-top: 10px;">加載中...</p></div>';
+            }
         }
         
         // 添加旋转动画
@@ -1405,8 +1608,10 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 isLoadingLogs = true;
                 showLoading('logSection');
                 
-                const emotionFilter = document.getElementById('emotionFilter').value;
-                const dateFilter = document.getElementById('dateFilter').value;
+                const emotionFilterElement = document.getElementById('emotionFilter');
+                const dateFilterElement = document.getElementById('dateFilter');
+                const emotionFilter = emotionFilterElement ? emotionFilterElement.value : '';
+                const dateFilter = dateFilterElement ? dateFilterElement.value : '';
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
                 
@@ -1449,7 +1654,11 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
 
         // 渲染日誌
         function renderLogs(totalPages, currentPage, totalLogs) {
-            const section = document.getElementById('logSection');
+            const section = document.getElementById('logList');
+            if (!section) {
+                console.error('logList元素未找到');
+                return;
+            }
             section.innerHTML = '';
             
             // 显示日志总数
@@ -1533,22 +1742,26 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         // 更新統計信息
         async function updateStats() {
             // 避免重复请求
-            if (isUpdatingStats) {
+            if (window.isUpdatingStats) {
                 console.log('统计更新已在进行中，跳过重复请求');
                 return;
             }
             
             try {
-                isUpdatingStats = true;
+                window.isUpdatingStats = true;
+                
+                // 检查stats元素是否存在
+                const statsElement = document.getElementById('stats');
+                if (!statsElement) {
+                    console.warn('stats元素不存在，无法更新统计');
+                    return;
+                }
+                
                 // 首先检查网络状态
                 if (!navigator.onLine) {
                     // 离线模式：尝试使用本地缓存的统计数据
                     const cachedStats = localStorage.getItem('cached_stats');
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats;
-                    } else {
-                        document.getElementById('stats').innerText = '離線模式：無法更新統計';
-                    }
+                    statsElement.innerText = cachedStats || '離線模式：無法更新統計';
                     return;
                 }
                 
@@ -1567,40 +1780,32 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 const data = await response.json();
                 
                 if (data.success) {
-                    const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
-                    document.getElementById('stats').innerText = statsText;
+                    const statsText = `完成率：${data.completion_rate || 0}% | 轉移成就：${data.transitions || 0}`;
+                    statsElement.innerText = statsText;
                     // 缓存统计数据用于离线查看
                     localStorage.setItem('cached_stats', statsText);
                 } else if (data.offline) {
                     // 显示离线提示
-                    document.getElementById('stats').innerText = '離線模式：無法更新統計';
+                    statsElement.innerText = '離線模式：無法更新統計';
                 }
             } catch (error) {
                 console.error('更新統計失敗詳細信息:', error);
-                console.error('錯誤名稱:', error.name);
-                console.error('錯誤堆棧:', error.stack);
-                console.error('網絡狀態:', navigator.onLine);
                 // 错误时尝试使用缓存或显示离线消息
-                const cachedStats = localStorage.getItem('cached_stats');
-                if (error.name === 'AbortError') {
-                    console.error('更新統計超時');
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
+                const statsElement = document.getElementById('stats');
+                if (statsElement) {
+                    const cachedStats = localStorage.getItem('cached_stats');
+                    if (error.name === 'AbortError') {
+                        statsElement.innerText = cachedStats ? cachedStats + ' (已缓存)' : '統計更新超時，請檢查網絡連接';
                     } else {
-                        document.getElementById('stats').innerText = '統計更新超時，請檢查網絡連接';
-                    }
-                } else {
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
-                    } else {
-                        document.getElementById('stats').innerText = `暫時無法更新統計數據: ${error.message || '未知錯誤'}`;
+                        statsElement.innerText = cachedStats ? cachedStats + ' (已缓存)' : `暫時無法更新統計數據: ${error.message || '未知錯誤'}`;
                     }
                 }
             } finally {
                 // 确保请求锁被释放
-                isUpdatingStats = false;
+                window.isUpdatingStats = false;
             }
         }
+
 
         // 绘制图表 - 优化移动端显示
         function drawChart() {
@@ -1670,7 +1875,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                     return `${label}: ${value}次 (${percentage}%)`;
-                                }
+                                },
                             }
                         }
                     }
@@ -2231,11 +2436,16 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (id === 'page4') {
                 // 使用setTimeout确保页面完全加载后再执行
                 setTimeout(() => {
-                    if (!isLoadingLogs) {
-                        loadLogs();
+                    if (typeof initPage4 === 'function') {
+                        initPage4();
+                    } else {
+                        console.warn('initPage4函数未定义，使用默认加载');
+                        if (typeof loadLogs === 'function') {
+                            loadLogs(1);
+                        }
                     }
-                    if (!isUpdatingStats) {
-                        updateStats();
+                    if (typeof updateChart === 'function') {
+                        updateChart();
                     }
                 }, 300);
             }
@@ -2368,8 +2578,13 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         // 錄音 UI (V1.0.4 新增動畫)
         function startRecordingUI() {
             document.getElementById('recordingIndicator').style.display = 'block';
-            document.getElementById('voiceBtn').style.display = 'none';
-            document.getElementById('stopVoiceBtn').style.display = 'block';
+            // 保留voiceBtn但更改图标和点击事件
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.src = '/icons/MoodMend_End_Call_Button.svg';
+            voiceBtn.alt = '停止語音輸入';
+            voiceBtn.title = '停止語音輸入';
+            voiceBtn.onclick = stopVoiceInput;
+            document.getElementById('stopVoiceBtn').style.display = 'none'; // 隐藏文字按钮
             let timeLeft = 30;
             const timer = setInterval(() => {
                 timeLeft--;
@@ -2386,25 +2601,37 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         
         function stopRecordingUI() {
             document.getElementById('recordingIndicator').style.display = 'none';
-            document.getElementById('voiceBtn').style.display = 'block';
+            // 恢复voiceBtn为原始状态
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.src = '/icons/MoodMend_Voice_Button_Simple.svg';
+            voiceBtn.alt = '開始語音輸入 (30s)';
+            voiceBtn.title = '開始語音輸入 (30s)';
+            voiceBtn.onclick = startVoiceInput;
             document.getElementById('stopVoiceBtn').style.display = 'none';
             document.getElementById('progressFill').style.width = '0%';
         }
         
-        // 波形 Canvas 動畫
+        // 情绪图标波浪动画
         function drawWaveform(percent) {
-            const canvas = document.getElementById('waveformCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = percent > 70 ? '#FF6B6B' : '#6A82FB';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let x = 0; x < canvas.width; x += 5) {
-                const y = canvas.height / 2 + Math.sin(x * 0.05 + Date.now() * 0.005) * (20 + percent / 5);
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
+            const emotionIcons = document.querySelectorAll('.emotion-wave');
+            const baseAmplitude = 10 + percent / 5;
+            const timeFactor = Date.now() * 0.002; // 降低时间因子使动画更平滑
+            
+            emotionIcons.forEach((icon, index) => {
+                // 使用类似波浪的正弦函数来计算每个图标的垂直位置偏移
+                const offset = Math.sin(index * 0.6 + timeFactor) * baseAmplitude;
+                // 设置图标的变换，应用垂直偏移
+                icon.style.transform = `translateY(${offset}px)`;
+                
+                // 根据百分比改变图标的颜色或样式，同时添加颜色过渡效果
+                if (percent > 70) {
+                    icon.style.filter = 'hue-rotate(0deg)';
+                    icon.style.transition = 'transform 0.3s ease-out, filter 0.3s ease-out';
+                } else {
+                    icon.style.filter = 'hue-rotate(220deg)';
+                    icon.style.transition = 'transform 0.3s ease-out, filter 0.3s ease-out';
+                }
+            });
         }
         
         // 文字輸入分析 (debounce)
@@ -2685,7 +2912,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
     </div>
     
     <!-- 3 表情 Bar (登入後顯示) -->
-    <div class="nav-bar" id="navBar" style="display: none;">
+    <div class="nav-bar" id="navBar" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding-bottom: env(safe-area-inset-bottom, 16px);">
         <!-- Angry: 主頁 -->
         <div class="nav-item" onclick="switchPage('page2', event)" title="主頁">
             <img src="/icons/MoodMend_Angry_Emotion.svg" alt="Angry" class="mood-icon">
