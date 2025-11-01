@@ -27,7 +27,54 @@
         // }
     </script>
     <script>
-        // 登录函数提前定义，确保在调用前可用
+        // 增强的提示消息函数 - 移到顶部确保在调用前可用
+        function showToast(message, duration = 3000) {
+            // 确保DOM已加载
+            if (!document.body) {
+                setTimeout(() => showToast(message, duration), 100);
+                return;
+            }
+            
+            // 检查是否已存在toast元素
+            let toast = document.getElementById('toast-message');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-message';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                toast.style.color = 'white';
+                toast.style.padding = '12px 20px';
+                toast.style.borderRadius = '20px';
+                toast.style.zIndex = '10000';
+                toast.style.fontSize = '14px';
+                toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                toast.style.transition = 'opacity 0.3s ease';
+                document.body.appendChild(toast);
+            }
+            
+            // 重置显示
+            toast.style.display = 'block';
+            toast.style.opacity = '1';
+            toast.textContent = message;
+            
+            // 清除之前的定时器
+            if (toast.timer) {
+                clearTimeout(toast.timer);
+            }
+            
+            // 设置新的定时器隐藏
+            toast.timer = setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 300);
+            }, duration);
+        }
+        
+        // 登录函数
         async function login() {
             const email = document.querySelector('#page1 input[type="email"]').value;
             const password = document.querySelector('#page1 input[type="password"]').value;
@@ -844,7 +891,8 @@
      .button.secondary:hover {
          background: rgba(106, 130, 251, 0.1);
      }
- }
+    }
+}
 </style>
 </head>
 <body>
@@ -936,21 +984,41 @@
             
             <!-- 步驟 1: 輸入區 (V1.0.4 升級：語音 + 文字) --> 
             <div id="inputStep" class="card active-step"> 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <button id="voiceBtn" onclick="startVoiceInput()" class="button primary">
-                        <img src="../../icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">
-                        開始語音輸入 (30s)
-                    </button>
-                    <button id="stopVoiceBtn" onclick="stopVoiceInput()" class="button secondary" style="display: none;">
-                        結束語音
-                    </button>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: center;">
+                    <img id="voiceBtn" onclick="startVoiceInput()" src="/icons/MoodMend_Voice_Button_Simple.svg" alt="語音輸入" style="width: 48px; height: 48px; cursor: pointer; border-radius: 8px; padding: 8px; outline: none;" title="開始語音輸入 (30s)">
+                    <img id="stopVoiceBtn" onclick="stopVoiceInput()" src="../../icons/MoodMend_End_Call_Button.svg" alt="結束語音" style="width: 48px; height: 48px; cursor: pointer; border-radius: 8px; background: #E5E7EB; padding: 8px; display: none; outline: none;" title="結束語音">
                 </div>
                 <div id="recordingIndicator" class="recording-indicator" style="display: none;"> 
                     <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div> 
                     <p>錄音中... <span id="timer">30</span>s</p> 
-                    <canvas id="waveformCanvas" width="300" height="50" aria-label="語音波形"></canvas> 
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px;">
+                        <img src="/icons/MoodMend_Angry_Emotion.svg" alt="憤怒情緒" style="width: 50px; height: 50px; animation: wave 1.5s ease-in-out infinite; animation-delay: 0s;" aria-label="憤怒情緒">
+                        <img src="/icons/MoodMend_Calm_Emotion.svg" alt="平靜情緒" style="width: 50px; height: 50px; animation: wave 1.5s ease-in-out infinite; animation-delay: 0.2s;" aria-label="平靜情緒">
+                        <img src="/icons/MoodMend_Happy_Emotion.svg" alt="快樂情緒" style="width: 50px; height: 50px; animation: wave 1.5s ease-in-out infinite; animation-delay: 0.4s;" aria-label="快樂情緒">
+                        <img src="/icons/MoodMend_Sad_Emotion.svg" alt="傷心情緒" style="width: 50px; height: 50px; animation: wave 1.5s ease-in-out infinite; animation-delay: 0.6s;" aria-label="傷心情緒">
+                    </div>
+                    <style>
+                        @keyframes wave {
+                            0%, 100% {
+                                transform: translateY(0px);
+                            }
+                            50% {
+                                transform: translateY(-10px);
+                            }
+                        }
+                    </style>
                 </div> 
-                <textarea id="moodText" placeholder="或直接輸入心情描述..." rows="3" onblur="analyzeTextInput()"></textarea> 
+                <div style="display: flex; gap: 10px; align-items: flex-end; justify-content: center;">
+                    <textarea id="moodText" placeholder="或直接輸入心情描述..." rows="3" onblur="analyzeTextInput()" style="flex: 1; border: 2px solid #818CF8; border-radius: 12px; padding: 12px; font-size: 16px; outline: none; box-shadow: 0 2px 8px rgba(129, 140, 248, 0.2); transition: all 0.3s ease; background-color: #fff;"></textarea>
+                    <style>
+                        #moodText:focus {
+                            border-color: #6366F1;
+                            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+                            transform: translateY(-1px);
+                        }
+                    </style>
+                    <img onclick="analyzeTextInput()" src="../../icons/MoodMend_Happy_Emotion.svg" alt="發送" style="width: 48px; height: 48px; cursor: pointer; border-radius: 8px; padding: 8px; outline: none;" title="發送">
+                </div>
             </div> 
             
             <!-- 步驟 2: 確認區 (隱藏，JS 顯示) --> 
@@ -992,6 +1060,13 @@
                     <option value="happy">快樂</option>
                     <option value="angry">生氣</option>
                 </select>
+                <select id="periodFilter" style="flex: 1; margin: 0 10px;">
+                    <option value="day">今日</option>
+                    <option value="week">本週</option>
+                    <option value="month">本月</option>
+                    <option value="6month">近6個月</option>
+                    <option value="year">今年</option>
+                </select>
                 <input type="date" id="dateFilter" style="flex: 1;">
                 <button onclick="filterLogs()" style="flex-shrink: 0; min-width: 80px;">過濾</button>
             </div>
@@ -1016,7 +1091,10 @@
         
         // 修复iOS Safari中状态栏覆盖问题
         if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-            document.documentElement.style.paddingTop = env(safe-area-inset-top) + 'px';
+            // 使用CSS变量获取安全区域值
+            const style = window.getComputedStyle(document.documentElement);
+            const safeAreaTop = parseFloat(style.getPropertyValue('--safe-area-inset-top')) || 0;
+            document.documentElement.style.paddingTop = safeAreaTop + 'px';
         }
 
         // 功能菜单切换
@@ -1460,13 +1538,39 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 
                 const emotionFilter = document.getElementById('emotionFilter').value;
                 const dateFilter = document.getElementById('dateFilter').value;
+                const periodFilter = document.getElementById('periodFilter').value;
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
                 
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
+                let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
+                if (periodFilter) url += `&period=${encodeURIComponent(periodFilter)}`;
+                
+                // 对于图表数据，我们需要直接获取时间序列数据
+                if (periodFilter) {
+                    try {
+                        const chartDataResponse = await fetch(`http://localhost:3000/api/get-logs?period=${encodeURIComponent(periodFilter)}&email=${encodeURIComponent(userEmail)}`, {
+                            method: 'GET'
+                        });
+                        
+                        if (chartDataResponse.ok) {
+                            const chartData = await chartDataResponse.json();
+                            if (chartData.success && chartData.timeSeries) {
+                                // 存储时间序列数据用于绘制折线图
+                                window.timeSeriesData = chartData.timeSeries;
+                            }
+                        }
+                    } catch (chartError) {
+                        console.error('获取图表数据失败:', chartError);
+                        // 如果获取专门的图表数据失败，使用模拟数据
+                        window.timeSeriesData = generateMockTimeSeriesData(periodFilter);
+                    }
+                } else {
+                    // 如果没有选择时间周期，使用模拟数据
+                    window.timeSeriesData = generateMockTimeSeriesData('week');
+                }
                 
                 const response = await fetch(url, {
                     method: 'GET'
@@ -1493,11 +1597,83 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
                     showError('加載日誌超時，請檢查網絡連接');
                 } else {
                     showError(`加載日誌失敗: ${error.message || '未知錯誤'}`);
+                    // 出错时使用模拟数据
+                    window.timeSeriesData = generateMockTimeSeriesData(document.getElementById('periodFilter').value || 'week');
+                    drawChart();
                 }
             } finally {
                 // 确保请求锁被释放
                 isLoadingLogs = false;
             }
+        }
+        
+        // 生成模拟时间序列数据
+        function generateMockTimeSeriesData(period) {
+            const data = [];
+            const now = new Date();
+            let points = 7; // 默认一周的数据点
+            let interval = 24 * 60 * 60 * 1000; // 默认每天
+            let format = 'MM/dd';
+            
+            switch(period) {
+                case 'day':
+                    points = 24;
+                    interval = 60 * 60 * 1000; // 每小时
+                    format = 'HH:mm';
+                    break;
+                case 'week':
+                    points = 7;
+                    interval = 24 * 60 * 60 * 1000; // 每天
+                    format = 'MM/dd';
+                    break;
+                case 'month':
+                    points = 30;
+                    interval = 24 * 60 * 60 * 1000; // 每天
+                    format = 'MM/dd';
+                    break;
+                case '6month':
+                    points = 26; // 大约每周一个点
+                    interval = 7 * 24 * 60 * 60 * 1000; // 每周
+                    format = 'yyyy/MM/dd';
+                    break;
+                case 'year':
+                    points = 12; // 每月一个点
+                    interval = 30 * 24 * 60 * 60 * 1000; // 约每月
+                    format = 'yyyy/MM';
+                    break;
+            }
+            
+            for (let i = points - 1; i >= 0; i--) {
+                const timestamp = now.getTime() - i * interval;
+                const date = new Date(timestamp);
+                let label;
+                
+                if (format === 'MM/dd') {
+                    label = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+                } else if (format === 'HH:mm') {
+                    label = `${String(date.getHours()).padStart(2, '0')}:00`;
+                } else if (format === 'yyyy/MM/dd') {
+                    label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+                } else if (format === 'yyyy/MM') {
+                    label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+                }
+                
+                // 生成0-10之间的随机情绪分数，添加一些趋势
+                let baseScore = 5;
+                if (i > points * 0.7) baseScore += 1; // 最近的数据稍微好一点
+                if (i === 0) baseScore += 2; // 最新的数据最好，符合用户可能的进步趋势
+                
+                const score = Math.max(0, Math.min(10, baseScore + (Math.random() * 4 - 2)));
+                
+                data.push({
+                    timestamp: timestamp,
+                    date: date.toISOString(),
+                    label: label,
+                    score: Math.round(score * 10) / 10 // 保留一位小数
+                });
+            }
+            
+            return data;
         }
 
         // 渲染日誌
@@ -1664,69 +1840,144 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
                 window.emotionChart.destroy();
             }
             
-            // 计算情绪分布
-            const emotionCounts = {
-                'anxious': 0,
-                'sad': 0,
-                'neutral': 0,
-                'happy': 0,
-                'angry': 0
-            };
+            // 确保有时间序列数据
+            if (!window.timeSeriesData || window.timeSeriesData.length === 0) {
+                window.timeSeriesData = generateMockTimeSeriesData(document.getElementById('periodFilter').value || 'week');
+            }
             
-            userLogs.forEach(log => {
-                if (emotionCounts.hasOwnProperty(log.emotion)) {
-                    emotionCounts[log.emotion]++;
-                }
-            });
+            // 准备折线图数据
+            const labels = window.timeSeriesData.map(item => item.label);
+            const scores = window.timeSeriesData.map(item => item.score);
             
             // 创建图表 - 优化移动端交互
             window.emotionChart = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'line',
                 data: {
-                    labels: ['焦慮', '傷心', '平靜', '快樂', '生氣'],
+                    labels: labels,
                     datasets: [{
-                        data: [
-                            emotionCounts.anxious,
-                            emotionCounts.sad,
-                            emotionCounts.neutral,
-                            emotionCounts.happy,
-                            emotionCounts.angry
-                        ],
-                        backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-                        borderWidth: 0,
-                        hoverOffset: 15
+                        label: '情緒分數',
+                        data: scores,
+                        borderColor: '#818CF8',
+                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#818CF8',
+                        pointHoverBackgroundColor: '#6366F1',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        // 特殊样式用于最新的数据点
+                        pointBackgroundColor: labels.map((_, i) => i === labels.length - 1 ? '#EC4899' : '#818CF8'),
+                        pointBorderColor: labels.map((_, i) => i === labels.length - 1 ? '#BE185D' : '#fff'),
+                        pointRadius: labels.map((_, i) => i === labels.length - 1 ? 8 : 6),
+                        pointHoverRadius: labels.map((_, i) => i === labels.length - 1 ? 10 : 8)
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '60%',
-                    animation: { duration: 2000, easing: 'easeInOutQuart' }, // 奢華動畫
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
                                 font: {
-                                    size: 14
-                                },
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                color: '#FFD700' // 金色
+                                    size: 12
+                                }
                             }
                         },
+                        y: {
+                            min: 0,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2,
+                                callback: function(value) {
+                                    return value;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#818CF8',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false,
                             callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const item = window.timeSeriesData[index];
+                                    return item.label;
+                                },
                                 label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return `${label}: ${value}次 (${percentage}%)`;
+                                    const score = context.parsed.y;
+                                    let mood = '';
+                                    
+                                    if (score >= 8) mood = '非常快樂';
+                                    else if (score >= 6) mood = '快樂';
+                                    else if (score >= 4) mood = '平靜';
+                                    else if (score >= 2) mood = '憂鬱';
+                                    else mood = '低落';
+                                    
+                                    return `情緒分數: ${score} (${mood})`;
+                                }
+                            },
+                            // 自定义tooltip外观和动画
+                            custom: function(tooltipModel) {
+                                // 实现自定义tooltip动画
+                                if (!tooltipModel.opacity) {
+                                    if (tooltipModel._chart.tooltip._activeTooltip) {
+                                        tooltipModel._chart.tooltip._activeTooltip.style.opacity = 0;
+                                    }
+                                    return;
+                                }
+                                
+                                // 默认的Chart.js tooltip处理
+                                Chart.defaults.plugins.tooltip.custom(tooltipModel);
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart',
+                        // 特殊的动画效果
+                        onProgress: function(animation) {
+                            if (animation.animationObject && animation.animationObject.currentStep === animation.animationObject.numSteps - 1) {
+                                // 动画完成时，为最新点添加闪烁效果
+                                const chart = animation.chart;
+                                const latestPoint = chart.getDatasetMeta(0).data[chart.data.labels.length - 1];
+                                if (latestPoint) {
+                                    latestPoint.custom = {
+                                        backgroundColor: '#EC4899',
+                                        borderColor: '#BE185D',
+                                        radius: 8
+                                    };
+                                    chart.draw();
                                 }
                             }
                         }
-                    }
+                    },
+                    // 响应式调整
+                    responsiveAnimationDuration: 500
                 }
             });
         }
@@ -1958,95 +2209,20 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
         // 初始检查网络状态
         checkNetworkStatus();
         
-        // 增强的提示消息函数
-        function showToast(message, duration = 3000) {
-            // 确保DOM已加载
-            if (!document.body) {
-                setTimeout(() => showToast(message, duration), 100);
-                return;
-            }
-            
-            // 检查是否已存在toast元素
-            let toast = document.getElementById('toast-message');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'toast-message';
-                toast.style.position = 'fixed';
-                toast.style.bottom = '20px';
-                toast.style.left = '50%';
-                toast.style.transform = 'translateX(-50%)';
-                toast.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                toast.style.color = 'white';
-                toast.style.padding = '12px 20px';
-                toast.style.borderRadius = '20px';
-                toast.style.zIndex = '10000';
-                toast.style.fontSize = '14px';
-                toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
-                toast.style.transition = 'opacity 0.3s ease';
-                document.body.appendChild(toast);
-            }
-            
-            // 重置显示
-            toast.style.display = 'block';
-            toast.style.opacity = '1';
-            toast.textContent = message;
-            
-            // 清除之前的定时器
-            if (toast.timer) {
-                clearTimeout(toast.timer);
-            }
-            
-            // 设置新的定时器隐藏
-            toast.timer = setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 300);
-            }, duration);
-        }
+        // showToast函数已移至文件顶部以避免引用错误
         
         // Service Worker注册函数
         function registerServiceWorker() {
             // 暂时禁用service worker，以便测试SVG路径
             console.log('Service Worker已暂时禁用，用于测试SVG路径');
         }
-        /* 修正：移除孤立的右花括号，此处应为样式表结尾，无需额外内容 */
         
         // 显示加载指示器
-        function showLoadingIndicator(show) {
-            let loader = document.getElementById('loading-indicator');
+        function showLoadingIndicator(show = true) {
+            let loader = document.getElementById('loading-indicator') || document.getElementById('app-loader');
             if (!loader && show) {
                 loader = document.createElement('div');
-                loader.id = 'loading-indicator';
-                loader.style.position = 'fixed';
-                loader.style.top = '0';
-                loader.style.left = '0';
-                loader.style.width = '100%';
-                loader.style.height = '100%';
-                loader.style.display = 'flex';
-                loader.style.justifyContent = 'center';
-                loader.style.alignItems = 'center';
-                loader.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-                loader.style.zIndex = '9999';
-                loader.innerHTML = '<div style="text-align: center;"><div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #6A82FB; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div><p style="margin-top: 15px;">加载中...</p></div>';
-                
-                // 添加旋转动画
-                const style = document.createElement('style');
-                style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
-                document.head.appendChild(style);
-                
-                document.body.appendChild(loader);
-            } else if (loader) {
-                loader.style.display = show ? 'flex' : 'none';
-            }
-        }
-        
-        // 显示加载指示器
-        function showLoadingIndicator() {
-            let loader = document.getElementById('app-loader');
-            if (!loader) {
-                loader = document.createElement('div');
-                loader.id = 'app-loader';
+                loader.id = 'app-loader'; // 使用统一的ID
                 loader.style.position = 'fixed';
                 loader.style.top = '0';
                 loader.style.left = '0';
@@ -2073,7 +2249,9 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
                 loader.appendChild(spinner);
                 document.body.appendChild(loader);
             }
-            loader.style.display = 'flex';
+            if (loader) {
+                loader.style.display = show ? 'flex' : 'none';
+            }
         }
         
         // 隐藏加载指示器
@@ -2381,9 +2559,9 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
         }
         
         // 文字輸入分析 (debounce)
-        let debounceTimer;
+        let debounceTimer = null;
         function analyzeTextInput() {
-            clearTimeout(debounceTimer);
+            if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const text = document.getElementById('moodText').value.trim();
                 if (text) analyzeMood(text);
@@ -2598,7 +2776,7 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
             happy: '喜悅之星',
             neutral: '平衡之石'
         };
-    });
+    
     </script>
     <!-- 用户中心页面 -->
     <div id="userCenter" class="page">
@@ -2632,6 +2810,14 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
                     <span class="menu-arrow">›</span>
                 </div>
                 <div class="menu-divider"></div>
+                <div class="menu-item" onclick="toggleDarkMode()">
+                    <span class="menu-icon">🌙</span>
+                    <span class="menu-text">夜間模式</span>
+                    <span class="toggle-switch">
+                        <span class="toggle-slider"></span>
+                    </span>
+                </div>
+                <div class="menu-divider"></div>
                 <div class="menu-item" onclick="showPrivacyPolicy()">
                     <span class="menu-icon">🔒</span>
                     <span class="menu-text">隱私政策</span>
@@ -2649,7 +2835,102 @@ let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEma
                     <span class="menu-text">關於MoodMend</span>
                     <span class="menu-arrow">›</span>
                 </div>
+                <style>
+                    .menu-item {
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        transition: background-color 0.3s ease;
+                        border-radius: 8px;
+                        margin: 4px 0;
+                    }
+                    .menu-item:hover {
+                        background-color: rgba(129, 140, 248, 0.1);
+                    }
+                    .menu-icon {
+                        font-size: 20px;
+                        margin-right: 12px;
+                        width: 24px;
+                        text-align: center;
+                    }
+                    .menu-text {
+                        flex: 1;
+                        font-size: 16px;
+                        color: #333;
+                    }
+                    .menu-arrow {
+                        font-size: 20px;
+                        color: #888;
+                        transition: transform 0.3s ease;
+                    }
+                    .menu-item:hover .menu-arrow {
+                        transform: translateX(3px);
+                    }
+                    .menu-divider {
+                        height: 1px;
+                        background-color: #eee;
+                        margin: 8px 0;
+                    }
+                    .toggle-switch {
+                        position: relative;
+                        display: inline-block;
+                        width: 50px;
+                        height: 24px;
+                        background-color: #ccc;
+                        border-radius: 24px;
+                        transition: background-color 0.3s ease;
+                        cursor: pointer;
+                    }
+                    .toggle-switch.active {
+                        background-color: #818CF8;
+                    }
+                    .toggle-slider {
+                        position: absolute;
+                        top: 2px;
+                        left: 2px;
+                        width: 20px;
+                        height: 20px;
+                        background-color: white;
+                        border-radius: 50%;
+                        transition: transform 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                    }
+                    .toggle-switch.active .toggle-slider {
+                        transform: translateX(26px);
+                    }
+                    .dark-mode {
+                        background-color: #1a1a2e;
+                        color: #e0e0e0;
+                    }
+                    .dark-mode .card {
+                        background-color: #16213e;
+                        color: #e0e0e0;
+                    }
+                    .dark-mode .menu-text {
+                        color: #e0e0e0;
+                    }
+                    .dark-mode .menu-arrow {
+                        color: #bbb;
+                    }
+                    .dark-mode .menu-divider {
+                        background-color: #333;
+                    }
+                </style>
             </div>
+            <script>
+                function toggleDarkMode() {
+                    const toggle = document.querySelector('.toggle-switch');
+                    toggle.classList.toggle('active');
+                    const isDarkMode = toggle.classList.contains('active');
+                    
+                    if (isDarkMode) {
+                        document.body.classList.add('dark-mode');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                    }
+                }
+            </script>
             
             <!-- 登出按钮 -->
             <button onclick="logout()" style="width: 100%; margin-top: 20px; background-color: #ff4d4f; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);">

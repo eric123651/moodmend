@@ -2,6 +2,17 @@
 
 ## 版本历史
 
+### V1.0.5 - Google Cloud服务集成
+
+- 集成Google Cloud Speech-to-Text服务，支持语音输入功能
+- 集成Google Cloud Natural Language API，提供更准确的情感分析
+- 集成Vertex AI Gemini API，生成个性化的情绪调节建议
+- 添加语音识别专用API接口 `/api/speech-to-text`
+- 增强process-emotion API，支持语音输入和智能建议
+- 实现自动回退机制，确保Google Cloud服务不可用时系统仍能正常工作
+- 更新依赖库，添加Google Cloud相关包
+- 创建模拟凭证文件，支持本地开发和测试
+
 ### V1.0.4.5 - 版本更新
 
 ### V1.0.4.4 - 版本更新

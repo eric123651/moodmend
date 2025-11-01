@@ -16,6 +16,12 @@ import sqlite3
 import threading
 from functools import wraps
 
+# Google Cloud 服务集成
+from google.cloud import speech_v1 as speech
+from google.cloud import language_v1 as language
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel
+
 # 配置日志
 # 设置默认编码为UTF-8
 import sys
@@ -23,6 +29,18 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
+
+# Google Cloud 配置
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.path.dirname(__file__), "google_credentials.json")
+PROJECT_ID = "moodmend-project"
+vertexai.init(project=PROJECT_ID, location="asia-east1")
+
+# Gemini 模型初始化
+try:
+    gemini_model = GenerativeModel("gemini-pro")
+except Exception as e:
+    logging.warning(f"Gemini 模型初始化失败，将使用本地模式: {e}")
+    gemini_model = None
 
 # 创建自定义的StreamHandler，确保UTF-8编码
 class UnicodeStreamHandler(logging.StreamHandler):
@@ -195,8 +213,34 @@ NFT_BADGES = {
     'neutral': '⚖️ 平衡徽章 - 平靜之源'
 }
 
-# 增强的情緒偵測函數
-def detect_emotion(text):
+# 语音识别功能
+def speech_to_text(audio_data):
+    """使用Google Cloud Speech-to-Text将语音转换为文本"""
+    try:
+        # 初始化客户端
+        client = speech.SpeechClient()
+        
+        # 配置音频
+        audio = speech.RecognitionAudio(content=audio_data)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            language_code="zh-TW",  # 支持中文（台湾）
+            enable_automatic_punctuation=True
+        )
+        
+        # 执行识别
+        response = client.recognize(config=config, audio=audio)
+        
+        # 提取文本
+        transcripts = [result.alternatives[0].transcript for result in response.results]
+        return " ".join(transcripts)
+    except Exception as e:
+        logging.error(f"语音识别失败: {e}")
+        return None
+
+# 本地情绪分析函数（作为备用）
+def detect_emotion_local(text):
     if not text or not isinstance(text, str):
         return 'neutral'
     
@@ -240,6 +284,85 @@ def detect_emotion(text):
     # 返回得分最高的情绪
     dominant = max(scores, key=scores.get)
     return dominant if scores[dominant] > 0 else 'neutral'
+
+# Google Cloud情感分析函数
+def analyze_sentiment_google(text):
+    """使用Google Cloud Natural Language API进行情感分析"""
+    try:
+        # 初始化客户端
+        client = language.LanguageServiceClient()
+        
+        # 配置分析请求
+        document = language.Document(
+            content=text,
+            type_=language.Document.Type.PLAIN_TEXT,
+            language="zh"
+        )
+        
+        # 执行情感分析
+        response = client.analyze_sentiment(request={"document": document})
+        
+        # 提取情感分数（-1.0到1.0）和情感强度
+        sentiment_score = response.document_sentiment.score
+        sentiment_magnitude = response.document_sentiment.magnitude
+        
+        # 映射到我们的情绪类型
+        if sentiment_score > 0.3:
+            return "happy"
+        elif sentiment_score < -0.3:
+            # 根据强度进一步区分负面情绪
+            if sentiment_magnitude > 1.0 and ("憤怒" in text or "生氣" in text):
+                return "angry"
+            elif "憂慮" in text or "焦慮" in text:
+                return "anxious"
+            else:
+                return "sad"
+        else:
+            return "neutral"
+    except Exception as e:
+        logging.error(f"Google Cloud 情感分析失败: {e}")
+        # 失败时回退到本地分析
+        return detect_emotion_local(text)
+
+# 使用Gemini生成个性化建议
+def generate_advice_with_gemini(emotion, user_input):
+    """使用Gemini API生成个性化情绪调节建议"""
+    if not gemini_model:
+        logging.warning("Gemini模型不可用，使用默认建议")
+        return SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+    
+    try:
+        prompt = f"""作为情绪管理专家，请根据用户当前的情绪状态和输入内容，生成个性化的情绪调节建议。
+        
+        用户情绪: {emotion}
+        用户输入: {user_input}
+        
+        请提供以下内容：
+        1. 简短的情绪理解和共情回应（tips）
+        2. 一个简单可行的日常任务（daily_task）
+        3. 一段建议性文字（advice）
+        4. 相关资源链接或书籍推荐（resources）
+        5. 与情绪匹配的颜色标识（color）
+        
+        请以JSON格式输出，字段名分别为：tips, daily_task, advice, resources, color。"""
+        
+        response = gemini_model.generate_content(prompt)
+        advice_content = response.text.strip()
+        
+        # 尝试解析JSON响应
+        advice_json = json.loads(advice_content)
+        
+        # 确保返回的数据结构完整
+        required_fields = ['tips', 'daily_task', 'advice', 'resources', 'color']
+        for field in required_fields:
+            if field not in advice_json:
+                advice_json[field] = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral']).get(field, '')
+        
+        return advice_json
+    except Exception as e:
+        logging.error(f"Gemini建议生成失败: {e}")
+        # 失败时回退到默认建议
+        return SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
 
 # 生成基本NFT徽章
 def generate_nft_badge(emotion):
@@ -447,6 +570,7 @@ def process_emotion():
     try:
         data = request.json
         user_input = data.get('input', '')
+        audio_data = data.get('audio_data')  # 支持语音输入
         email = data.get('email')
         task_completed = data.get('task_completed', False)
         
@@ -455,8 +579,28 @@ def process_emotion():
         if not isinstance(data, dict):
             data = {}
         
-        # 重新获取user_input，确保正确的变量引用
-        user_input = data.get('input', '')
+        # 处理语音输入
+        if audio_data:
+            try:
+                import base64
+                decoded_audio = base64.b64decode(audio_data)
+                # 使用Google Cloud语音识别
+                recognized_text = speech_to_text(decoded_audio)
+                if recognized_text:
+                    user_input = recognized_text
+                else:
+                    # 语音识别失败，使用默认提示
+                    user_input = "用户使用语音输入，但识别失败"
+            except Exception as e:
+                logging.error(f"处理语音输入失败: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': '语音处理失败'
+                }), 500
+        
+        # 处理文本输入
+        if not user_input:
+            user_input = data.get('input', '')
         
         # 确保user_input是字符串 - 全面的类型处理
         if user_input is None:
@@ -502,9 +646,11 @@ def process_emotion():
                 'message': '無效的用戶信息'
             }), 401
         
-        # 偵測情緒
-        emotion = detect_emotion(user_input)
-        pkg = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+        # 偵測情緒 - 优先使用Google Cloud情感分析
+        emotion = analyze_sentiment_google(user_input)
+        
+        # 使用Gemini生成个性化建议
+        pkg = generate_advice_with_gemini(emotion, user_input)
         
         # 生成基本NFT
         nft = generate_nft_badge(emotion)
@@ -557,7 +703,8 @@ def process_emotion():
                 'color': pkg['color']
             },
             'nft': nft,
-            'transition_nft': transition_nft_str
+            'transition_nft': transition_nft_str,
+            'recognized_text': user_input if audio_data else None  # 返回识别的文本
         })
         
     except Exception as e:
