@@ -1,6 +1,6 @@
 {
   "name": "MoodMend",
-  "version": "v1.0.4.2",
+  "version": "v1.0.5",
   "short_name": "MoodMend",
   "description": "MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案",
   "start_url": "./moodmend_ui_demo.html",
@@ -10,21 +10,81 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "../../icons/MoodMend_Logo_Option4.svg",
+      "src": "../../icons/MoodMend_Logo_Option4.png",
       "sizes": "1024x1024",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "../../icons/MoodMend_Logo_Option4.svg",
+      "src": "../../icons/MoodMend_Logo_Option4.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "../../icons/MoodMend_Logo_Option4.svg",
+      "src": "../../icons/MoodMend_Logo_Option4.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "167x167",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "80x80",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "76x76",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../../icons/MoodMend_Logo_Option4.png",
+      "sizes": "20x20",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -34,14 +94,14 @@
       "short_name": "記錄",
       "description": "記錄當前的情緒",
       "url": "./moodmend_ui_demo.html?page=page4",
-      "icons": [{ "src": "../../icons/icon-emotion.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "../../icons/icon-emotion.png", "sizes": "192x192" }]
     },
     {
       "name": "查看記錄",
       "short_name": "歷史",
       "description": "查看情緒記錄歷史",
       "url": "./moodmend_ui_demo.html?page=page4",
-      "icons": [{ "src": "../../icons/icon-history.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "../../icons/icon-history.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["health", "lifestyle", "productivity"],

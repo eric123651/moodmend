@@ -11,20 +11,273 @@
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="../../icons/icon-moodmend.svg">
-    <link rel="mask-icon" href="../../icons/icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="../../icons/icon-moodmend.svg">
+    <!-- 优先使用PNG格式以满足App Store要求 -->
+    <link rel="apple-touch-icon" href="../../icons/MoodMend_Logo_Option4.png">
+    <link rel="mask-icon" href="../../icons/MoodMend_Logo_Option4.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="../../icons/MoodMend_Logo_Option4.png">
+    <link rel="icon" href="../../icons/MoodMend_Logo_Option4.png" type="image/png">
+    <!-- 作为后备，保留SVG格式 -->
     <link rel="icon" type="image/svg+xml" href="../../icons/MoodMend_Logo_Option4.svg">
-    <link rel="icon" href="../../icons/icon-moodmend.svg" type="image/svg+xml">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
+    <script type="module" src="assets/script.js"></script>
     <script>
-        // 暂时禁用service worker，以便测试SVG路径
-        // if ('serviceWorker' in navigator) {
-        // navigator.serviceWorker.register('sw.js');
-        // }
+        // 初始化API服务，设置网络监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.apiService && window.apiService.initApiService) {
+                window.apiService.initApiService();
+            }
+        });
+        
+        // 数据同步后更新UI
+        window.updateUIAfterSync = function() {
+            console.log('数据同步完成，更新UI...');
+            // 重新加载日志数据
+            if (window.currentView === 'logs') {
+                loadEmotionLogs();
+            }
+            // 重新加载统计数据
+            if (window.currentView === 'stats') {
+                loadStatsForTimeRange();
+            }
+            showToast('数据已成功同步到云端');
+        };
+        
+        // 启用service worker以支持离线功能
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('Service Worker 注册成功:', registration.scope);
+                    
+                    // 检查后台同步支持
+                    if ('sync' in registration) {
+                        console.log('后台同步功能可用');
+                    }
+                    
+                    // 检查推送通知支持
+                    if ('showNotification' in ServiceWorkerRegistration.prototype) {
+                        console.log('推送通知功能可用');
+                    }
+                })
+                .catch(error => {
+                    console.log('Service Worker 注册失败:', error);
+                });
+            
+            // 监听来自Service Worker的消息
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data && event.data.type) {
+                    switch(event.data.type) {
+                        case 'SYNC_COMPLETED':
+                            // 数据同步完成，更新UI
+                            if (window.updateUIAfterSync) {
+                                window.updateUIAfterSync();
+                            }
+                            showToast('数据同步成功');
+                            break;
+                        case 'SYNC_FAILED':
+                            showToast('数据同步失败: ' + (event.data.error || '未知错误'));
+                            break;
+                    }
+                }
+            });
+        }
+        
+        // 初始化IndexedDB数据库
+        let db;
+        const initDatabase = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MoodMendDB', 1);
+                
+                request.onerror = event => {
+                    console.error('打开数据库失败:', event.target.error);
+                    reject(event.target.error);
+                };
+                
+                request.onsuccess = event => {
+                    db = event.target.result;
+                    console.log('数据库连接成功');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = event => {
+                    db = event.target.result;
+                    
+                    // 创建情绪记录表
+                    if (!db.objectStoreNames.contains('emotions')) {
+                        const emotionStore = db.createObjectStore('emotions', {
+                            keyPath: 'id',
+                            autoIncrement: true
+                        });
+                        emotionStore.createIndex('date', 'date', { unique: false });
+                        emotionStore.createIndex('synced', 'synced', { unique: false });
+                    }
+                    
+                    console.log('数据库升级完成');
+                };
+            });
+        };
+        
+        // 保存情绪数据（支持离线存储）
+        const saveEmotionData = async (emotionData) => {
+            try {
+                if (!db) await initDatabase();
+                
+                // 添加基本信息
+                const data = {
+                    ...emotionData,
+                    date: new Date().toISOString(),
+                    synced: navigator.onLine, // 如果在线则标记为已同步，否则为未同步
+                    offlineId: Date.now().toString()
+                };
+                
+                // 保存到IndexedDB
+                const transaction = db.transaction(['emotions'], 'readwrite');
+                const store = transaction.objectStore('emotions');
+                const request = store.add(data);
+                
+                request.onsuccess = () => {
+                    console.log('情绪数据保存到本地数据库成功');
+                };
+                
+                request.onerror = event => {
+                    console.error('保存数据到本地数据库失败:', event.target.error);
+                };
+                
+                // 如果在线，尝试同步到服务器
+                if (navigator.onLine) {
+                    await syncToServer(data);
+                    return true;
+                } else {
+                    // 离线状态，请求后台同步
+                    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                        const registration = await navigator.serviceWorker.ready;
+                        await registration.sync.register('sync-emotions');
+                        showToast('数据已保存，将在网络恢复后同步');
+                    }
+                    return true;
+                }
+            } catch (error) {
+                console.error('保存情绪数据失败:', error);
+                showToast('保存失败，请重试');
+                return false;
+            }
+        };
+        
+        // 从IndexedDB获取情绪数据
+        const getEmotionData = async (options = {}) => {
+            try {
+                if (!db) await initDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['emotions'], 'readonly');
+                    const store = transaction.objectStore('emotions');
+                    let request;
+                    
+                    if (options.id) {
+                        request = store.get(options.id);
+                    } else {
+                        request = store.getAll();
+                    }
+                    
+                    request.onsuccess = () => {
+                        let results = request.result || [];
+                        
+                        // 如果需要排序
+                        if (options.sortBy === 'date') {
+                            results = Array.isArray(results) ? 
+                                results.sort((a, b) => new Date(b.date) - new Date(a.date)) : 
+                                results;
+                        }
+                        
+                        resolve(results);
+                    };
+                    
+                    request.onerror = event => {
+                        console.error('获取数据失败:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error('获取情绪数据失败:', error);
+                return [];
+            }
+        };
+        
+        // 尝试同步数据到服务器
+        const syncToServer = async (data) => {
+            try {
+                const response = await fetch('/api/emotions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    // 更新本地数据为已同步
+                    if (db) {
+                        const transaction = db.transaction(['emotions'], 'readwrite');
+                        const store = transaction.objectStore('emotions');
+                        const updateRequest = store.get(data.id || data.offlineId);
+                        
+                        updateRequest.onsuccess = () => {
+                            const record = updateRequest.result;
+                            if (record) {
+                                record.synced = true;
+                                store.put(record);
+                            }
+                        };
+                    }
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('同步到服务器失败:', error);
+                return false;
+            }
+        };
+        
+        // 监听网络状态变化
+        window.addEventListener('online', () => {
+            showToast('网络已连接');
+            // 网络恢复时尝试同步未同步的数据
+            syncPendingData();
+        });
+        
+        window.addEventListener('offline', () => {
+            showToast('网络已断开，将使用离线模式');
+        });
+        
+        // 同步所有未同步的数据
+        const syncPendingData = async () => {
+            try {
+                const pendingData = await getEmotionData({ synced: false });
+                if (pendingData.length > 0) {
+                    showToast(`正在同步 ${pendingData.length} 条离线数据`);
+                    
+                    // 尝试通过Service Worker后台同步
+                    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                        const registration = await navigator.serviceWorker.ready;
+                        await registration.sync.register('sync-emotions');
+                    } else {
+                        // 后备方案：直接尝试同步
+                        for (const data of pendingData) {
+                            await syncToServer(data);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('同步待处理数据失败:', error);
+            }
+        };
+        
+        // 初始化数据库
+        window.addEventListener('DOMContentLoaded', () => {
+            initDatabase().catch(err => console.warn('数据库初始化失败:', err));
+        });
     </script>
     <script>
         // 增强的提示消息函数 - 移到顶部确保在调用前可用
@@ -1258,17 +1511,10 @@
                 loginButton.textContent = '登入中...';
                 loginButton.disabled = true;
                 
-                console.log('正在发送登录请求:', email);
-                const response = await fetch('http://localhost:3000/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                console.log('正在进行本地登录验证:', email);
+                // 使用本地函数登录
+                const data = await window.apiService.login(email, password);
                 
-                console.log('登录请求响应状态:', response.status);
-                const data = await response.json();
                 console.log('登录响应数据:', data);
                 
                 if (data.success) {
@@ -1322,15 +1568,8 @@
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password, user_name })
-                });
-                
-                const data = await response.json();
+                // 使用本地函数注册
+                const data = await window.apiService.register({user_name, email, password});
                 
                 if (data.success) {
                     // 註冊成功後自動登錄
@@ -1349,7 +1588,7 @@
                     alert(data.message || '註冊失敗，請稍後重試');
                 }
             } catch (error) {
-                showError('註冊失敗，請確認後端服務已啟動');
+                showError(error.message || '註冊失敗，請稍後重試');
             }
         }
 
@@ -1360,37 +1599,23 @@
             
             try {
                 const taskCompleteElem = document.getElementById('taskComplete');
-const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
+                const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 
                 showLoading('packageCard');
                 
-                // 检查网络连接
-                if (!navigator.onLine) {
-                    // 离线模式 - 提示用户
-                    showError('当前处于离线状态，请检查网络连接后重试。');
-                    return;
-                }
+                // 直接使用本地函数处理情绪
+                const result = await window.apiService.processEmotion(
+                    input, 
+                    window.currentUser.email, 
+                    taskCompleted
+                );
                 
-                const response = await fetch('http://localhost:3000/api/process-emotion', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        input, 
-                        email: window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser,
-                        task_completed: taskCompleted
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    currentPackage = data;
-                    const pkg = data.package;
+                if (result.success) {
+                    currentPackage = result;
+                    const pkg = result.package;
                     
                     document.getElementById('packageCard').innerHTML = `
-                        <h3><span class="emotion-badge ${pkg.color}">${data.emotion}</span></h3>
+                        <h3><span class="emotion-badge ${pkg.color}">${result.emotion}</span></h3>
                         <p><strong>技巧：</strong>${pkg.tips}</p>
                         <p><strong>建議：</strong>${pkg.advice}</p>
                         <p><small>${pkg.resources}</small></p>
@@ -1400,10 +1625,13 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                     document.getElementById('packageCard').style.display = 'block';
                     document.getElementById('taskSection').style.display = 'block';
                 } else {
-                    alert(data.message);
+                    alert(result.message || '處理情緒失敗');
                 }
             } catch (error) {
+                console.error('處理情緒错误:', error);
                 showError('處理情緒失敗');
+            } finally {
+                hideLoading();
             }
         }
 
@@ -1548,39 +1776,27 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
                 if (periodFilter) url += `&period=${encodeURIComponent(periodFilter)}`;
                 
-                // 对于图表数据，我们需要直接获取时间序列数据
-                if (periodFilter) {
-                    try {
-                        const chartDataResponse = await fetch(`http://localhost:3000/api/get-logs?period=${encodeURIComponent(periodFilter)}&email=${encodeURIComponent(userEmail)}`, {
-                            method: 'GET'
-                        });
-                        
-                        if (chartDataResponse.ok) {
-                            const chartData = await chartDataResponse.json();
-                            if (chartData.success && chartData.timeSeries) {
-                                // 存储时间序列数据用于绘制折线图
-                                window.timeSeriesData = chartData.timeSeries;
-                            }
-                        }
-                    } catch (chartError) {
-                        console.error('获取图表数据失败:', chartError);
-                        // 如果获取专门的图表数据失败，使用模拟数据
-                        window.timeSeriesData = generateMockTimeSeriesData(periodFilter);
-                    }
-                } else {
-                    // 如果没有选择时间周期，使用模拟数据
-                    window.timeSeriesData = generateMockTimeSeriesData('week');
+                // 对于图表数据，我们使用本地函数获取时间序列数据
+                try {
+                    // 使用本地函数获取统计数据，包含时间序列信息
+                    const statsData = await window.apiService.getStats(userEmail);
+                    // 使用统计数据生成时间序列图表数据
+                    window.timeSeriesData = generateTimeSeriesFromStats(statsData, periodFilter);
+                } catch (chartError) {
+                    console.error('获取图表数据失败:', chartError);
+                    // 如果获取专门的图表数据失败，使用模拟数据
+                    window.timeSeriesData = generateMockTimeSeriesData(periodFilter);
                 }
                 
-                const response = await fetch(url, {
-                    method: 'GET'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
+                // 使用本地函数获取日志数据
+                const data = await window.apiService.getLogs(
+                    userEmail,
+                    page,
+                    limit,
+                    emotionFilter,
+                    dateFilter,
+                    periodFilter
+                );
                 
                 if (data.success) {
                     userLogs = data.logs;
@@ -1593,12 +1809,124 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 console.error('錯誤名稱:', error.name);
                 console.error('錯誤堆棧:', error.stack);
                 console.error('網絡狀態:', navigator.onLine);
+                
+                // 首先尝试从localStorage获取离线日志
+                try {
+                    console.log('尝试从localStorage获取离线日志...');
+                    const offlineLogs = JSON.parse(localStorage.getItem('offline_logs') || '[]');
+                    const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
+                    let localLogs = offlineLogs.filter(log => log.email === userEmail);
+                    
+                    if (localLogs && localLogs.length > 0) {
+                        console.log('从localStorage成功获取到', localLogs.length, '条本地数据');
+                        // 处理localStorage数据并返回
+                        userLogs = localLogs;
+                        // 按时间倒序排列
+                        userLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
+                        
+                        // 应用过滤条件
+                        const emotionFilter = document.getElementById('emotionFilter').value;
+                        if (emotionFilter) {
+                            userLogs = userLogs.filter(log => log.emotion === emotionFilter);
+                        }
+                        
+                        // 分页处理
+                        const limit = 50;
+                        const offset = (page - 1) * limit;
+                        const paginatedLogs = userLogs.slice(offset, offset + limit);
+                        
+                        // 更新全局变量
+                        userLogs = paginatedLogs;
+                        
+                        // 渲染本地数据
+                        renderLogs(Math.ceil(localLogs.length / limit), page, localLogs.length);
+                        updateStats();
+                        return;
+                    } else {
+                        console.log('localStorage中没有找到数据，尝试从IndexedDB获取...');
+                    }
+                } catch (storageError) {
+                    console.error('从localStorage获取数据失败:', storageError);
+                }
+                
+                // 如果localStorage没有数据，尝试从IndexedDB获取本地数据
+                try {
+                    console.log('尝试从IndexedDB获取本地数据...');
+                    // 创建临时变量存储异步操作结果
+                    const getLocalData = () => {
+                                return new Promise((resolve, reject) => {
+                                    const request = indexedDB.open('MoodMendDB', 1);
+                            
+                            request.onsuccess = (event) => {
+                                const db = event.target.result;
+                                const transaction = db.transaction(['emotions'], 'readonly');
+                                const store = transaction.objectStore('emotions');
+                                const getAllRequest = store.getAll();
+                                
+                                getAllRequest.onsuccess = () => {
+                                    const localLogs = getAllRequest.result;
+                                    db.close();
+                                    resolve(localLogs);
+                                };
+                                
+                                getAllRequest.onerror = () => {
+                                    db.close();
+                                    reject(new Error('获取本地数据失败'));
+                                };
+                            };
+                            
+                            request.onerror = () => {
+                                reject(new Error('打开数据库失败'));
+                            };
+                        });
+                    };
+                    
+                    // 获取本地数据
+                    const localLogs = await getLocalData();
+                    
+                    if (localLogs && localLogs.length > 0) {
+                        console.log('从IndexedDB成功获取到', localLogs.length, '条本地数据');
+                        userLogs = localLogs;
+                        // 按时间倒序排列
+                        userLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
+                        
+                        // 应用过滤条件
+                        const emotionFilter = document.getElementById('emotionFilter').value;
+                        if (emotionFilter) {
+                            userLogs = userLogs.filter(log => log.emotion === emotionFilter);
+                        }
+                        
+                        // 分页处理
+                        const limit = 50;
+                        const offset = (page - 1) * limit;
+                        const paginatedLogs = userLogs.slice(offset, offset + limit);
+                        
+                        // 更新全局变量
+                        userLogs = paginatedLogs;
+                        
+                        // 渲染本地数据
+                        renderLogs(Math.ceil(localLogs.length / limit), page, localLogs.length);
+                        updateStats();
+                        return;
+                    } else {
+                        console.log('IndexedDB中没有找到数据，使用模拟数据');
+                    }
+                } catch (dbError) {
+                    console.error('从IndexedDB获取数据失败:', dbError);
+                }
+                
+                // 如果本地数据也没有，使用模拟数据
                 if (error.name === 'AbortError') {
                     showError('加載日誌超時，請檢查網絡連接');
                 } else {
                     showError(`加載日誌失敗: ${error.message || '未知錯誤'}`);
-                    // 出错时使用模拟数据
+                    // 使用模拟时间序列数据
                     window.timeSeriesData = generateMockTimeSeriesData(document.getElementById('periodFilter').value || 'week');
+                    
+                    // 生成模拟日志数据
+                    const mockLogs = generateMockLogs(10);
+                    userLogs = mockLogs;
+                    renderLogs(1, 1, mockLogs.length);
                     drawChart();
                 }
             } finally {
@@ -1607,77 +1935,181 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             }
         }
         
-        // 生成模拟时间序列数据
-        function generateMockTimeSeriesData(period) {
-            const data = [];
-            const now = new Date();
-            let points = 7; // 默认一周的数据点
-            let interval = 24 * 60 * 60 * 1000; // 默认每天
-            let format = 'MM/dd';
-            
-            switch(period) {
-                case 'day':
-                    points = 24;
-                    interval = 60 * 60 * 1000; // 每小时
-                    format = 'HH:mm';
-                    break;
-                case 'week':
-                    points = 7;
-                    interval = 24 * 60 * 60 * 1000; // 每天
-                    format = 'MM/dd';
-                    break;
-                case 'month':
-                    points = 30;
-                    interval = 24 * 60 * 60 * 1000; // 每天
-                    format = 'MM/dd';
-                    break;
-                case '6month':
-                    points = 26; // 大约每周一个点
-                    interval = 7 * 24 * 60 * 60 * 1000; // 每周
-                    format = 'yyyy/MM/dd';
-                    break;
-                case 'year':
-                    points = 12; // 每月一个点
-                    interval = 30 * 24 * 60 * 60 * 1000; // 约每月
-                    format = 'yyyy/MM';
-                    break;
-            }
-            
-            for (let i = points - 1; i >= 0; i--) {
-                const timestamp = now.getTime() - i * interval;
-                const date = new Date(timestamp);
-                let label;
-                
-                if (format === 'MM/dd') {
-                    label = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-                } else if (format === 'HH:mm') {
-                    label = `${String(date.getHours()).padStart(2, '0')}:00`;
-                } else if (format === 'yyyy/MM/dd') {
-                    label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-                } else if (format === 'yyyy/MM') {
-                    label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-                }
-                
-                // 生成0-10之间的随机情绪分数，添加一些趋势
-                let baseScore = 5;
-                if (i > points * 0.7) baseScore += 1; // 最近的数据稍微好一点
-                if (i === 0) baseScore += 2; // 最新的数据最好，符合用户可能的进步趋势
-                
-                const score = Math.max(0, Math.min(10, baseScore + (Math.random() * 4 - 2)));
-                
-                data.push({
-                    timestamp: timestamp,
-                    date: date.toISOString(),
-                    label: label,
-                    score: Math.round(score * 10) / 10 // 保留一位小数
-                });
-            }
-            
-            return data;
+        // 生成模拟日志数据
+        function generateMockLogs(count) {
+    const emotions = ['happy', 'sad', 'angry', 'calm', 'anxious'];
+    const tasks = [
+        '完成每日冥想练习',
+        '进行15分钟的深呼吸',
+        '写下三件感恩的事',
+        '听喜欢的音乐放松',
+        '进行短暂的散步'
+    ];
+    const nftTypes = ['moody1', 'moody2', 'zen1', 'happy1', 'calm1'];
+    
+    const mockLogs = [];
+    
+    for (let i = 0; i < count; i++) {
+        const emotion = emotions[Math.floor(Math.random() * emotions.length)];
+        const score = Math.floor(Math.random() * 6) + 3; // 3-8分
+        const date = new Date();
+        date.setDate(date.getDate() - Math.floor(Math.random() * 30)); // 最近30天内
+        
+        mockLogs.push({
+            emotion: emotion,
+            score: score,
+            time: date.toISOString(),
+            task: tasks[Math.floor(Math.random() * tasks.length)],
+            taskCompleted: Math.random() > 0.3, // 70%概率任务完成
+            nft: Math.random() > 0.5 ? nftTypes[Math.floor(Math.random() * nftTypes.length)] : null
+        });
+    }
+    
+    return mockLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
+}
+
+// 从统计数据生成时间序列数据
+function generateTimeSeriesFromStats(stats, period) {
+    const data = [];
+    const now = new Date();
+    let points = 7; // 默认一周的数据点
+    let interval = 24 * 60 * 60 * 1000; // 默认每天
+    let format = 'MM/dd';
+    
+    // 根据时间周期调整
+    if (period === 'day') {
+        points = 24; // 24小时
+        interval = 60 * 60 * 1000; // 每小时
+        format = 'HH:00';
+    } else if (period === 'week') {
+        points = 7;
+        interval = 24 * 60 * 60 * 1000; // 每天
+        format = 'MM/dd';
+    } else if (period === 'month') {
+        points = 30;
+        interval = 24 * 60 * 60 * 1000; // 每天
+        format = 'MM/dd';
+    } else if (period === 'year') {
+        points = 12;
+        interval = 30 * 24 * 60 * 60 * 1000; // 每月（近似）
+        format = 'yyyy/MM';
+    }
+    
+    // 使用统计数据生成时间序列，或者创建基于统计的模拟数据
+    for (let i = points - 1; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * interval);
+        const timestamp = date.getTime();
+        let label = '';
+        
+        // 根据格式设置标签
+        if (format === 'HH:00') {
+            label = `${String(date.getHours()).padStart(2, '0')}:00`;
+        } else if (format === 'MM/dd') {
+            label = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        } else if (format === 'yyyy/MM') {
+            label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
         }
+        
+        // 根据统计数据生成情绪分数，使用一些随机性但保持趋势
+        let score = 5; // 基础分数
+        
+        // 如果有情绪分布数据，根据正面/负面情绪比例调整分数
+        if (stats && stats.emotionDistribution) {
+            const positiveCount = ['happy', 'neutral'].reduce((sum, emotion) => {
+                return sum + (stats.emotionDistribution[emotion] || 0);
+            }, 0);
+            const negativeCount = ['sad', 'angry', 'anxious'].reduce((sum, emotion) => {
+                return sum + (stats.emotionDistribution[emotion] || 0);
+            }, 0);
+            const totalCount = positiveCount + negativeCount;
+            
+            if (totalCount > 0) {
+                // 基于正面情绪比例设置基础分数 (0-10)
+                score = (positiveCount / totalCount) * 10;
+            }
+        }
+        
+        // 添加一些随机性并确保在0-10范围内
+        const randomVariation = Math.random() * 2 - 1; // -1到1之间的随机数
+        score = Math.max(0, Math.min(10, score + randomVariation));
+        
+        data.push({
+            timestamp: timestamp,
+            date: date.toISOString(),
+            label: label,
+            score: Math.round(score * 10) / 10 // 保留一位小数
+        });
+    }
+    
+    return data;
+}
+
+function generateMockTimeSeriesData(period) {
+    const data = [];
+    const now = new Date();
+    let points = 7; // 默认一周的数据点
+    let interval = 24 * 60 * 60 * 1000; // 默认每天
+    let format = 'MM/dd';
+    
+    switch(period) {
+        case 'day':
+            points = 24;
+            interval = 60 * 60 * 1000; // 每小时
+            format = 'HH:mm';
+            break;
+        case 'week':
+            points = 7;
+            interval = 24 * 60 * 60 * 1000; // 每天
+            format = 'MM/dd';
+            break;
+        case 'month':
+            points = 30;
+            interval = 24 * 60 * 60 * 1000; // 每天
+            format = 'MM/dd';
+            break;
+        case 'year':
+            points = 12;
+            interval = 30 * 24 * 60 * 60 * 1000; // 每月（近似）
+            format = 'yyyy/MM';
+            break;
+    }
+    
+    for (let i = points - 1; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * interval);
+        const timestamp = date.getTime();
+        let label = '';
+        
+        if (format === 'HH:mm') {
+            label = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        } else if (format === 'MM/dd') {
+            label = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        } else if (format === 'yyyy/MM') {
+            label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else if (format === 'yyyy/MM/dd') {
+            label = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        }
+        
+        // 生成0-10之间的随机情绪分数，添加一些趋势
+        let baseScore = 5;
+        if (i > points * 0.7) baseScore += 1; // 最近的数据稍微好一点
+        if (i === 0) baseScore += 2; // 最新的数据最好，符合用户可能的进步趋势
+        
+        const score = Math.max(0, Math.min(10, baseScore + (Math.random() * 4 - 2)));
+        
+        data.push({
+            timestamp: timestamp,
+            date: date.toISOString(),
+            label: label,
+            score: Math.round(score * 10) / 10 // 保留一位小数
+        });
+    }
+    
+    return data;
+}
 
         // 渲染日誌
         function renderLogs(totalPages, currentPage, totalLogs) {
+            console.log('renderLogs调用，总日志数:', totalLogs, '当前页:', currentPage);
             const section = document.getElementById('logSection');
             section.innerHTML = '';
             
@@ -1697,20 +2129,37 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                     const entry = document.createElement('div');
                     entry.className = 'log-entry card';
                     
-                    // 情緒顏色映射
+                    // 情緒顏色映射，添加calm支持
                     const emotionColors = {
                         'anxious': 'anxious',
                         'sad': 'sad',
                         'neutral': 'neutral',
                         'happy': 'happy',
-                        'angry': 'angry'
+                        'angry': 'angry',
+                        'calm': 'calm'
                     };
                     
                     const colorClass = emotionColors[log.emotion] || 'neutral';
                     
+                    // 处理不同格式的日志数据
+                    const taskCompleted = log.completed || log.taskCompleted || false;
+                    const taskText = log.task || '无任务';
+                    const nftText = log.nft || '无徽章';
+                    
+                    // 格式化时间
+                    let timeDisplay = log.time;
+                    try {
+                        const date = new Date(log.time);
+                        if (!isNaN(date.getTime())) {
+                            timeDisplay = date.toLocaleString('zh-TW');
+                        }
+                    } catch (e) {
+                        console.log('时间格式化失败，使用原始时间:', log.time);
+                    }
+                    
                     entry.innerHTML = `
-                        <strong>${log.time}:</strong> <span class="emotion-badge ${colorClass}">${log.emotion}</span>
-                        | 任務: ${log.task} ${log.completed ? '✅' : ''} | 徽章: ${log.nft}
+                        <strong>${timeDisplay}:</strong> <span class="emotion-badge ${colorClass}">${log.emotion}</span>
+                        | 任務: ${taskText} ${taskCompleted ? '✅' : ''} | 徽章: ${nftText}
                     `;
                     section.appendChild(entry);
                 });
@@ -1769,61 +2218,62 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             
             try {
                 isUpdatingStats = true;
-                // 首先检查网络状态
-                if (!navigator.onLine) {
-                    // 离线模式：尝试使用本地缓存的统计数据
+                
+                // 优先使用本地日志数据计算基本统计信息
+                let basicStats = '';
+                if (userLogs && userLogs.length > 0) {
+                    const completedTasks = userLogs.filter(log => log.completed || log.taskCompleted).length;
+                    const completionRate = Math.round((completedTasks / userLogs.length) * 100);
+                    basicStats = `完成率：${completionRate}% | 記錄數：${userLogs.length}`;
+                    document.getElementById('stats').innerText = basicStats + ' (本地數據)';
+                }
+                
+                // 如果在线，尝试从服务器获取更详细的统计数据
+                if (navigator.onLine) {
+                    try {
+                        const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
+                        const response = await fetch(
+                             `http://localhost:3000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
+                            { 
+                                method: 'GET'
+                            }
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
+                                document.getElementById('stats').innerText = statsText;
+                                // 缓存统计数据用于离线查看
+                                localStorage.setItem('cached_stats', statsText);
+                            }
+                        }
+                    } catch (apiError) {
+                        console.warn('获取服务器统计数据失败，继续使用本地数据:', apiError);
+                        // 保持使用本地数据
+                    }
+                } else {
+                    // 离线模式：检查是否有缓存的统计数据
                     const cachedStats = localStorage.getItem('cached_stats');
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats;
-                    } else {
+                    if (cachedStats && !basicStats) {
+                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
+                    } else if (!basicStats) {
                         document.getElementById('stats').innerText = '離線模式：無法更新統計';
                     }
-                    return;
-                }
-                
-                const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-                const response = await fetch(
-                     `http://localhost:3000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
-                    { 
-                        method: 'GET'
-                    }
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
-                    document.getElementById('stats').innerText = statsText;
-                    // 缓存统计数据用于离线查看
-                    localStorage.setItem('cached_stats', statsText);
-                } else if (data.offline) {
-                    // 显示离线提示
-                    document.getElementById('stats').innerText = '離線模式：無法更新統計';
                 }
             } catch (error) {
                 console.error('更新統計失敗詳細信息:', error);
                 console.error('錯誤名稱:', error.name);
                 console.error('錯誤堆棧:', error.stack);
                 console.error('網絡狀態:', navigator.onLine);
+                
                 // 错误时尝试使用缓存或显示离线消息
                 const cachedStats = localStorage.getItem('cached_stats');
-                if (error.name === 'AbortError') {
-                    console.error('更新統計超時');
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
-                    } else {
-                        document.getElementById('stats').innerText = '統計更新超時，請檢查網絡連接';
-                    }
+                if (cachedStats) {
+                    document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
                 } else {
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
-                    } else {
-                        document.getElementById('stats').innerText = `暫時無法更新統計數據: ${error.message || '未知錯誤'}`;
-                    }
+                    document.getElementById('stats').innerText = '暫時無法更新統計數據';
                 }
             } finally {
                 // 确保请求锁被释放
@@ -2348,6 +2798,17 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             // 显示目标页面
             document.getElementById(id).classList.add('active');
             
+            // 当切换到page4时，强制刷新日志
+            if (id === 'page4') {
+                console.log('切换到page4，强制刷新日志...');
+                // 重置加载锁，确保可以重新加载
+                isLoadingLogs = false;
+                // 延迟执行，确保页面已完全切换
+                setTimeout(() => {
+                    loadLogs(1);
+                }, 100);
+            }
+            
             // 重置滚动位置
             document.getElementById(id).scrollTop = 0;
             
@@ -2487,33 +2948,46 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             stopRecordingUI();
         }
         
-        // 備援錄音上傳 STT
+        // 備援錄音功能（使用Web Speech Recognition API）
         async function fallbackToRecorder() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(audioChunks, { type: 'audio/wav' });
-                const formData = new FormData();
-                formData.append('audio', blob, 'mood.wav');
-                try {
-                    const res = await fetch('http://localhost:3000/api/speech-to-text', {
-                        method: 'POST', 
-                        body: formData 
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        document.getElementById('moodText').value = data.transcript;
-                        analyzeMood(data.transcript);
-                    }
-                } catch (e) { 
-                    alert('STT 失敗，使用文字輸入'); 
-                }
+            
+            // 检查浏览器是否支持Web Speech Recognition
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'zh-TW'; // 使用中文（台湾）
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('moodText').value = transcript;
+                    analyzeMood(transcript);
+                };
+                
+                recognition.onerror = (event) => {
+                    console.error('语音识别错误:', event.error);
+                    alert('语音识别失败，请使用文字输入');
+                    stopRecordingUI();
+                };
+                
+                recognition.onend = () => {
+                    stopRecordingUI();
+                };
+                
+                recognition.start();
+                startRecordingUI();
+            } else {
+                // 如果不支持Web Speech Recognition，提示用户使用文字输入
+                alert('您的浏览器不支持语音识别功能，请使用文字输入');
+                stopRecordingUI();
+            }
+            
+            // 停止媒体流
+            setTimeout(() => {
                 stream.getTracks().forEach(track => track.stop());
-            };
-            mediaRecorder.start();
-            startRecordingUI();
+            }, 30000); // 30秒后自动停止
         }
         
         // 錄音 UI (V1.0.4 新增動畫)
@@ -2568,36 +3042,39 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             }, 500);
         }
         
-        // AI 分析 (V1.0.4 API 呼叫)
+        // AI 分析 (使用本地实现)
         async function analyzeMood(text) {
             try {
                 showLoading('inputStep');
-                const res = await fetch('http://localhost:3000/api/analyze-mood', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text, 
-                        email: window.currentUser?.email || window.currentUser 
-                    })
-                });
-                currentAnalysis = await res.json();
+                // 使用本地函数分析情绪
+                const result = await window.backendFunctions.processEmotionLocal(
+                    text,
+                    window.currentUser.email,
+                    false
+                );
+                
+                // 确保数据格式与原代码兼容
+                currentAnalysis = {
+                    ...result,
+                    mood_quote: result.package.tips,
+                    daily_task: result.package.daily_task
+                };
+                
                 if (currentAnalysis.success) {
                     originalEmotion = currentAnalysis.emotion;
                     showConfirmModal();
                 }
             } catch (e) {
                 console.error('分析失敗', e);
-                // 模擬數據 - 後端不可用時使用
-                if (!currentAnalysis.success) {
-                    currentAnalysis = {
-                        success: true,
-                        emotion: 'anxious',
-                        mood_quote: '寧靜的心態，是最好的陪伴',
-                        daily_task: '今天花10分鐘冥想，放鬆心情'
-                    };
-                    originalEmotion = currentAnalysis.emotion;
-                    showConfirmModal();
-                }
+                // 模擬數據 - 本地處理不可用時使用
+                currentAnalysis = {
+                    success: true,
+                    emotion: 'anxious',
+                    mood_quote: '寧靜的心態，是最好的陪伴',
+                    daily_task: '今天花10分鐘冥想，放鬆心情'
+                };
+                originalEmotion = currentAnalysis.emotion;
+                showConfirmModal();
             } finally {
                 // 移除加載中狀態
                 const inputStep = document.getElementById('inputStep');
@@ -2682,31 +3159,55 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
         async function completeTask(checkbox) { 
             if (checkbox.checked) { 
                 const newEmotion = 'happy'; // 預設轉變 
-                try { 
-                    const res = await fetch('http://localhost:3000/api/complete-task', { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ email: currentUser.email, original_emotion: originalEmotion, new_emotion: newEmotion, task: currentAnalysis.daily_task }) 
-                    }); 
-                    const data = await res.json(); 
-                    if (data.success) { 
-                        document.getElementById('nftResult').innerHTML = `🎉 ${data.nft}`; 
-                        document.getElementById('nftResult').style.display = 'block'; 
-                        // 傳 latestLog 至 page4 
-                        sessionStorage.setItem('latestLog', JSON.stringify({ 
-                            time: new Date().toISOString(), 
-                            emotion: originalEmotion, 
-                            quote: currentAnalysis.mood_quote, 
-                            task: currentAnalysis.daily_task, 
-                            nft: data.nft, 
-                            completed: true 
-                        })); 
-                        setTimeout(() => switchPage('page4'), 2000); // 自動跳 Log 
-                    } 
-                } catch (e) { 
-                    console.error('完成失敗', e); 
-                    checkbox.checked = false; 
-                } 
+                // 使用前端模拟逻辑替代不存在的complete-task端点
+                try {
+                    // 生成模拟NFT
+                    const mockNft = generateMockNft(originalEmotion);
+                    document.getElementById('nftResult').innerHTML = `🎉 ${mockNft}`;
+                    document.getElementById('nftResult').style.display = 'block';
+                    
+                    // 保存日志到sessionStorage
+                    sessionStorage.setItem('latestLog', JSON.stringify({
+                        time: new Date().toISOString(),
+                        emotion: originalEmotion,
+                        quote: currentAnalysis.mood_quote,
+                        task: currentAnalysis.daily_task,
+                        nft: mockNft,
+                        completed: true
+                    }));
+                    
+                    // 尝试保存到后端
+                    if (navigator.onLine) {
+                        await fetch('http://localhost:3000/api/add-log', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: currentUser?.email || currentUser,
+                                emotion: originalEmotion,
+                                task: currentAnalysis.daily_task,
+                                nft: mockNft,
+                                completed: true
+                            })
+                        });
+                    }
+                    
+                    setTimeout(() => switchPage('page4'), 2000);
+                } catch (e) {
+                    console.error('完成處理失敗', e);
+                    // 即使发生错误也继续流程
+                    const mockNft = generateMockNft(originalEmotion);
+                    document.getElementById('nftResult').innerHTML = `🎉 ${mockNft}`;
+                    document.getElementById('nftResult').style.display = 'block';
+                    sessionStorage.setItem('latestLog', JSON.stringify({
+                        time: new Date().toISOString(),
+                        emotion: originalEmotion,
+                        quote: currentAnalysis.mood_quote,
+                        task: currentAnalysis.daily_task,
+                        nft: mockNft,
+                        completed: true
+                    }));
+                    setTimeout(() => switchPage('page4'), 2000);
+                }
             } else { 
                 // 未完成：基本 NFT 
                 const basicNft = generateBasicNft(originalEmotion); 
@@ -2715,10 +3216,25 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             } 
         }
         
-        // 基本 NFT (V1.0.4 utils 輔助) 
-        function generateBasicNft(emotion) { 
-            const badges = NFT_BADGES[emotion] || NFT_BADGES.neutral; // 假設全局 NFT_BADGES 
-            return badges; 
+        // 基本 NFT (V1.0.4 utils 輔助)
+        function generateBasicNft(emotion) {
+            const badges = NFT_BADGES[emotion] || NFT_BADGES.neutral; // 假設全局 NFT_BADGES
+            return badges;
+        }
+        
+        // 模拟NFT生成函数
+        function generateMockNft(emotion) {
+            const nftTypes = {
+                happy: ['陽光微笑徽章', '快樂之星', '開心能量球'],
+                sad: ['雨天彩虹徽章', '希望之光', '療傷之心'],
+                angry: ['冷靜大師', '平心氣和徽章', '情緒管理專家'],
+                calm: ['寧靜湖光', '禪意徽章', '平和之心'],
+                anxious: ['勇氣徽章', '信心之星', '平靜之力']
+            };
+            
+            const types = nftTypes[emotion] || nftTypes.neutral || ['神秘徽章'];
+            const randomIndex = Math.floor(Math.random() * types.length);
+            return types[randomIndex];
         }
         
         // 保存情感日誌
@@ -2729,21 +3245,19 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 mood_quote: currentAnalysis.mood_quote,
                 daily_task: currentAnalysis.daily_task,
                 completed: completed,
+                nft: '日常徽章',
                 timestamp: new Date().toISOString()
             };
             
             try {
-                if (navigator.onLine) {
-                    await fetch('http://localhost:3000/api/save-log', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(logData)
-                    });
-                } else {
+                // 使用本地函数保存情绪日志
+                await window.backendFunctions.saveEmotionLog(logData);
+            } catch (e) {
+                console.error('保存情绪日志失败:', e);
+                // 如果失败，尝试使用本地保存备用方案
+                if (typeof saveLogToOffline === 'function') {
                     saveLogToOffline(logData);
                 }
-            } catch (e) {
-                saveLogToOffline(logData);
             }
         }
         
@@ -2957,5 +3471,64 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             <span class="nav-label"></span>
         </div>
     </div>
+    
+    <!-- 引入后端功能的前端实现 -->
+    <script src="backend_functions.js"></script>
+<script src="api_service.js"></script>
+    
+    <!-- 模拟数据加载脚本 -->
+    <script>
+        // 页面加载完成后尝试生成模拟数据
+        window.addEventListener('load', async () => {
+            // 延迟执行，确保页面其他脚本已加载
+            setTimeout(async () => {
+                // 只有在第4页或页面完全加载时才尝试生成数据
+                if (window.location.hash === '#page4' || window.location.pathname.includes('page4')) {
+                    // 先尝试从IndexedDB获取数据，检查是否已有记录
+                    try {
+                        // 初始化数据库
+                        await window.backendFunctions.initDatabase();
+                        
+                        // 模拟登录一个测试用户
+                        if (!window.currentUser) {
+                            window.currentUser = { email: 'test@example.com', user_name: '测试用户' };
+                            localStorage.setItem('user', JSON.stringify(window.currentUser));
+                        }
+                        
+                        // 检查是否已有数据
+                        const logs = await window.apiService.getLogs(1, {});
+                        
+                        // 如果没有数据，加载模拟数据生成脚本
+                        if (logs.total === 0) {
+                            console.log('未发现历史记录，加载模拟数据...');
+                            const script = document.createElement('script');
+                            script.src = 'generate_dummy_data.js';
+                            script.onload = () => {
+                                console.log('模拟数据脚本已加载');
+                                // 延迟加载日志以确保模拟数据已生成
+                                setTimeout(() => {
+                                    if (typeof loadLogs === 'function') {
+                                        loadLogs();
+                                    }
+                                }, 1000);
+                            };
+                            document.head.appendChild(script);
+                        } else {
+                            // 如果已有数据，直接加载日志
+                            if (typeof loadLogs === 'function') {
+                                loadLogs();
+                            }
+                        }
+                    } catch (error) {
+                        console.log('检查数据失败，加载模拟数据:', error);
+                        // 如果出错，直接加载模拟数据
+                        const script = document.createElement('script');
+                        script.src = 'generate_dummy_data.js';
+                        document.head.appendChild(script);
+                    }
+                }
+            }, 500);
+        });
+    </script>
 </body>
 </html>
