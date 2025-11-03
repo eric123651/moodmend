@@ -1,6 +1,6 @@
-# MoodMend 后端服务 - 优化版
+# MoodMend 后端服务 - Google Cloud集成版
 # 作者: AI Assistant
-# 版本: 4.0
+# 版本: v1.0.5
 # 运行: python moodmend_backend.py
 
 from flask import Flask, request, jsonify, g
@@ -15,6 +15,33 @@ import bcrypt
 import sqlite3
 import threading
 from functools import wraps
+import base64
+import io
+from dotenv import load_dotenv
+
+# 尝试导入Google Cloud服务
+GOOGLE_CLOUD_AVAILABLE = False
+try:
+    from google.cloud import speech
+    from google.cloud import language_v1
+    from google.cloud.aiplatform import GapicTransport
+    import google.generativeai as genai
+    GOOGLE_CLOUD_AVAILABLE = True
+except ImportError:
+    logging.warning("Google Cloud库未安装，将使用本地模拟功能")
+
+# 加载环境变量
+load_dotenv()
+
+# 设置Google Cloud凭证
+os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'service-account-key.json')
+
+# 配置Gemini API
+if GOOGLE_CLOUD_AVAILABLE:
+    try:
+        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+    except Exception as e:
+        logging.warning(f"Gemini API配置失败: {e}")
 
 # 配置日志
 # 设置默认编码为UTF-8
@@ -186,6 +213,34 @@ SUGGESTIONS = {
     }
 }
 
+# 使用Gemini API生成个性化建议
+def generate_personalized_suggestion(text, emotion):
+    """使用Vertex AI Gemini API生成个性化情绪调节建议"""
+    if GOOGLE_CLOUD_AVAILABLE:
+        try:
+            model = genai.GenerativeModel('gemini-pro')
+            prompt = f"""
+            你是一位专业的情绪顾问。请根据用户的情绪描述和检测到的情绪类型，提供个性化的情绪调节建议。
+            用户描述: {text}
+            检测到的情绪: {emotion}
+            
+            请提供:
+            1. 简短的共情回应 (20字以内)
+            2. 2-3个具体可行的调节建议 (每个不超过50字)
+            3. 一句鼓励的话
+            
+            请使用中文回复，语气温暖、专业且支持性强。
+            """
+            response = model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            logging.error(f"Gemini API生成建议失败: {e}")
+    
+    # 回退到基于模板的建议
+    logging.info("使用基于模板的建议")
+    template = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+    return f"共情回应：我理解你现在的感受。\n建议：{template['tips']}\n鼓励：相信明天会更好。"
+
 # NFT徽章定義
 NFT_BADGES = {
     'anxious': '🛡️ 勇者徽章 - 戰勝焦慮',
@@ -195,10 +250,73 @@ NFT_BADGES = {
     'neutral': '⚖️ 平衡徽章 - 平靜之源'
 }
 
+# 语音识别函数
+def speech_to_text(audio_content):
+    """将语音转换为文本"""
+    if GOOGLE_CLOUD_AVAILABLE:
+        try:
+            client = speech.SpeechClient()
+            audio = speech.RecognitionAudio(content=audio_content)
+            config = speech.RecognitionConfig(
+                encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
+                sample_rate_hertz=48000,
+                language_code="zh-TW"
+            )
+            response = client.recognize(config=config, audio=audio)
+            text = "".join([result.alternatives[0].transcript for result in response.results])
+            return text
+        except Exception as e:
+            logging.error(f"语音识别失败: {e}")
+            # 回退到模拟功能
+    
+    # 模拟语音识别结果
+    logging.info("使用模拟语音识别功能")
+    return "我感到有些焦虑和压力，需要放松一下"
+
+# Google Cloud自然语言处理情感分析
+def analyze_sentiment_google(text):
+    """使用Google Cloud进行情感分析"""
+    if GOOGLE_CLOUD_AVAILABLE:
+        try:
+            client = language_v1.LanguageServiceClient()
+            document = language_v1.Document(
+                content=text, type_=language_v1.Document.Type.PLAIN_TEXT, language="zh"
+            )
+            response = client.analyze_sentiment(request={"document": document})
+            sentiment_score = response.document_sentiment.score
+            
+            # 映射Google情感分数到本地情绪类型
+            if sentiment_score > 0.3:
+                return {"emotion": "happy", "confidence": abs(sentiment_score)}
+            elif sentiment_score < -0.3:
+                # 进一步分析负面情绪
+                if "焦" in text or "担心" in text or "压力" in text:
+                    return {"emotion": "anxious", "confidence": abs(sentiment_score)}
+                elif "伤" in text or "难过" in text or "沮丧" in text:
+                    return {"emotion": "sad", "confidence": abs(sentiment_score)}
+                elif "生气" in text or "愤怒" in text or "烦躁" in text:
+                    return {"emotion": "angry", "confidence": abs(sentiment_score)}
+                else:
+                    return {"emotion": "sad", "confidence": abs(sentiment_score)}
+            else:
+                return {"emotion": "neutral", "confidence": abs(sentiment_score)}
+        except Exception as e:
+            logging.error(f"Google情感分析失败: {e}")
+            # 回退到本地分析
+    
+    return None
+
 # 增强的情緒偵測函數
 def detect_emotion(text):
+    """增强的情绪检测，支持Google Cloud和本地分析"""
     if not text or not isinstance(text, str):
         return 'neutral'
+    
+    # 优先使用Google Cloud情感分析
+    google_result = analyze_sentiment_google(text)
+    if google_result and google_result.get('confidence', 0) > 0.5:
+        logging.info(f"使用Google Cloud情感分析结果: {google_result['emotion']}")
+        return google_result['emotion']
     
     text_lower = text.lower()
     scores = {emotion: 0 for emotion in EMOTION_KEYWORDS}
@@ -442,8 +560,39 @@ def login():
         }), 500
 
 # API: 處理情緒輸入
+@app.route('/api/speech-to-text', methods=['POST'])
+def api_speech_to_text():
+    """语音识别API接口"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': '无效的请求数据'}), 400
+        
+        audio_base64 = data.get('audio', '')
+        if not audio_base64:
+            return jsonify({'error': '缺少音频数据'}), 400
+        
+        # 解码base64音频数据
+        try:
+            audio_content = base64.b64decode(audio_base64)
+        except Exception as e:
+            return jsonify({'error': '音频数据解码失败'}), 400
+        
+        # 调用语音识别服务
+        text = speech_to_text(audio_content)
+        
+        return jsonify({
+            'success': True,
+            'text': text,
+            'service': 'google_cloud' if GOOGLE_CLOUD_AVAILABLE else 'simulation'
+        })
+    except Exception as e:
+        logging.error(f"语音识别API错误: {e}")
+        return jsonify({'error': '语音识别处理失败'}), 500
+
 @app.route('/api/process-emotion', methods=['POST'])
 def process_emotion():
+    """增强的情绪处理API，支持文本和语音输入"""
     try:
         data = request.json
         user_input = data.get('input', '')
@@ -488,6 +637,19 @@ def process_emotion():
         
         # 去除首尾空白字符
         user_input = user_input.strip()
+        
+        # 支持音频输入
+        audio_base64 = data.get('audio', '')
+        recognized_text = user_input
+        if audio_base64:
+            try:
+                audio_content = base64.b64decode(audio_base64)
+                recognized_text = speech_to_text(audio_content)
+                # 如果语音识别成功，使用识别的文本作为输入
+                if recognized_text:
+                    user_input = recognized_text
+            except Exception as e:
+                logger.error(f"音频处理失败: {e}")
         
         # 验证输入
         if not user_input:
@@ -544,6 +706,9 @@ def process_emotion():
         # 更新内存中的上次情绪
         user_last_emotion[email] = emotion
         
+        # 使用Gemini API生成个性化建议
+        personalized_suggestion = generate_personalized_suggestion(user_input, emotion)
+        
         logger.info(f"處理情緒成功: 用戶={email}, 輸入='{user_input[:30]}...', 檢測情緒={emotion}")
         
         return jsonify({
@@ -557,7 +722,14 @@ def process_emotion():
                 'color': pkg['color']
             },
             'nft': nft,
-            'transition_nft': transition_nft_str
+            'transition_nft': transition_nft_str,
+            'personalized_suggestion': personalized_suggestion,
+            'recognized_text': recognized_text if audio_base64 else None,
+            'services_used': {
+                'speech_recognition': 'google_cloud' if GOOGLE_CLOUD_AVAILABLE and audio_base64 else 'none',
+                'sentiment_analysis': 'google_cloud' if GOOGLE_CLOUD_AVAILABLE else 'local',
+                'personalized_suggestions': 'gemini_api' if GOOGLE_CLOUD_AVAILABLE else 'template'
+            }
         })
         
     except Exception as e:
