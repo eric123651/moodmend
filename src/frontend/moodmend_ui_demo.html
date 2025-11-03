@@ -1157,7 +1157,7 @@
         // 全局变量定义 - 确保在所有使用前初始化
         window.currentUser = null;
         let currentPackage = null;
-        let userLogs = [];
+        // userLogs is already declared at line 34
         // 请求锁，避免重复请求
         let isLoadingLogs = false;
         let isUpdatingStats = false;
@@ -2027,14 +2027,14 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 
                 // 过滤出当前用户的日志
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-                const userLogs = offlineLogs.filter(log => log.email === userEmail);
+                const filteredUserLogs = offlineLogs.filter(log => log.email === userEmail);
                 
-                if (userLogs.length === 0) return;
+                if (filteredUserLogs.length === 0) return;
                 
                 // 尝试同步每条日志
                 const syncedLogs = [];
                 
-                for (const log of userLogs) {
+                for (const log of filteredUserLogs) {
                     try {
                         const response = await fetch('http://localhost:5000/api/add-log', {
                             method: 'POST',
