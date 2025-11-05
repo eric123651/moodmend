@@ -21,14 +21,21 @@ from dotenv import load_dotenv
 
 # 尝试导入Google Cloud服务
 GOOGLE_CLOUD_AVAILABLE = False
+print("=== 开始初始化Google Cloud服务 ===")
 try:
+    # 直接导入而不是嵌套try-except以简化日志
     from google.cloud import speech
     from google.cloud import language_v1
-    from google.cloud.aiplatform import GapicTransport
     import google.generativeai as genai
+    
     GOOGLE_CLOUD_AVAILABLE = True
-except ImportError:
-    logging.warning("Google Cloud库未安装，将使用本地模拟功能")
+    print("✅ Google Cloud服务初始化成功！已加载所有必要的库")
+    print(f"✅ GOOGLE_CLOUD_AVAILABLE = {GOOGLE_CLOUD_AVAILABLE}")
+except Exception as e:
+    print(f"❌ Google Cloud库导入失败: {e}")
+    print("⚠️ 将使用本地模拟功能")
+print("=== Google Cloud服务初始化完成 ===")
+
 
 # 加载环境变量
 load_dotenv()

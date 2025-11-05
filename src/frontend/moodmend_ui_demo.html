@@ -21,11 +21,248 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
     <script>
-        // 暂时禁用service worker，以便测试SVG路径
-// if ('serviceWorker' in navigator) {
-// navigator.serviceWorker.register('sw.js');
-// }
+        // PWA Service Worker 注册
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker 注册成功:', registration.scope);
+                        
+                        // 监听Service Worker更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 有新版本可用
+                                    document.dispatchEvent(new CustomEvent('swUpdateAvailable'));
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker 注册失败:', error);
+                    });
+                
+                // 监听控制状态变化
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('Service Worker 控制状态变化');
+                });
+            });
+        }
         
+        // 处理离线状态检测
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        function updateOnlineStatus() {
+            const isOnline = navigator.onLine;
+            console.log('网络状态:', isOnline ? '在线' : '离线');
+            
+            // 显示离线通知
+            if (!isOnline) {
+                showOfflineNotification();
+            } else {
+                hideOfflineNotification();
+                // 尝试同步离线数据
+                syncOfflineData();
+            }
+        }
+        
+        // 离线通知函数
+        function showOfflineNotification() {
+            let notification = document.createElement('div');
+            notification.id = 'offline-notification';
+            notification.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.textContent = '您当前处于离线状态，部分功能可能受限';
+            document.body.appendChild(notification);
+        }
+        
+        function hideOfflineNotification() {
+            const notification = document.getElementById('offline-notification');
+            if (notification) {
+                notification.remove();
+            }
+        }
+        
+        // 尝试同步离线数据
+        function syncOfflineData() {
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                navigator.serviceWorker.ready.then(registration => {
+                    return registration.sync.register('sync-offline-data');
+                }).catch(err => {
+                    console.log('后台同步失败:', err);
+                    // 失败时尝试直接同步
+                    manualSyncOfflineData();
+                });
+            } else {
+                // 浏览器不支持后台同步，尝试直接同步
+                manualSyncOfflineData();
+            }
+        }
+        
+        // 手动同步离线数据
+        async function manualSyncOfflineData() {
+            try {
+                const db = await openDatabase();
+                const transaction = db.transaction(['offline_logs'], 'readonly');
+                const store = transaction.objectStore('offline_logs');
+                const offlineLogs = await store.getAll();
+                
+                if (offlineLogs.length > 0) {
+                    console.log('开始手动同步', offlineLogs.length, '条离线日志');
+                    
+                    for (const log of offlineLogs) {
+                        try {
+                            const response = await fetch('http://localhost:5000/api/add-log', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(log)
+                            });
+                            
+                            if (response.ok) {
+                                // 删除已同步的日志
+                                const deleteTx = db.transaction(['offline_logs'], 'readwrite');
+                                const deleteStore = deleteTx.objectStore('offline_logs');
+                                await deleteStore.delete(log.id);
+                                await deleteTx.done;
+                                console.log('离线日志同步成功:', log.id);
+                            }
+                        } catch (error) {
+                            console.error('单条日志同步失败:', error);
+                        }
+                    }
+                    
+                    showToast('离线数据已同步到服务器');
+                }
+            } catch (error) {
+                console.error('手动同步失败:', error);
+            }
+        }
+        
+        // IndexedDB 数据库操作
+        let dbPromise;
+        
+        // 打开数据库
+        function openDatabase() {
+            if (!dbPromise) {
+                dbPromise = new Promise((resolve, reject) => {
+                    const request = indexedDB.open('MoodMendDB', 1);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // 创建离线日志存储
+                        if (!db.objectStoreNames.contains('offline_logs')) {
+                            const logsStore = db.createObjectStore('offline_logs', { keyPath: 'id' });
+                            logsStore.createIndex('timestamp', 'timestamp', { unique: false });
+                            logsStore.createIndex('email', 'email', { unique: false });
+                        }
+                        
+                        // 创建用户数据存储
+                        if (!db.objectStoreNames.contains('user_data')) {
+                            const userStore = db.createObjectStore('user_data', { keyPath: 'email' });
+                        }
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        resolve(event.target.result);
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('数据库打开失败:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+            
+            return dbPromise;
+        }
+        
+        // 保存数据到离线存储
+        async function saveToOfflineStorage(data) {
+            try {
+                const db = await openDatabase();
+                const transaction = db.transaction(['offline_logs'], 'readwrite');
+                const store = transaction.objectStore('offline_logs');
+                
+                // 添加时间戳和唯一ID
+                const offlineData = {
+                    ...data,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    timestamp: new Date().toISOString()
+                };
+                
+                await store.add(offlineData);
+                await transaction.done;
+                console.log('数据已保存到离线存储');
+                return offlineData;
+            } catch (error) {
+                console.error('保存到离线存储失败:', error);
+                throw error;
+            }
+        }
+        
+        // 获取离线存储的数据
+        async function getOfflineData(storeName, query = null) {
+            try {
+                const db = await openDatabase();
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                
+                let request;
+                if (query) {
+                    request = store.get(query);
+                } else {
+                    request = store.getAll();
+                }
+                
+                const result = await new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                return result;
+            } catch (error) {
+                console.error('获取离线数据失败:', error);
+                return query ? null : [];
+            }
+        }
+        
+        // 显示提示信息
+        function showToast(message) {
+            let toast = document.getElementById('toast-message');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-message';
+                toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
+                document.body.appendChild(toast);
+            }
+            
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 监听Service Worker更新通知
+        document.addEventListener('swUpdateAvailable', () => {
+            const updateBanner = document.createElement('div');
+            updateBanner.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2';
+            updateBanner.innerHTML = `
+                <span>有新版本可用</span>
+                <button onclick="window.location.reload()" class="bg-white text-blue-500 px-3 py-1 rounded text-sm">更新</button>
+            `;
+            document.body.appendChild(updateBanner);
+        });
     </script>
     <script>
     // ... 現有全局 JS (switchPage, currentUser 等)
@@ -2635,7 +2872,8 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         }
         
         // 文字輸入分析 (debounce)
-        let debounceTimer;
+        // 使用var确保变量提升，避免暂时性死区问题
+        var debounceTimer;
         function analyzeTextInput() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -2644,27 +2882,52 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             }, 500);
         }
         
-        // AI 分析 (V1.0.4 API 呼叫)
+        // AI 分析 (使用正确的API端点)
         async function analyzeMood(text) {
             try {
                 showLoading('inputStep');
-                const res = await fetch('http://localhost:5000/api/analyze-mood', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text, 
-                        email: window.currentUser?.email || window.currentUser 
-                    })
-                });
-                currentAnalysis = await res.json();
-                if (currentAnalysis.success) {
-                    originalEmotion = currentAnalysis.emotion;
-                    showConfirmModal();
+                // 修改为使用后端已实现的/process-emotion端点，并添加超时处理
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+                    
+                    const res = await fetch('http://localhost:5000/api/process-emotion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            input: text, 
+                            email: window.currentUser?.email || window.currentUser 
+                        }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    currentAnalysis = await res.json();
+                    if (currentAnalysis.success) {
+                        // 适配后端返回的数据结构
+                        // 从package中获取daily_task，并创建mood_quote字段
+                        currentAnalysis.daily_task = currentAnalysis.package?.daily_task || '今天给自己一个微笑';
+                        // 使用personalized_suggestion或package.tips作为mood_quote
+                        currentAnalysis.mood_quote = currentAnalysis.personalized_suggestion || 
+                                                   currentAnalysis.package?.tips || 
+                                                   '寧靜的心態，是最好的陪伴';
+                        originalEmotion = currentAnalysis.emotion;
+                        showConfirmModal();
+                    } else {
+                        // 显示后端返回的错误消息
+                        alert(currentAnalysis.message || '情緒分析失敗，請稍後重試');
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        alert('分析請求超時，請檢查網絡連接或稍後重試');
+                    } else {
+                        alert('分析請求失敗: ' + e.message);
+                    }
                 }
             } catch (e) {
                 console.error('分析失敗', e);
                 // 模擬數據 - 後端不可用時使用
-                if (!currentAnalysis.success) {
+                if (!currentAnalysis || !currentAnalysis.success) {
                     currentAnalysis = {
                         success: true,
                         emotion: 'anxious',
@@ -2706,17 +2969,38 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (!confirmed) {
                 const manual = prompt('輸入正確情緒 (anxious/sad/angry/happy/neutral):') || 'neutral';
                 try {
-                    const res = await fetch('http://localhost:5000/api/analyze-mood', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            text: document.getElementById('moodText').value, 
-                            email: window.currentUser?.email || window.currentUser,
-                            confirmed_emotion: manual 
-                        })
-                    });
-                    currentAnalysis = await res.json();
-                    originalEmotion = manual;
+                    // 修改为使用后端已实现的/process-emotion端点，并添加超时处理
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+                        
+                        const res = await fetch('http://localhost:5000/api/process-emotion', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                input: document.getElementById('moodText').value, 
+                                email: window.currentUser?.email || window.currentUser
+                            }),
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        
+                        currentAnalysis = await res.json();
+                        // 直接使用手动指定的情绪
+                        currentAnalysis.emotion = manual;
+                        // 适配后端返回的数据结构
+                        currentAnalysis.daily_task = currentAnalysis.package?.daily_task || '今天给自己一个微笑';
+                        currentAnalysis.mood_quote = currentAnalysis.personalized_suggestion || 
+                                                   currentAnalysis.package?.tips || 
+                                                   '寧靜的心態，是最好的陪伴';
+                        originalEmotion = manual;
+                    } catch (e) {
+                        if (e.name === 'AbortError') {
+                            alert('分析請求超時，請檢查網絡連接或稍後重試');
+                        } else {
+                            alert('分析請求失敗: ' + e.message);
+                        }
+                    }
                 } catch (e) {
                     // 模擬數據
                     currentAnalysis.emotion = manual;
@@ -2759,28 +3043,59 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             if (checkbox.checked) { 
                 const newEmotion = 'happy'; // 預設轉變 
                 try { 
-                    const res = await fetch('http://localhost:5000/api/complete-task', { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ email: currentUser.email, original_emotion: originalEmotion, new_emotion: newEmotion, task: currentAnalysis.daily_task }) 
-                    }); 
-                    const data = await res.json(); 
-                    if (data.success) { 
-                        document.getElementById('nftResult').innerHTML = `🎉 ${data.nft}`; 
-                        document.getElementById('nftResult').style.display = 'block'; 
-                        // 傳 latestLog 至 page4 
-                        sessionStorage.setItem('latestLog', JSON.stringify({ 
-                            time: new Date().toISOString(), 
-                            emotion: originalEmotion, 
-                            quote: currentAnalysis.mood_quote, 
-                            task: currentAnalysis.daily_task, 
-                            nft: data.nft, 
-                            completed: true 
-                        })); 
-                        setTimeout(() => switchPage('page4'), 2000); // 自動跳 Log 
-                    } 
+                    // 使用后端已实现的/add-log API，并添加完善的错误处理和超时控制
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    try {
+                        const res = await fetch('http://localhost:5000/api/add-log', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ 
+                                email: currentUser.email, 
+                                emotion: originalEmotion, 
+                                task: currentAnalysis.daily_task, 
+                                nft: generateBasicNft(originalEmotion), 
+                                completed: true 
+                            }),
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!res.ok) {
+                            throw new Error(`HTTP错误! 状态码: ${res.status}`);
+                        }
+                        
+                        const data = await res.json(); 
+                        if (data.success) { 
+                            // 由于API可能不返回nft字段，使用本地生成的NFT
+                            const nft = generateBasicNft(originalEmotion);
+                            document.getElementById('nftResult').innerHTML = `🎉 ${nft}`; 
+                            document.getElementById('nftResult').style.display = 'block'; 
+                            // 傳 latestLog 至 page4 
+                            sessionStorage.setItem('latestLog', JSON.stringify({ 
+                                time: new Date().toISOString(), 
+                                emotion: originalEmotion, 
+                                quote: currentAnalysis.mood_quote, 
+                                task: currentAnalysis.daily_task, 
+                                nft: nft, 
+                                completed: true 
+                            })); 
+                            setTimeout(() => switchPage('page4'), 2000); // 自動跳 Log 
+                        }
+                    } catch (e) {
+                        clearTimeout(timeoutId);
+                        if (e.name === 'AbortError') {
+                            console.error('完成任务请求超时');
+                            alert('网络连接超时，请检查网络设置');
+                        } else {
+                            console.error('完成失败:', e);
+                        }
+                        checkbox.checked = false; 
+                    }
                 } catch (e) { 
-                    console.error('完成失敗', e); 
+                    console.error('完成失败的外部错误:', e); 
                     checkbox.checked = false; 
                 } 
             } else { 
@@ -2810,11 +3125,38 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             
             try {
                 if (navigator.onLine) {
-                    await fetch('http://localhost:5000/api/save-log', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(logData)
-                    });
+                    // 使用后端已实现的/add-log API，并添加完善的错误处理
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    try {
+                        const res = await fetch('http://localhost:5000/api/add-log', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: logData.email,
+                                emotion: logData.emotion,
+                                task: logData.daily_task,
+                                nft: generateBasicNft(logData.emotion),
+                                completed: logData.completed
+                            }),
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!res.ok) {
+                            throw new Error(`HTTP错误! 状态码: ${res.status}`);
+                        }
+                    } catch (e) {
+                        clearTimeout(timeoutId);
+                        if (e.name === 'AbortError') {
+                            console.error('保存日志请求超时');
+                        } else {
+                            console.error('保存日志失败:', e);
+                        }
+                        saveLogToOffline(logData);
+                    }
                 } else {
                     saveLogToOffline(logData);
                 }

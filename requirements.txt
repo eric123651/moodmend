@@ -1,6 +1,9 @@
 flask
 flask-cors
+py-bcrypt
+python-dotenv
 google-cloud-speech
 google-cloud-language
 google-cloud-aiplatform
-python-dotenv
+google-generativeai
+protobuf==4.25.3

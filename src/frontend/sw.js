@@ -201,10 +201,173 @@ function fetchWithNetworkFallback(event) {
             });
         }
         return response;
-      })
-      .catch(() => {
-        // 网络失败时尝试从缓存获取
-        return caches.match(event.request);
+        })
+        .catch(error => {
+          console.log('Service Worker: API请求失败，尝试从缓存获取', event.request.url, error);
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                console.log('Service Worker: 从缓存返回API响应', event.request.url);
+                return cachedResponse;
+              }
+              // API请求失败且无缓存时，返回503离线状态
+              return new Response(JSON.stringify({ error: '您当前处于离线状态' }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            });
+        })
+    );
+  }
+
+// 处理后台同步事件
+self.addEventListener('sync', (event) => {
+  console.log('Service Worker: 后台同步触发', event.tag);
+  if (event.tag === 'sync-offline-data') {
+    event.waitUntil(syncOfflineLogs());
+  }
+});
+
+// 同步离线日志数据
+async function syncOfflineLogs() {
+  try {
+    // 从IndexedDB获取离线存储的日志
+    const offlineLogs = await getOfflineLogs();
+    
+    if (offlineLogs && offlineLogs.length > 0) {
+      console.log('Service Worker: 开始同步', offlineLogs.length, '条离线日志');
+      
+      // 逐条同步日志
+      for (const log of offlineLogs) {
+        try {
+          const response = await fetch('http://localhost:5000/api/add-log', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(log)
+          });
+          
+          if (response.ok) {
+            console.log('Service Worker: 离线日志同步成功');
+            // 同步成功后删除离线日志
+            await deleteOfflineLog(log.id);
+          }
+        } catch (error) {
+          console.error('Service Worker: 单条日志同步失败', error);
+        }
+      }
+      
+      console.log('Service Worker: 离线日志同步完成');
+      // 发送同步完成通知给客户端
+      const clients = await self.clients.matchAll();
+      clients.forEach(client => {
+        client.postMessage({ type: 'SYNC_COMPLETED' });
+      });
+    }
+  } catch (error) {
+    console.error('Service Worker: 离线日志同步失败', error);
+  }
+}
+
+// 获取离线日志（模拟函数，实际应使用IndexedDB）
+function getOfflineLogs() {
+  return new Promise((resolve) => {
+    // 这里应该从IndexedDB获取数据
+    // 由于没有实际的IndexedDB实现，这里返回空数组
+    resolve([]);
+  });
+}
+
+// 删除离线日志（模拟函数）
+function deleteOfflineLog(logId) {
+  return new Promise((resolve) => {
+    // 这里应该从IndexedDB删除数据
+    resolve();
+  });
+}
+
+// 处理推送通知
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || '您有新的情绪建议',
+      icon: '/icons/MoodMend_Logo_Option4.svg',
+      badge: '/icons/MoodMend_Logo_Option4.svg',
+      data: {
+        url: data.url || '/',
+        timestamp: Date.now()
+      },
+      vibrate: [100, 50, 100],
+      actions: data.actions || [
+        {
+          action: 'view',
+          title: '查看详情'
+        }
+      ]
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'MoodMend', options)
+    );
+  } catch (error) {
+    console.error('Service Worker: 推送通知处理失败', error);
+  }
+});
+
+// 处理通知点击事件
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      const url = event.notification.data.url;
+      
+      // 如果已经有打开的窗口，则切换到该窗口
+      for (const client of clientList) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      // 否则打开新窗口
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
+
+// 实现推送订阅
+self.addEventListener('pushsubscriptionchange', (event) => {
+  console.log('Service Worker: 推送订阅已更改');
+  event.waitUntil(
+    // 重新订阅推送服务
+    self.registration.pushManager.subscribe(event.oldSubscription.options)
+      .then((newSubscription) => {
+        // 将新的订阅信息发送到服务器
+        return fetch('http://localhost:5000/api/update-push-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(newSubscription)
+        });
       })
   );
-}
+});
+
+// 定期缓存更新（可选）
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// 实现内容安全策略兼容
+self.addEventListener('contentsecuritypolicyviolation', (event) => {
+  console.warn('Service Worker: 内容安全策略违规', event);
+});
