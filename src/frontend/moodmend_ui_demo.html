@@ -22,6 +22,8 @@
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
+    <script src="backend_functions.js"></script>
+    <script src="api_service.js"></script>
     <script type="module" src="assets/script.js"></script>
     <script>
         // 初始化API服务，设置网络监听器
@@ -118,6 +120,98 @@
                 };
             });
         };
+        
+        // 页面切换函数
+        function switchPage(id, event = null) {
+            // 先关闭所有菜单
+            document.querySelectorAll('.menu-dropdown').forEach(menu => {
+                menu.classList.remove('show');
+            });
+            
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            document.getElementById(id).classList.add('active');
+            
+            // 当切换到page4时，强制刷新日志
+            if (id === 'page4') {
+                console.log('切换到page4，强制刷新日志...');
+                // 重置加载锁，确保可以重新加载
+                isLoadingLogs = false;
+                // 延迟执行，确保页面已完全切换
+                setTimeout(() => {
+                    loadLogs(1);
+                }, 100);
+            }
+            
+            // 重置滚动位置
+            document.getElementById(id).scrollTop = 0;
+            
+            // 如果是主页，更新用户名显示
+            if (id === 'page2' && currentUser) {
+                const welcomeMessage = document.getElementById('welcomeMessage');
+                if (welcomeMessage && currentUser.user_name) {
+                    welcomeMessage.textContent = `嗨，${currentUser.user_name}！`;
+                }
+            }
+            
+            // 如果是用户中心页面，更新用户信息
+            if (id === 'userCenter' && currentUser) {
+                const userName = document.getElementById('userName');
+                const userEmail = document.getElementById('userEmail');
+                const userInitial = document.getElementById('userInitial');
+                
+                if (userName && currentUser.user_name) {
+                    userName.textContent = currentUser.user_name;
+                }
+                
+                if (userEmail && currentUser.email) {
+                    userEmail.textContent = currentUser.email;
+                }
+                
+                if (userInitial && currentUser.user_name) {
+                    userInitial.textContent = currentUser.user_name.charAt(0).toUpperCase();
+                }
+            }
+            
+            // 如果切换到日志页，加载数据
+            if (id === 'page4') {
+                // 使用setTimeout确保页面完全加载后再执行
+                setTimeout(() => {
+                    if (!isLoadingLogs) {
+                        loadLogs();
+                    }
+                    if (!isUpdatingStats) {
+                        updateStats();
+                    }
+                }, 300);
+            }
+            
+            // 导航栏相关逻辑
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // 修复event对象问题，只有当event和event.target存在时才执行
+            if (event && event.target) {
+                if (id === 'page2') {
+                    const navItem = event.target.closest('.nav-item');
+                    if (navItem) navItem.classList.add('active');
+                } else if (id === 'page4') {
+                    const navItem = event.target.closest('.nav-item');
+                    if (navItem) navItem.classList.add('active');
+                }
+            }
+            
+            // 只在非登录页面显示导航栏
+            if (id !== 'page1') {
+                onLoginSuccess();
+            } else {
+                // 在登录页面隐藏导航栏
+                const navBar = document.getElementById('navBar');
+                if (navBar) navBar.style.display = 'none';
+            }
+        }
         
         // 保存情绪数据（支持离线存储）
         const saveEmotionData = async (emotionData) => {
@@ -365,7 +459,7 @@
                     
                     // 延迟跳转，让用户看到成功提示
                     setTimeout(() => {
-                        switchPage('pageMoodTracking', event);
+                        switchPage('page3');
                     }, 1500);
                 } else {
                     // 登录失败
@@ -2783,97 +2877,7 @@ function generateMockTimeSeriesData(period) {
         function onLoginSuccess() { 
             document.getElementById('navBar').style.display = 'flex'; 
         } 
-        // 擴充 switchPage 
-        function switchPage(id, event = null) { 
-            // 先关闭所有菜单
-            document.querySelectorAll('.menu-dropdown').forEach(menu => {
-                menu.classList.remove('show');
-            });
-            
-            // 隐藏所有页面
-            document.querySelectorAll('.page').forEach(p => {
-                p.classList.remove('active');
-            });
-            
-            // 显示目标页面
-            document.getElementById(id).classList.add('active');
-            
-            // 当切换到page4时，强制刷新日志
-            if (id === 'page4') {
-                console.log('切换到page4，强制刷新日志...');
-                // 重置加载锁，确保可以重新加载
-                isLoadingLogs = false;
-                // 延迟执行，确保页面已完全切换
-                setTimeout(() => {
-                    loadLogs(1);
-                }, 100);
-            }
-            
-            // 重置滚动位置
-            document.getElementById(id).scrollTop = 0;
-            
-            // 如果是主页，更新用户名显示
-            if (id === 'page2' && currentUser) {
-                const welcomeMessage = document.getElementById('welcomeMessage');
-                if (welcomeMessage && currentUser.user_name) {
-                    welcomeMessage.textContent = `嗨，${currentUser.user_name}！`;
-                }
-            }
-            
-            // 如果是用户中心页面，更新用户信息
-            if (id === 'userCenter' && currentUser) {
-                const userName = document.getElementById('userName');
-                const userEmail = document.getElementById('userEmail');
-                const userInitial = document.getElementById('userInitial');
-                
-                if (userName && currentUser.user_name) {
-                    userName.textContent = currentUser.user_name;
-                }
-                
-                if (userEmail && currentUser.email) {
-                    userEmail.textContent = currentUser.email;
-                }
-                
-                if (userInitial && currentUser.user_name) {
-                    userInitial.textContent = currentUser.user_name.charAt(0).toUpperCase();
-                }
-            }
-            
-            // 如果切换到日志页，加载数据
-            if (id === 'page4') {
-                // 使用setTimeout确保页面完全加载后再执行
-                setTimeout(() => {
-                    if (!isLoadingLogs) {
-                        loadLogs();
-                    }
-                    if (!isUpdatingStats) {
-                        updateStats();
-                    }
-                }, 300);
-            }
-            
-            // 导航栏相关逻辑
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            // 修复event对象问题，只有当event和event.target存在时才执行
-            if (event && event.target) {
-                if (id === 'page2') {
-                    const navItem = event.target.closest('.nav-item');
-                    if (navItem) navItem.classList.add('active');
-                } else if (id === 'page4') {
-                    const navItem = event.target.closest('.nav-item');
-                    if (navItem) navItem.classList.add('active');
-                } 
-            }
-            
-            // 只在非登录页面显示导航栏
-            if (id !== 'page1') {
-                onLoginSuccess();
-            } else {
-                // 在登录页面隐藏导航栏
-                const navBar = document.getElementById('navBar');
-                if (navBar) navBar.style.display = 'none';
-            }
-        } 
+        // switchPage 函数已移至页面早期定义
         // 登入函數後呼叫 onLoginSuccess()
         
         // Page3 專屬變數與函數 (V1.0.4 相容：currentUser 從 localStorage)
@@ -3282,8 +3286,8 @@ function generateMockTimeSeriesData(period) {
             }
         };
         
-        // NFT徽章配置
-        const NFT_BADGES = {
+        // NFT徽章配置 - 仅在变量不存在时声明
+        window.NFT_BADGES = window.NFT_BADGES || {
             anxious: '寧靜之心',
             sad: '希望之光',
             angry: '平和之盾',
@@ -3473,8 +3477,7 @@ function generateMockTimeSeriesData(period) {
     </div>
     
     <!-- 引入后端功能的前端实现 -->
-    <script src="backend_functions.js"></script>
-<script src="api_service.js"></script>
+    <!-- 已移至页面头部 -->
     
     <!-- 模拟数据加载脚本 -->
     <script>

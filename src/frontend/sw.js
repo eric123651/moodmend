@@ -60,6 +60,64 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+// 重试配置
+const RETRY_CONFIG = {
+    MAX_RETRIES: 3,
+    BASE_DELAY: 1000, // 1秒
+    MAX_DELAY: 60000 // 1分钟
+};
+
+// 生成指数退避延迟
+function getBackoffDelay(attempt) {
+    const delay = Math.min(
+        RETRY_CONFIG.BASE_DELAY * Math.pow(2, attempt),
+        RETRY_CONFIG.MAX_DELAY
+    );
+    // 添加随机抖动避免所有重试同时发生
+    return delay * (0.9 + Math.random() * 0.2);
+}
+
+// 延迟函数
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 带重试的fetch函数
+async function fetchWithRetry(url, options, maxRetries = RETRY_CONFIG.MAX_RETRIES) {
+    let lastError;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, options);
+            
+            if (response.ok) {
+                return response;
+            } else if (response.status >= 500) {
+                // 服务器错误才重试
+                lastError = new Error(`服务器错误: ${response.status}`);
+                if (attempt < maxRetries - 1) {
+                    const waitTime = getBackoffDelay(attempt);
+                    console.log(`尝试 ${attempt + 1} 失败，${waitTime.toFixed(0)}ms 后重试...`);
+                    await delay(waitTime);
+                }
+            } else {
+                // 客户端错误不重试
+                throw new Error(`请求失败: ${response.status}`);
+            }
+        } catch (error) {
+            // 网络错误才重试
+            lastError = error;
+            if (attempt < maxRetries - 1) {
+                const waitTime = getBackoffDelay(attempt);
+                console.log(`网络错误: ${error.message}，${waitTime.toFixed(0)}ms 后重试...`);
+                await delay(waitTime);
+            }
+        }
+    }
+    
+    throw lastError || new Error('所有重试都失败了');
+}
+
 // 实现后台同步逻辑
 async function syncEmotionData() {
   try {
@@ -83,10 +141,12 @@ async function syncEmotionData() {
     
     // 同步每条数据到服务器
     const syncedIds = [];
+    const failedIds = [];
+    
     for (const record of unsyncedData) {
       try {
-        // 发送数据到服务器
-        const response = await fetch('/api/emotions', {
+        // 发送数据到服务器（带重试逻辑）
+        const response = await fetchWithRetry('/api/emotions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -98,11 +158,12 @@ async function syncEmotionData() {
           syncedIds.push(record.id);
           console.log(`数据 ${record.id} 同步成功`);
         } else {
+          failedIds.push(record.id);
           console.error(`数据 ${record.id} 同步失败:`, await response.text());
         }
       } catch (syncError) {
+        failedIds.push(record.id);
         console.error(`同步单条数据失败:`, syncError);
-        // 继续尝试同步其他数据
       }
     }
     
@@ -116,12 +177,15 @@ async function syncEmotionData() {
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
       client.postMessage({ 
-        type: 'SYNC_COMPLETED',
+        type: syncedIds.length > 0 ? 'SYNC_COMPLETED' : 'SYNC_FAILED',
         timestamp: Date.now(),
-        success: true,
+        success: failedIds.length === 0,
         syncedCount: syncedIds.length,
+        failedCount: failedIds.length,
         totalCount: unsyncedData.length,
-        message: `成功同步 ${syncedIds.length}/${unsyncedData.length} 条数据`
+        message: syncedIds.length > 0 && failedIds.length === 0 ? 
+          `成功同步所有 ${syncedIds.length} 条数据` :
+          `部分同步成功: ${syncedIds.length}/${unsyncedData.length} 条数据`
       });
     });
   } catch (error) {

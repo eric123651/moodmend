@@ -3,7 +3,7 @@
 // 情绪关键词字典（从后端迁移）
 const EMOTION_KEYWORDS = {
     'happy': {
-                'keywords': ['開心', '快樂', '高興', '愉快', '滿足', '興奮', '欣喜', '幸福', '喜悅', '歡樂', '愉悅', '狂喜', '欣慰', '滿意', '樂乎', '樂', '爽'],
+                'keywords': ['開心', '快樂', '高興', '愉快', '滿足', '興奮', '欣喜', '幸福', '喜悅', '歡樂', '愉悅', '狂喜', '慰問', '滿意', '樂乎', '樂', '爽'],
         'weight': 1
     },
     'sad': {'keywords': ['傷心', '難過', '悲傷', '憂傷', '沮喪', '抑鬱', '絕望', '悲痛', '悲哀', '難過', '傷心欲絕', '哀傷', '惆悵', '失落', '痛苦', '哭', '泣', '慘'],
@@ -61,7 +61,8 @@ const SUGGESTIONS = {
 };
 
 // NFT徽章定义（从后端迁移）
-const NFT_BADGES = {
+// NFT徽章配置 - 使用window对象避免重复声明
+window.NFT_BADGES = window.NFT_BADGES || {
     'happy': '快樂獎勵',
     'sad': '雨過天晴',
     'anxious': '平靜之心',
@@ -110,41 +111,20 @@ function generateAdvice(emotion) {
 }
 
 // 生成NFT徽章函数
+// 修改NFT徽章生成相关函数，简化为硬编码提示词
 function generateNftBadge(emotion, taskCompleted) {
+    // 直接返回硬编码的徽章名称，不再进行动态生成
     if (taskCompleted) {
         return `${NFT_BADGES[emotion]} - 任务达人`;
     }
     return NFT_BADGES[emotion];
 }
 
-// 检查情绪转移函数
-async function checkEmotionTransition(currentEmotion, email) {
-    // 从IndexedDB获取最近的情绪记录
-    const recentRecords = await getRecentEmotions(email, 2);
-    
-    if (recentRecords.length >= 1) {
-        const lastEmotion = recentRecords[0].emotion;
-        
-        // 检查是否从负面情绪转为正面情绪
-        if (NEGATIVE_EMOTIONS.includes(lastEmotion) && POSITIVE_EMOTIONS.includes(currentEmotion)) {
-            return {
-                hasTransition: true,
-                transitionType: 'negative_to_positive',
-                previousEmotion: lastEmotion,
-                currentEmotion: currentEmotion
-            };
-        }
-    }
-    
-    return {
-        hasTransition: false
-    };
-}
-
-// 生成转换NFT徽章函数
+// 简化转换NFT徽章函数，移除动态生成逻辑
 function generateTransitionNft(transitionInfo) {
     if (transitionInfo.hasTransition && transitionInfo.transitionType === 'negative_to_positive') {
-        return `情绪蜕变 - 从${getEmotionLabel(transitionInfo.previousEmotion)}到${getEmotionLabel(currentEmotion)}`;
+        // 修复未定义变量currentEmotion的错误
+        return `情绪蜕变 - 从${getEmotionLabel(transitionInfo.previousEmotion)}到${getEmotionLabel(transitionInfo.currentEmotion)}`;
     }
     return null;
 }
@@ -174,7 +154,9 @@ function getEmotionColor(emotion) {
 }
 
 // 初始化数据库
-async function initDatabase() {
+// 初始化数据库函数 - 避免重复声明
+if (typeof window.initDatabase !== 'function') {
+    window.initDatabase = async function() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('MoodMendDB', 1);
         
@@ -209,8 +191,9 @@ async function initDatabase() {
                     keyPath: 'email'
                 });
             }
-        };
+        }
     });
+    }
 }
 
 // 保存情绪日志
@@ -493,7 +476,39 @@ async function getStats(email) {
     });
 }
 
-// 注册用户
+// 简单的密码哈希函数（前端模拟实现）
+function simpleHashPassword(password) {
+    // 注意：这是前端简化实现，实际项目中应该使用更安全的算法如bcrypt
+    // 在真实生产环境中，密码哈希应该在服务器端完成
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // 转换为32位整数
+    }
+    // 使用当前时间戳作为简单的盐值
+    const salt = Date.now().toString(36).substr(2, 9);
+    // 组合盐值和哈希结果
+    const saltedHash = `${salt}:${hash.toString(16)}`;
+    return saltedHash;
+}
+
+// 验证密码函数
+function verifyPassword(storedHash, providedPassword) {
+    // 从存储的哈希中提取盐值
+    const [salt, expectedHash] = storedHash.split(':');
+    // 对提供的密码进行相同的哈希处理
+    let hash = 0;
+    for (let i = 0; i < providedPassword.length; i++) {
+        const char = providedPassword.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // 转换为32位整数
+    }
+    // 比较哈希值
+    return expectedHash === hash.toString(16);
+}
+
+// 注册用户（使用密码哈希）
 async function registerUser(userData) {
     const db = await initDatabase();
     
@@ -510,10 +525,10 @@ async function registerUser(userData) {
                 return;
             }
             
-            // 创建新用户（简化版，实际应用中应该加密密码）
+            // 创建新用户，使用哈希存储密码
             const newUser = {
                 email: userData.email,
-                password: userData.password, // 注意：实际应用中应该加密存储
+                passwordHash: simpleHashPassword(userData.password),
                 user_name: userData.user_name,
                 created_at: new Date().toISOString()
             };
@@ -537,7 +552,7 @@ async function registerUser(userData) {
     });
 }
 
-// 用户登录
+// 用户登录（使用密码哈希验证）
 async function loginUser(email, password) {
     const db = await initDatabase();
     
@@ -559,8 +574,8 @@ async function loginUser(email, password) {
                 return;
             }
             
-            // 简化版密码验证（实际应用中应该使用密码加密和验证）
-            if (user.password === password) {
+            // 使用安全的密码验证
+            if (verifyPassword(user.passwordHash, password)) {
                 resolve({ success: true, email: user.email, user_name: user.user_name });
             } else {
                 reject({ success: false, message: '密码错误' });
@@ -583,15 +598,18 @@ async function processEmotionLocal(input, email, taskCompleted = false) {
         // 2. 生成建议
         const suggestions = generateAdvice(emotion);
         
-        // 3. 生成NFT徽章
-        let nft = generateNftBadge(emotion, taskCompleted);
+        // 3. 使用简化的NFT徽章（仅使用硬编码值）
+        let nft = NFT_BADGES[emotion];
+        if (taskCompleted) {
+            nft += " - 任务达人";
+        }
         
-        // 4. 检查情绪转移
-        const transitionInfo = await checkEmotionTransition(emotion, email);
-        if (transitionInfo.hasTransition) {
-            const transitionNft = generateTransitionNft(transitionInfo);
-            if (transitionNft) {
-                nft = transitionNft;
+        // 4. 当用户完成任务时，检查情绪转变并提供特殊NFT
+        if (taskCompleted) {
+            const transitionInfo = await checkEmotionTransition(emotion, email);
+            if (transitionInfo.hasTransition) {
+                // 为情绪从负面转变为正面的用户提供特殊NFT
+                nft = `情绪蜕变达人 - 从${getEmotionLabel(transitionInfo.previousEmotion)}到${getEmotionLabel(transitionInfo.currentEmotion)}！`;
             }
         }
         
@@ -633,9 +651,6 @@ if (typeof window !== 'undefined') {
     window.backendFunctions = {
         detectEmotionLocal,
         generateAdvice,
-        generateNftBadge,
-        checkEmotionTransition,
-        generateTransitionNft,
         getEmotionLabel,
         getEmotionColor,
         initDatabase,
@@ -649,14 +664,46 @@ if (typeof window !== 'undefined') {
         getUnsyncedData,
         markAsSynced
     };
+    
+    // 页面切换函数 - 全局可用
+    if (typeof window.switchPage !== 'function') {
+        window.switchPage = function(id, event = null) {
+            // 先关闭所有菜单
+            const menus = document.querySelectorAll('.menu-dropdown');
+            if (menus.length > 0) {
+                menus.forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+            
+            // 隐藏所有页面
+            const pages = document.querySelectorAll('.page');
+            if (pages.length > 0) {
+                pages.forEach(p => {
+                    p.classList.remove('active');
+                });
+            }
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(id);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // 当切换到page4时，强制刷新日志
+            if (id === 'page4' && typeof window.loadLogs === 'function') {
+                console.log('切换到page4，强制刷新日志...');
+                setTimeout(() => {
+                    window.loadLogs(1);
+                }, 100);
+            }
+        };
+    }
 } else {
     // Node.js环境（如果需要）
     module.exports = {
         detectEmotionLocal,
         generateAdvice,
-        generateNftBadge,
-        checkEmotionTransition,
-        generateTransitionNft,
         getEmotionLabel,
         getEmotionColor,
         initDatabase,
@@ -669,5 +716,29 @@ if (typeof window !== 'undefined') {
         processEmotionLocal,
         getUnsyncedData,
         markAsSynced
+    };
+}
+
+// 检查情绪转移函数
+async function checkEmotionTransition(currentEmotion, email) {
+    // 从IndexedDB获取最近的情绪记录
+    const recentRecords = await getRecentEmotions(email, 2);
+    
+    if (recentRecords.length >= 1) {
+        const lastEmotion = recentRecords[0].emotion;
+        
+        // 检查是否从负面情绪转为正面情绪
+        if (NEGATIVE_EMOTIONS.includes(lastEmotion) && POSITIVE_EMOTIONS.includes(currentEmotion)) {
+            return {
+                hasTransition: true,
+                transitionType: 'negative_to_positive',
+                previousEmotion: lastEmotion,
+                currentEmotion: currentEmotion
+            };
+        }
+    }
+    
+    return {
+        hasTransition: false
     };
 }

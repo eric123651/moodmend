@@ -1,1163 +1,1029 @@
-# MoodMend 后端服务 - 优化版
-# 作者: AI Assistant
-# 版本: 4.0
-# 运行: python moodmend_backend.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-from flask import Flask, request, jsonify, g
-from flask_cors import CORS
-from datetime import datetime, timedelta
-import re
-import json
+"""
+MoodMend 后端服务
+提供情绪分析、用户认证、数据存储等核心功能
+"""
+
 import os
+import sys
+import json
 import logging
-import uuid
-import bcrypt
 import sqlite3
 import threading
-from functools import wraps
+import uuid
+import hashlib
+import time
+import re
+from datetime import datetime, timedelta
 
-# Google Cloud 服务集成
-from google.cloud import speech_v1 as speech
-from google.cloud import language_v1 as language
-import vertexai
-from vertexai.preview.generative_models import GenerativeModel
-
-# 配置日志
-# 设置默认编码为UTF-8
-import sys
+# 设置编码支持
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
-# Google Cloud 配置
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.path.dirname(__file__), "google_credentials.json")
-PROJECT_ID = "moodmend-project"
-vertexai.init(project=PROJECT_ID, location="asia-east1")
-
-# Gemini 模型初始化
-try:
-    gemini_model = GenerativeModel("gemini-pro")
-except Exception as e:
-    logging.warning(f"Gemini 模型初始化失败，将使用本地模式: {e}")
-    gemini_model = None
-
-# 创建自定义的StreamHandler，确保UTF-8编码
-class UnicodeStreamHandler(logging.StreamHandler):
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            stream = self.stream
-            stream.write(msg + self.terminator)
-            self.flush()
-        except UnicodeEncodeError:
-            # 尝试编码为系统默认编码，替换无法编码的字符
-            msg = self.format(record)
-            if hasattr(stream, 'encoding'):
-                msg = msg.encode(stream.encoding, errors='replace').decode(stream.encoding)
-            stream.write(msg + self.terminator)
-            self.flush()
-
-logging.basicConfig(level=logging.INFO, 
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('moodmend.log', encoding='utf-8'),
-                              UnicodeStreamHandler()])
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('moodmend.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger('moodmend_backend')
 
-# Flask应用配置
+# 导入Flask相关模块
+try:
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+except ImportError:
+    logger.error("缺少Flask相关依赖，请运行: pip install flask flask-cors")
+    sys.exit(1)
+
+# 创建Flask应用实例
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)  # 为会话生成随机密钥
-# 启用CORS，支持所有来源，允许所有方法和头部
+app.config['SECRET_KEY'] = os.urandom(24)  # 用于生成会话令牌
+
+# 配置静态文件服务，指向前端目录
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+app.static_folder = frontend_dir
+app.static_url_path = '/static'
+
+# 配置CORS，允许所有来源
 CORS(app, origins='*', methods=['GET', 'POST', 'OPTIONS'], allow_headers=['*'])
+
+# 处理Vite客户端请求，避免404错误
+@app.route('/@vite/client')
+def vite_client():
+    return jsonify({"message": "Vite client not available"}), 404
+
+# 主页路由，提供HTML文件
+@app.route('/')
+def serve_index():
+    index_path = os.path.join(frontend_dir, 'index.html')
+    if os.path.exists(index_path):
+        return app.send_static_file('index.html')
+    return jsonify({"message": "前端文件未找到"}), 404
+
+# 提供Demo页面路由
+@app.route('/moodmend_ui_demo.html')
+def serve_demo():
+    demo_path = os.path.join(frontend_dir, 'moodmend_ui_demo.html')
+    if os.path.exists(demo_path):
+        return app.send_static_file('moodmend_ui_demo.html')
+    return jsonify({"message": "Demo页面未找到"}), 404
+
+# 处理图标资源请求
+@app.route('/icons/<path:filename>')
+def serve_icon(filename):
+    # 图标位于项目根目录的icons文件夹
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    icon_path = os.path.join(project_root, 'icons', filename)
+    
+    if os.path.exists(icon_path):
+        with open(icon_path, 'rb') as f:
+            content = f.read()
+        
+        # 设置正确的Content-Type
+        if filename.endswith('.svg'):
+            return app.response_class(content, mimetype='image/svg+xml')
+        elif filename.endswith('.png'):
+            return app.response_class(content, mimetype='image/png')
+        return app.response_class(content)
+    return jsonify({"message": "图标未找到"}), 404
+
+# 提供service worker文件
+@app.route('/sw.js')
+def serve_sw():
+    sw_path = os.path.join(frontend_dir, 'sw.js')
+    if os.path.exists(sw_path):
+        return app.send_static_file('sw.js')
+    return jsonify({"message": "Service Worker未找到"}), 404
+
+# 提供manifest.json文件
+@app.route('/manifest.json')
+def serve_manifest():
+    manifest_path = os.path.join(frontend_dir, 'manifest.json')
+    if os.path.exists(manifest_path):
+        return app.send_static_file('manifest.json')
+    # 尝试使用项目根目录的manifest.json
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    root_manifest = os.path.join(project_root, 'manifest.json')
+    if os.path.exists(root_manifest):
+        with open(root_manifest, 'rb') as f:
+            return app.response_class(f.read(), mimetype='application/manifest+json')
+    return jsonify({"message": "Manifest未找到"}), 404
+
+# 处理JavaScript文件请求
+@app.route('/<filename>.js')
+def serve_js(filename):
+    js_path = os.path.join(frontend_dir, f'{filename}.js')
+    if os.path.exists(js_path):
+        with open(js_path, 'rb') as f:
+            return app.response_class(f.read(), mimetype='application/javascript')
+    return jsonify({"message": f"JavaScript文件 {filename}.js 未找到"}), 404
+
+# 处理assets目录下的资源
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    asset_path = os.path.join(frontend_dir, 'assets', filename)
+    if os.path.exists(asset_path):
+        with open(asset_path, 'rb') as f:
+            content = f.read()
+        
+        # 设置正确的Content-Type
+        if filename.endswith('.js'):
+            return app.response_class(content, mimetype='application/javascript')
+        elif filename.endswith('.css'):
+            return app.response_class(content, mimetype='text/css')
+        elif filename.endswith('.json'):
+            return app.response_class(content, mimetype='application/json')
+        return app.response_class(content)
+    return jsonify({"message": f"资源 {filename} 未找到"}), 404
 
 # 数据库配置
 DB_NAME = 'moodmend.db'
 
-# 线程锁，用于并发安全
+# 数据库锁，用于线程安全
 db_lock = threading.RLock()
 
-# 模拟数据库（将在启动时从数据库加载）
-users_db = {}
-logs_db = []
-user_last_emotion = {}
-
-# 初始化数据库
-def init_db():
-    try:
-        with db_lock, sqlite3.connect(DB_NAME) as conn:
-            cursor = conn.cursor()
-            # 创建用户表
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id TEXT PRIMARY KEY,
-                    email TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    user_name TEXT NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    last_login TEXT
-                )
-            ''')
-            
-            # 检查并添加缺失的user_name列（兼容旧数据库）
-            try:
-                cursor.execute("ALTER TABLE users ADD COLUMN user_name TEXT NOT NULL DEFAULT '用户'")
-                conn.commit()
-            except:
-                # 如果列已存在，忽略错误
-                pass
-            # 创建日志表
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS logs (
-                    log_id TEXT PRIMARY KEY,
-                    user_id TEXT,
-                    email TEXT,
-                    time TEXT,
-                    emotion TEXT,
-                    task TEXT,
-                    nft TEXT,
-                    completed BOOLEAN,
-                    FOREIGN KEY (user_id) REFERENCES users (user_id)
-                )
-            ''')
-            # 创建用户情绪表
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS user_emotions (
-                    user_id TEXT PRIMARY KEY,
-                    last_emotion TEXT,
-                    last_update TEXT,
-                    FOREIGN KEY (user_id) REFERENCES users (user_id)
-                )
-            ''')
-            conn.commit()
-        logger.info("資料庫初始化成功")
-    except Exception as e:
-        logger.error(f"資料庫初始化失敗: {e}")
-
-# 增强的情緒關鍵字字典 (包含强度权重)
+# 情绪关键词定义（与前端保持一致）
 EMOTION_KEYWORDS = {
-    'anxious': [
-        ('焦慮', 2), ('擔心', 1), ('壓力', 2), ('緊張', 1), ('不安', 1), 
-        ('害怕', 2), ('恐慌', 3), ('慌張', 1), ('緊繃', 1), ('坐立不安', 2),
-        ('忐忑', 1), ('煩憂', 1), ('煩惱', 1), ('憂慮', 1), ('焦慮不安', 2)
-    ],
-    'sad': [
-        ('傷心', 2), ('難過', 2), ('沮喪', 2), ('孤單', 1), ('悲傷', 2), 
-        ('失落', 1), ('絕望', 3), ('惆悵', 1), ('憂鬱', 2), ('傷感', 1),
-        ('空虛', 2), ('鬱悶', 1), ('難受', 1), ('想哭', 1), ('寂寞', 1)
-    ],
-    'angry': [
-        ('生氣', 2), ('憤怒', 3), ('煩躁', 1), ('氣憤', 2), ('不滿', 1),
-        ('惱火', 2), ('惱怒', 2), ('暴跳如雷', 3), ('氣炸', 3), ('憤慨', 2),
-        ('不悅', 1), ('不爽', 1), ('討厭', 1), ('厭煩', 1), ('惱恨', 2)
-    ],
-    'happy': [
-        ('快樂', 2), ('開心', 2), ('興奮', 2), ('愉快', 1), ('滿足', 1),
-        ('開朗', 1), ('欣喜', 2), ('高興', 2), ('歡喜', 1), ('雀躍', 2),
-        ('愉悅', 1), ('欣慰', 1), ('幸福', 2), ('開懷', 1), ('喜悅', 2)
-    ],
-    'neutral': [
-        ('平靜', 1), ('正常', 1), ('沒事', 1), ('ok', 1), ('一般', 1),
-        ('平常', 1), ('普通', 1), ('淡定', 1), ('無感', 1), ('穩定', 1)
-    ]
-}
-
-# 負面情緒定義 (用於轉移偵測)
-NEGATIVE_EMOTIONS = {'anxious', 'sad', 'angry'}
-POSITIVE_EMOTIONS = {'happy', 'neutral'}
-
-# 調節建議模板 (基於情緒生成，新增daily_task)
-SUGGESTIONS = {
-    'anxious': {
-        'tips': '深呼吸練習：吸氣4秒，憋氣4秒，吐氣4秒，重複5次。',
-        'daily_task': '去做一件放鬆的事，例如聽音樂或散步。',
-        'advice': '試著列出3件今天感恩的事，轉移焦點。',
-        'resources': '資源連結：https://www.headspace.com/meditation/anxiety (免費冥想App)',
-        'color': 'anxious'
+    'happy': {
+        'keywords': ['開心', '快樂', '高興', '愉快', '滿足', '興奮', '欣喜', '幸福', '喜悅', '歡樂', '愉悅', '狂喜', '慰問', '滿意', '樂乎', '樂', '爽'],
+        'weight': 1
     },
     'sad': {
-        'tips': '聽一首喜歡的歌，或散步10分鐘接觸陽光。',
-        'daily_task': '寫下3件讓你微笑的小事。',
-        'advice': '寫日記：今天有什麼小事讓你微笑？',
-        'resources': '資源連結：https://www.helpguide.org/articles/depression/coping-with-grief-and-loss.htm',
-        'color': 'sad'
+        'keywords': ['傷心', '難過', '悲傷', '憂傷', '沮喪', '抑鬱', '絕望', '悲痛', '悲哀', '難過', '傷心欲絕', '哀傷', '惆悵', '失落', '痛苦', '哭', '泣', '慘'],
+        'weight': 1
+    },
+    'anxious': {
+        'keywords': ['焦慮', '緊張', '不安', '擔憂', '害怕', '恐懼', '恐慌', '驚嚇', '擔憂', '焦慮不安', '心悸', '發抖', '哆嗦', '忐忑', '惴惴', '慌'],
+        'weight': 1
     },
     'angry': {
-        'tips': '拳擊枕頭或快走5分鐘釋放能量。',
-        'daily_task': '做5分鐘運動來釋放怒氣。',
-        'advice': '問自己：這件事10年後還重要嗎？',
-        'resources': '資源連結：https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/anger-management/art-20045434',
-        'color': 'angry'
-    },
-    'happy': {
-        'tips': '記錄這一刻，分享給朋友！',
-        'daily_task': '計劃一個小慶祝活動。',
-        'advice': '延續正面：計劃下一個小目標。',
-        'resources': '資源連結：https://positivepsychology.com/happiness-activities-exercises-tools/',
-        'color': 'happy'
+        'keywords': ['生氣', '憤怒', '惱怒', '惱火', '氣憤', '暴躁', '暴怒', '火大', '發飆', '怒不可遏', '氣死', '冒火', '動怒', '怒火', '憤恨', '怒'],
+        'weight': 1
     },
     'neutral': {
-        'tips': '維持平衡：喝杯水，伸展身體。',
-        'daily_task': '反思一天的正面時刻。',
-        'advice': '反思一天：什麼讓你感覺好？',
-        'resources': '資源連結：https://www.mind.org.uk/information-support/tips-for-everyday-living/wellbeing/',
-        'color': 'neutral'
+        'keywords': ['平靜', '平常', '一般', '普通', '淡定', '冷靜', '沉穩', '心平氣和', '無所謂', '還行', '可以', '不錯', '馬馬虎虎', '過得去'],
+        'weight': 1
     }
 }
 
-# NFT徽章定義
-NFT_BADGES = {
-    'anxious': '🛡️ 勇者徽章 - 戰勝焦慮',
-    'sad': '🌈 彩虹徽章 - 擁抱療癒',
-    'angry': '🔥 鳳凰徽章 - 轉化怒火',
-    'happy': '⭐ 星光徽章 - 喜悅守護',
-    'neutral': '⚖️ 平衡徽章 - 平靜之源'
+# 情绪分类
+NEGATIVE_EMOTIONS = ['sad', 'anxious', 'angry']
+POSITIVE_EMOTIONS = ['happy']
+
+# 建议内容
+SUGGESTIONS = {
+    'happy': {
+        'daily_task': '與朋友分享你的快樂，傳遞正能量。',
+        'advice': '保持良好的作息和饮食习惯，延续快樂的狀態。',
+        'resources': '推薦閱讀：《快樂競爭力》'
+    },
+    'sad': {
+        'tips': '允許自己感受悲傷，但不要沉浸其中太久。',
+        'daily_task': '進行一項讓自己休息的活動，如冥想或聽音樂。',
+        'advice': '與信任的人交流你的感受，尋求支持。',
+        'resources': '推薦APP：潮汐（冥想放松）'
+    },
+    'anxious': {
+        'tips': '嘗試深呼吸練習，幫助缓解緊張情緒。',
+        'daily_task': '進行15分鐘的身體活動，釋放壓力。',
+        'advice': '將大問題分解成小步驟，逐一解決。',
+        'resources': '推薦練習：4-7-8呼吸法'
+    },
+    'angry': {
+        'tips': '先深呼吸，數到10再做決定。',
+        'daily_task': '進行一項體育活動，釋放能量。',
+        'advice': '嘗試從對方角度思考問題，尋求理解。',
+        'resources': '推薦APP：Calm'
+    },
+    'neutral': {
+        'tips': '探索新的興趣爱好，豐富生活體驗。',
+        'daily_task': '學習一項新技能或知識。',
+        'advice': '設定小目標，逐步提升生活滿意度。',
+        'resources': '推薦平台：Coursera（線上學習）'
+    }
 }
 
-# 语音识别功能
-def speech_to_text(audio_data):
-    """使用Google Cloud Speech-to-Text将语音转换为文本"""
+def init_db():
+    """初始化数据库，创建必要的表"""
     try:
-        # 初始化客户端
-        client = speech.SpeechClient()
-        
-        # 配置音频
-        audio = speech.RecognitionAudio(content=audio_data)
-        config = speech.RecognitionConfig(
-            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=16000,
-            language_code="zh-TW",  # 支持中文（台湾）
-            enable_automatic_punctuation=True
-        )
-        
-        # 执行识别
-        response = client.recognize(config=config, audio=audio)
-        
-        # 提取文本
-        transcripts = [result.alternatives[0].transcript for result in response.results]
-        return " ".join(transcripts)
+        with db_lock:
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            
+            # 检查表是否需要更新（如果表存在但结构不匹配）
+            # 注意：生产环境中应该使用迁移工具，这里为了简化直接删除重建
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            existing_tables = [row[0] for row in cursor.fetchall()]
+            
+            # 如果需要更新表结构，先删除旧表
+            tables_to_recreate = ['users', 'logs', 'sync_queue']
+            for table in tables_to_recreate:
+                if table in existing_tables:
+                    # 先删除索引
+                    if table == 'logs':
+                        cursor.execute("DROP INDEX IF EXISTS idx_logs_user_id")
+                        cursor.execute("DROP INDEX IF EXISTS idx_logs_created_at")
+                    elif table == 'sync_queue':
+                        cursor.execute("DROP INDEX IF EXISTS idx_sync_queue_user_id")
+                        cursor.execute("DROP INDEX IF EXISTS idx_sync_queue_synced")
+                    # 删除表
+                    cursor.execute(f"DROP TABLE {table}")
+                    logger.info(f"已删除旧表: {table}")
+            
+            # 创建用户表
+            create_users_sql = '''
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    email TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP,
+                    settings TEXT DEFAULT '{}'
+                )
+            '''
+            cursor.execute(create_users_sql)
+            logger.info("创建用户表成功")
+            
+            # 创建日志表（包含前端所需的所有字段）
+            create_logs_sql = '''
+                CREATE TABLE logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    input TEXT NOT NULL,
+                    emotion TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    advice TEXT,
+                    tags TEXT DEFAULT '[]',
+                    location TEXT,
+                    weather TEXT,
+                    activity TEXT,
+                    intensity INTEGER DEFAULT 5,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            '''
+            cursor.execute(create_logs_sql)
+            logger.info("创建日志表成功")
+            
+            # 创建数据同步表
+            create_sync_queue_sql = '''
+                CREATE TABLE sync_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    operation TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    synced BOOLEAN DEFAULT 0,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            '''
+            cursor.execute(create_sync_queue_sql)
+            logger.info("创建同步表成功")
+            
+            # 创建索引以提高查询性能
+            cursor.execute('CREATE INDEX idx_logs_user_id ON logs(user_id)')
+            cursor.execute('CREATE INDEX idx_logs_created_at ON logs(created_at)')
+            cursor.execute('CREATE INDEX idx_sync_queue_user_id ON sync_queue(user_id)')
+            cursor.execute('CREATE INDEX idx_sync_queue_synced ON sync_queue(synced)')
+            logger.info("创建索引成功")
+            
+            conn.commit()
+            conn.close()
+            logger.info("数据库初始化成功")
     except Exception as e:
-        logging.error(f"语音识别失败: {e}")
-        return None
+        logger.error(f"数据库初始化失败: {str(e)}")
+        raise
 
-# 本地情绪分析函数（作为备用）
 def detect_emotion_local(text):
+    """本地情绪检测算法"""
     if not text or not isinstance(text, str):
-        return 'neutral'
+        return 'neutral', 0.0
     
-    text_lower = text.lower()
-    scores = {emotion: 0 for emotion in EMOTION_KEYWORDS}
+    # 情绪得分统计
+    emotion_scores = {}
     
-    # 计算基础分数
-    for emotion, keyword_list in EMOTION_KEYWORDS.items():
-        for kw, weight in keyword_list:
-            if kw.lower() in text_lower:
-                scores[emotion] += weight
-    
-    # 计算总分数
-    total_score = sum(scores.values())
-    
-    if total_score == 0:
-        # 没有匹配到关键词，尝试二次分析
-        # 检查否定词和程度词
-        negations = ['不', '沒有', '不是', '並非', '不覺得']
-        has_negation = any(neg in text_lower for neg in negations)
+    # 遍历每种情绪的关键词
+    for emotion, config in EMOTION_KEYWORDS.items():
+        score = 0
+        keywords = config.get('keywords', [])
+        weight = config.get('weight', 1)
         
-        # 检查情感词密集度
-        emotion_words = []
-        for emotion, keyword_list in EMOTION_KEYWORDS.items():
-            emotion_words.extend([kw for kw, _ in keyword_list])
+        # 统计关键词出现次数
+        for keyword in keywords:
+            if keyword in text:
+                score += text.count(keyword) * weight
         
-        # 计算文本长度和情感词数量
-        char_count = len(text)
-        emotion_word_count = sum(1 for word in emotion_words if word.lower() in text_lower)
-        
-        # 如果有否定词或者情感词密度很低，返回neutral
-        if has_negation or (char_count > 20 and emotion_word_count == 0):
-            return 'neutral'
-        
-        # 最后尝试一些常见的中性表达
-        neutral_phrases = ['沒什麼', '還好', '一般般', '普通', '正常', '可以']
-        for phrase in neutral_phrases:
-            if phrase.lower() in text_lower:
-                return 'neutral'
+        emotion_scores[emotion] = score
     
-    # 返回得分最高的情绪
-    dominant = max(scores, key=scores.get)
-    return dominant if scores[dominant] > 0 else 'neutral'
+    # 找到得分最高的情绪
+    if emotion_scores:
+        max_emotion = max(emotion_scores, key=emotion_scores.get)
+        max_score = emotion_scores[max_emotion]
+        
+        # 如果最高得分大于0，则返回对应的情绪，否则返回中性
+        if max_score > 0:
+            # 计算置信度（简单归一化）
+            total_score = sum(emotion_scores.values())
+            confidence = max_score / total_score if total_score > 0 else 0
+            return max_emotion, confidence
+    
+    # 默认返回中性情绪
+    return 'neutral', 0.5
 
-# Google Cloud情感分析函数
-def analyze_sentiment_google(text):
-    """使用Google Cloud Natural Language API进行情感分析"""
-    try:
-        # 初始化客户端
-        client = language.LanguageServiceClient()
-        
-        # 配置分析请求
-        document = language.Document(
-            content=text,
-            type_=language.Document.Type.PLAIN_TEXT,
-            language="zh"
-        )
-        
-        # 执行情感分析
-        response = client.analyze_sentiment(request={"document": document})
-        
-        # 提取情感分数（-1.0到1.0）和情感强度
-        sentiment_score = response.document_sentiment.score
-        sentiment_magnitude = response.document_sentiment.magnitude
-        
-        # 映射到我们的情绪类型
-        if sentiment_score > 0.3:
-            return "happy"
-        elif sentiment_score < -0.3:
-            # 根据强度进一步区分负面情绪
-            if sentiment_magnitude > 1.0 and ("憤怒" in text or "生氣" in text):
-                return "angry"
-            elif "憂慮" in text or "焦慮" in text:
-                return "anxious"
-            else:
-                return "sad"
-        else:
-            return "neutral"
-    except Exception as e:
-        logging.error(f"Google Cloud 情感分析失败: {e}")
-        # 失败时回退到本地分析
-        return detect_emotion_local(text)
-
-# 使用Gemini生成个性化建议
-def generate_advice_with_gemini(emotion, user_input):
-    """使用Gemini API生成个性化情绪调节建议"""
-    if not gemini_model:
-        logging.warning("Gemini模型不可用，使用默认建议")
-        return SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
-    
-    try:
-        prompt = f"""作为情绪管理专家，请根据用户当前的情绪状态和输入内容，生成个性化的情绪调节建议。
-        
-        用户情绪: {emotion}
-        用户输入: {user_input}
-        
-        请提供以下内容：
-        1. 简短的情绪理解和共情回应（tips）
-        2. 一个简单可行的日常任务（daily_task）
-        3. 一段建议性文字（advice）
-        4. 相关资源链接或书籍推荐（resources）
-        5. 与情绪匹配的颜色标识（color）
-        
-        请以JSON格式输出，字段名分别为：tips, daily_task, advice, resources, color。"""
-        
-        response = gemini_model.generate_content(prompt)
-        advice_content = response.text.strip()
-        
-        # 尝试解析JSON响应
-        advice_json = json.loads(advice_content)
-        
-        # 确保返回的数据结构完整
-        required_fields = ['tips', 'daily_task', 'advice', 'resources', 'color']
-        for field in required_fields:
-            if field not in advice_json:
-                advice_json[field] = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral']).get(field, '')
-        
-        return advice_json
-    except Exception as e:
-        logging.error(f"Gemini建议生成失败: {e}")
-        # 失败时回退到默认建议
-        return SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
-
-# 生成基本NFT徽章
-def generate_nft_badge(emotion):
-    badge = NFT_BADGES.get(emotion, NFT_BADGES['neutral'])
-    logger.info(f"生成NFT徽章: {badge} (情绪: {emotion})")
-    return badge
-
-# 增强的特殊轉移NFT
-def generate_transition_nft(prev_emotion, current_emotion):
-    # 从负面到正面的转移
-    if prev_emotion in NEGATIVE_EMOTIONS and current_emotion in POSITIVE_EMOTIONS:
-        transition_mapping = {
-            ('anxious', 'happy'): '🌟 平復之星 - 從焦慮到喜悅的轉變',
-            ('anxious', 'neutral'): '✨ 平靜之力 - 從焦慮到平靜的轉變',
-            ('sad', 'happy'): '🌈 快樂重生 - 從傷心到喜悅的蛻變',
-            ('sad', 'neutral'): '🌊 平靜如海 - 從傷心到平靜的治癒',
-            ('angry', 'happy'): '🌞 和平使者 - 從憤怒到喜悅的轉化',
-            ('angry', 'neutral'): '🌿 冷靜之心 - 從憤怒到平靜的掌控'
-        }
-        special_badge = transition_mapping.get((prev_emotion, current_emotion), 
-                                              '🌟 成功緩和徽章 - 情緒管理的勝利')
-        logger.info(f"生成特殊NFT: {special_badge} (从{prev_emotion}到{current_emotion})")
-        return special_badge
-    
-    # 连续保持正面情绪的奖励
-    if prev_emotion in POSITIVE_EMOTIONS and current_emotion in POSITIVE_EMOTIONS:
-        return '🏆 持之以恆徽章 - 保持積極心態的成就'
-    
-    return None
-
-# 工具函数: 验证邮箱格式
-def is_valid_email(email):
-    email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    return re.match(email_pattern, email) is not None
-
-# 工具函数: 获取数据库连接
 def get_db():
-    if 'db' not in g:
-        g.db = sqlite3.connect(DB_NAME)
-        # 移除row_factory设置，让查询返回元组格式
-    return g.db
+    """获取数据库连接"""
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        conn.row_factory = sqlite3.Row  # 允许通过列名访问
+        return conn
+    except Exception as e:
+        logger.error(f"获取数据库连接失败: {str(e)}")
+        raise
 
-# API: 註冊
+def is_valid_email(email):
+    """验证邮箱格式"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def hash_password(password):
+    """密码哈希处理"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# API 路由定义
+
 @app.route('/api/register', methods=['POST'])
 def register():
+    """用户注册接口"""
     try:
-        data = request.json
+        data = request.get_json()
+        
+        # 验证请求数据
+        if not data:
+            return jsonify({"success": False, "error": "无效的请求数据"}), 400
+        
+        username = data.get('username')
         email = data.get('email')
         password = data.get('password')
-        user_name = data.get('user_name')
-        confirm_password = data.get('confirm_password')  # 获取确认密码
         
-        # 验证输入
-        if not email or not password or not user_name:
-            return jsonify({
-                'success': False,
-                'message': '電子郵件、密碼和使用者名稱不能為空'
-                }), 400
+        if not all([username, email, password]):
+            return jsonify({"success": False, "error": "缺少必要参数"}), 400
         
+        # 验证用户名长度
+        if len(username) < 3 or len(username) > 20:
+            return jsonify({"success": False, "error": "用户名长度应在3-20个字符之间"}), 400
+        
+        # 验证邮箱格式
         if not is_valid_email(email):
-            return jsonify({
-                'success': False,
-                'message': '請輸入有效的電子郵件地址'
-            }), 400
+            return jsonify({"success": False, "error": "无效的邮箱格式"}), 400
         
+        # 验证密码强度
         if len(password) < 6:
-            return jsonify({
-                'success': False,
-                'message': '密碼長度不能少於6位'
-            }), 400
+            return jsonify({"success": False, "error": "密码长度至少为6个字符"}), 400
+        
+        # 哈希密码
+        password_hash = hash_password(password)
+        
+        # 插入用户数据
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
             
-        if len(user_name) < 2 or len(user_name) > 20:
-            return jsonify({
-                'success': False,
-                'message': '使用者名稱長度應在2-20個字符之間'
-            }), 400
-            
-        # 验证确认密码
-        if confirm_password is not None and password != confirm_password:
-            return jsonify({
-                'success': False,
-                'message': '两次輸入的密碼不一致'
-            }), 400
-        
-        # 检查邮箱是否已存在
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-        if cursor.fetchone():
-            return jsonify({
-                'success': False,
-                'message': '該電子郵件已被註冊'
-            }), 409
-        
-        # 密码加密
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user_id = str(uuid.uuid4())
-        
-        # 插入用户
-        cursor.execute(
-            'INSERT INTO users (user_id, email, password, user_name, created_at) VALUES (?, ?, ?, ?, ?)',
-            (user_id, email, hashed_password.decode('utf-8'), user_name, datetime.now().isoformat())
-        )
-        conn.commit()
-        
-        # 更新内存中的用户数据
-        users_db[email] = {
-            'user_id': user_id,
-            'password': hashed_password.decode('utf-8'),
-            'user_name': user_name
-        }
-        
-        logger.info(f"新用戶註冊成功: {email}, 使用者名稱: {user_name}")
-        
-        return jsonify({
-            'success': True,
-            'user_id': user_id,
-            'email': email,
-            'user_name': user_name
-        }), 201
-        
+            try:
+                cursor.execute(
+                    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                    (username, email, password_hash)
+                )
+                user_id = cursor.lastrowid
+                conn.commit()
+                
+                logger.info(f"新用户注册成功: {username} (ID: {user_id})")
+                
+                return jsonify({
+                    "success": True,
+                    "message": "注册成功",
+                    "user": {
+                        "id": user_id,
+                        "username": username,
+                        "email": email
+                    }
+                }), 201
+            except sqlite3.IntegrityError as e:
+                conn.rollback()
+                if "username" in str(e):
+                    return jsonify({"success": False, "error": "用户名已存在"}), 400
+                elif "email" in str(e):
+                    return jsonify({"success": False, "error": "邮箱已被注册"}), 400
+                else:
+                    return jsonify({"success": False, "error": "注册失败，数据已存在"}), 400
+            finally:
+                conn.close()
+                
     except Exception as e:
-        logger.error(f"註冊失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '註冊失敗，請稍後重試'   
-        }), 500
+        logger.error(f"用户注册失败: {str(e)}")
+        return jsonify({"success": False, "error": "注册失败，请稍后重试"}), 500
 
-# API: 登錄
 @app.route('/api/login', methods=['POST'])
 def login():
+    """用户登录接口"""
     try:
-        data = request.json
-        email = data.get('email')
+        data = request.get_json()
+        
+        # 验证请求数据
+        if not data:
+            return jsonify({"success": False, "error": "无效的请求数据"}), 400
+        
+        # 支持邮箱或用户名登录
+        identifier = data.get('email') or data.get('username')
         password = data.get('password')
         
-        # 验证输入
-        if not email or not password:
-            return jsonify({
-                'success': False,
-                'message': '電子郵件和密碼不能為空'
-            }), 400
+        if not identifier or not password:
+            return jsonify({"success": False, "error": "缺少用户名/邮箱或密码"}), 400
         
-        # 优先处理测试账号
-        if email == 'test@test.com' and password == '123':
-            logger.info("演示用戶登錄成功")
-            return jsonify({
-                'success': True,
-                'user_id': '1',
-                'email': email,
-                'user_name': '測試用戶',
-                'message': '演示用戶登錄成功'
-            })
+        # 哈希密码
+        password_hash = hash_password(password)
         
-        # 检查用户
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-        user = cursor.fetchone()
-        
-        if not user:
-            return jsonify({
-                'success': False,
-                'message': '電子郵件或密碼錯誤'
-            }), 401
-        
-        # 验证密码
-        try:
-            if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+        # 查询用户
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            try:
+                # 尝试通过邮箱查询
+                if '@' in identifier:
+                    cursor.execute(
+                        "SELECT id, username, email, password_hash FROM users WHERE email = ?",
+                        (identifier,)
+                    )
+                else:
+                    # 尝试通过用户名查询
+                    cursor.execute(
+                        "SELECT id, username, email, password_hash FROM users WHERE username = ?",
+                        (identifier,)
+                    )
+                
+                user = cursor.fetchone()
+                
+                # 测试账号支持
+                if (identifier == 'test@example.com' or identifier == 'test') and password == 'password123':
+                    # 如果是测试账号，返回测试用户信息
+                    return jsonify({
+                        "success": True,
+                        "message": "登录成功",
+                        "user": {
+                            "id": 0,
+                            "username": "测试用户",
+                            "email": "test@example.com"
+                        }
+                    }), 200
+                
+                if not user or user['password_hash'] != password_hash:
+                    return jsonify({"success": False, "error": "用户名/邮箱或密码错误"}), 401
+                
+                # 更新最后登录时间
+                cursor.execute(
+                    "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+                    (user['id'],)
+                )
+                conn.commit()
+                
+                logger.info(f"用户登录成功: {user['username']} (ID: {user['id']})")
+                
                 return jsonify({
-                    'success': False,
-                    'message': '電子郵件或密碼錯誤'
-                }), 401
-        except Exception as e:
-            logger.error(f"密碼驗證失敗: {e}")
-            return jsonify({
-                'success': False,
-                'message': '密碼驗證失敗，請聯繫管理員'
-            }), 500
-        
-        # 更新最後登錄時間
-        cursor.execute('UPDATE users SET last_login = ? WHERE user_id = ?',
-                      (datetime.now().isoformat(), user['user_id']))
-        conn.commit()
-        
-        logger.info(f"用戶登錄成功: {email}, 用戶名稱: {user['user_name']}")
-        
-        return jsonify({
-            'success': True,
-            'user_id': user['user_id'],
-            'email': user['email'],
-            'user_name': user['user_name']
-        })
-        
+                    "success": True,
+                    "message": "登录成功",
+                    "user": {
+                        "id": user['id'],
+                        "username": user['username'],
+                        "email": user['email']
+                    }
+                }), 200
+                
+            finally:
+                conn.close()
+                
     except Exception as e:
-        logger.error(f"登錄失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '登錄失敗，請稍後重試'
-        }), 500
+        logger.error(f"用户登录失败: {str(e)}")
+        return jsonify({"success": False, "error": "登录失败，请稍后重试"}), 500
 
-# API: 處理情緒輸入
 @app.route('/api/process-emotion', methods=['POST'])
 def process_emotion():
+    """情绪分析接口"""
     try:
-        data = request.json
-        user_input = data.get('input', '')
-        audio_data = data.get('audio_data')  # 支持语音输入
-        email = data.get('email')
-        task_completed = data.get('task_completed', False)
+        data = request.get_json()
         
-        # 增强的输入类型验证和处理
-        # 确保data是字典
-        if not isinstance(data, dict):
-            data = {}
+        # 验证请求数据
+        if not data:
+            return jsonify({"success": False, "error": "无效的请求数据"}), 400
         
-        # 处理语音输入
-        if audio_data:
-            try:
-                import base64
-                decoded_audio = base64.b64decode(audio_data)
-                # 使用Google Cloud语音识别
-                recognized_text = speech_to_text(decoded_audio)
-                if recognized_text:
-                    user_input = recognized_text
-                else:
-                    # 语音识别失败，使用默认提示
-                    user_input = "用户使用语音输入，但识别失败"
-            except Exception as e:
-                logging.error(f"处理语音输入失败: {e}")
-                return jsonify({
-                    'success': False,
-                    'message': '语音处理失败'
-                }), 500
+        user_id = data.get('user_id')
+        text = data.get('input')
         
-        # 处理文本输入
-        if not user_input:
-            user_input = data.get('input', '')
+        if not user_id or not text:
+            return jsonify({"success": False, "error": "缺少用户ID或输入内容"}), 400
         
-        # 确保user_input是字符串 - 全面的类型处理
-        if user_input is None:
-            user_input = ''
-        elif not isinstance(user_input, str):
-            # 如果是字典，尝试各种方式提取字符串内容
-            if isinstance(user_input, dict):
-                # 1. 尝试获取text字段
-                if 'text' in user_input:
-                    user_input = user_input['text']
-                # 2. 尝试获取第一个非空值
-                elif user_input:
-                    for key, value in user_input.items():
-                        if isinstance(value, str) and value.strip():
-                            user_input = value
-                            break
-                    # 如果没有找到合适的值，使用第一个值
-                    else:
-                        first_value = next(iter(user_input.values()), '')
-                        user_input = str(first_value)
-                else:
-                    user_input = ''
-            # 对于其他非字符串类型，转换为字符串
-            else:
-                try:
-                    user_input = str(user_input)
-                except:
-                    user_input = ''
+        # 验证用户是否存在
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+            if not cursor.fetchone():
+                conn.close()
+                return jsonify({"success": False, "error": "用户不存在"}), 404
+            conn.close()
         
-        # 去除首尾空白字符
-        user_input = user_input.strip()
+        # 执行情绪检测
+        emotion, confidence = detect_emotion_local(text)
         
-        # 验证输入
-        if not user_input:
-            return jsonify({
-                'success': False,
-                'message': '情緒描述不能為空'
-            }), 400
+        # 获取对应的建议
+        suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
         
-        if not email or not is_valid_email(email):
-            return jsonify({
-                'success': False,
-                'message': '無效的用戶信息'
-            }), 401
-        
-        # 偵測情緒 - 优先使用Google Cloud情感分析
-        emotion = analyze_sentiment_google(user_input)
-        
-        # 使用Gemini生成个性化建议
-        pkg = generate_advice_with_gemini(emotion, user_input)
-        
-        # 生成基本NFT
-        nft = generate_nft_badge(emotion)
-        
-        # 檢查情緒轉移
-        transition_nft_str = ''
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # 从数据库获取上次情绪
-        cursor.execute('SELECT last_emotion FROM user_emotions WHERE user_id = (SELECT user_id FROM users WHERE email = ?)', (email,))
-        result = cursor.fetchone()
-        prev_emotion = result[0] if result else None
-        
-        # 或者从内存中获取
-        if not prev_emotion and email in user_last_emotion:
-            prev_emotion = user_last_emotion[email]
-        
-        if prev_emotion and task_completed:
-            transition_nft = generate_transition_nft(prev_emotion, emotion)
-            if transition_nft:
-                transition_nft_str = ' + ' + transition_nft
-                nft += transition_nft_str
-        
-        # 更新数据库中的上次情绪
-        user_id = None
-        cursor.execute('SELECT user_id FROM users WHERE email = ?', (email,))
-        user_result = cursor.fetchone()
-        if user_result:
-            user_id = user_result[0]
-            cursor.execute(
-                'INSERT OR REPLACE INTO user_emotions (user_id, last_emotion, last_update) VALUES (?, ?, ?)',
-                (user_id, emotion, datetime.now().isoformat())
-            )
-            conn.commit()
-        
-        # 更新内存中的上次情绪
-        user_last_emotion[email] = emotion
-        
-        logger.info(f"處理情緒成功: 用戶={email}, 輸入='{user_input[:30]}...', 檢測情緒={emotion}")
-        
-        return jsonify({
-            'success': True,
+        # 准备日志数据
+        log_data = {
+            'user_id': user_id,
+            'input': text,
             'emotion': emotion,
-            'package': {
-                'tips': pkg['tips'],
-                'daily_task': pkg['daily_task'],
-                'advice': pkg['advice'],
-                'resources': pkg['resources'],
-                'color': pkg['color']
-            },
-            'nft': nft,
-            'transition_nft': transition_nft_str,
-            'recognized_text': user_input if audio_data else None  # 返回识别的文本
-        })
+            'advice': json.dumps(suggestion) if suggestion else None,
+            'tags': json.dumps([]),  # 默认空标签
+            'intensity': int(confidence * 10)  # 转换置信度为强度值
+        }
         
-    except Exception as e:
-        logger.error(f"處理情緒失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '處理情緒失敗，請稍後重試'
-        }), 500
-
-# API: 記錄日誌
-@app.route('/api/add-log', methods=['POST'])
-def add_log():
-    try:
-        data = request.json
-        email = data.get('email')
-        emotion = data.get('emotion')
-        task = data.get('task')
-        badge = data.get('nft')  # 从UI传过来的是nft
-        completed = data.get('completed', False)
-        
-        # 验证输入
-        if not all([email, emotion, task, badge]):
-            return jsonify({
-                'success': False,
-                'message': '缺少必要的日誌信息'
-            }), 400
-        
-        if not is_valid_email(email):
-            return jsonify({
-                'success': False,
-                'message': '無效的用戶信息'
-            }), 401
-        
-        # 生成日誌ID和時間戳
-        log_id = str(uuid.uuid4())
-        timestamp = datetime.now().isoformat()
+        # 可选字段
+        if 'location' in data:
+            log_data['location'] = data['location']
+        if 'weather' in data:
+            log_data['weather'] = data['weather']
+        if 'activity' in data:
+            log_data['activity'] = data['activity']
+        if 'tags' in data:
+            log_data['tags'] = json.dumps(data['tags'])
+        if 'intensity' in data:
+            log_data['intensity'] = data['intensity']
         
         # 保存到数据库
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT user_id FROM users WHERE email = ?', (email,))
-        user_result = cursor.fetchone()
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            try:
+                cursor.execute(
+                    "INSERT INTO logs (user_id, input, emotion, advice, tags, location, weather, activity, intensity) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (log_data['user_id'], log_data['input'], log_data['emotion'],
+                     log_data['advice'], log_data['tags'], log_data.get('location'),
+                     log_data.get('weather'), log_data.get('activity'), log_data['intensity'])
+                )
+                log_id = cursor.lastrowid
+                conn.commit()
+                
+                logger.info(f"情绪分析结果已保存: 用户ID {user_id}, 情绪 {emotion}, 日志ID {log_id}")
+                
+            finally:
+                conn.close()
         
-        if not user_result:
-            return jsonify({
-                'success': False,
-                'message': '用戶不存在'
-            }), 404
-        
-        user_id = user_result[0]
-        
-        cursor.execute(
-            '''INSERT INTO logs 
-               (log_id, user_id, email, time, emotion, task, nft, completed) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            (log_id, user_id, email, timestamp, emotion, task, badge, completed)
-        )
-        conn.commit()
-        
-        # 更新内存中的日志（用于缓存）
-        log_entry = {
-            'log_id': log_id,
-            'time': timestamp,
-            'email': email,
-            'emotion': emotion,
-            'task': task,
-            'nft': badge,
-            'completed': completed
-        }
-        logs_db.append(log_entry)
-        
-        # 限制内存日志数量，避免内存泄漏
-        if len(logs_db) > 1000:
-            logs_db.pop(0)
-        
-        logger.info(f"日誌記錄成功: 用戶={email}, 情緒={emotion}")
-        
+        # 返回结果
         return jsonify({
-            'success': True,
-            'log': log_entry
-        })
+            "success": True,
+            "emotion": emotion,
+            "confidence": confidence,
+            "suggestion": suggestion,
+            "log_id": log_id
+        }), 200
         
     except Exception as e:
-        logger.error(f"記錄日誌失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '記錄日誌失敗，請稍後重試'
-        }), 500
+        logger.error(f"情绪分析失败: {str(e)}")
+        return jsonify({"success": False, "error": "情绪分析失败，请稍后重试"}), 500
 
-# API: 获取日志列表
-@app.route('/api/get-logs', methods=['GET'])
+@app.route('/api/logs', methods=['GET'])
 def get_logs():
+    """获取用户日志列表"""
     try:
-        email = request.args.get('email')
-        emotion_filter = request.args.get('emotion')
-        date_filter = request.args.get('date')
-        limit = request.args.get('limit', default=50, type=int)
-        offset = request.args.get('offset', default=0, type=int)
+        user_id = request.args.get('user_id')
         
-        # 验证输入
-        if not email or not is_valid_email(email):
-            return jsonify({
-                'success': False,
-                'message': '無效的用戶信息'
-            }), 401
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
         
-        # 构建查詢
-        conn = get_db()
-        cursor = conn.cursor()
+        # 获取分页参数
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        offset = (page - 1) * page_size
         
-        # 基礎查詢
-        query = '''SELECT log_id, time, emotion, task, nft, completed 
-                  FROM logs 
-                  WHERE email = ?''' 
-        params = [email]
-        
-        # 添加過濾條件
-        if emotion_filter:
-            query += " AND emotion = ?"
-            params.append(emotion_filter)
-        
-        if date_filter:
-            query += " AND time LIKE ?"
-            params.append(f"{date_filter}%")
-        
-        # 添加排序和分页
-        query += " ORDER BY time DESC LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
-        
-        # 执行查询
-        cursor.execute(query, params)
-        logs = []
-        for row in cursor.fetchall():
-            log = {
-                'log_id': row[0],
-                'time': row[1],
-                'emotion': row[2],
-                'task': row[3],
-                'nft': row[4],
-                'completed': row[5] == 1
-            }
-            logs.append(log)
-        
-        # 获取总数
-        count_query = "SELECT COUNT(*) as count FROM logs WHERE email = ?"
-        count_params = [email]
-        
-        if emotion_filter:
-            count_query += " AND emotion = ?"
-            count_params.append(emotion_filter)
-        
-        if date_filter:
-            count_query += " AND time LIKE ?"
-            count_params.append(f"{date_filter}%")
-        
-        cursor.execute(count_query, count_params)
-        total = cursor.fetchone()[0]  # 使用索引访问而不是字典访问，因为没有设置row_factory
-        
-        logger.info(f"查詢日誌成功: 用戶={email}, 數量={len(logs)}, 總數={total}")
+        # 查询日志
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # 获取总数
+            cursor.execute("SELECT COUNT(*) FROM logs WHERE user_id = ?", (user_id,))
+            total = cursor.fetchone()[0]
+            
+            # 获取日志列表
+            cursor.execute(
+                "SELECT id, input, emotion, created_at, advice, tags, location, weather, activity, intensity "
+                "FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (user_id, page_size, offset)
+            )
+            logs = cursor.fetchall()
+            
+            # 转换为字典列表
+            log_list = []
+            for log in logs:
+                log_dict = dict(log)
+                # 解析JSON字段
+                if log_dict.get('advice'):
+                    try:
+                        log_dict['advice'] = json.loads(log_dict['advice'])
+                    except:
+                        log_dict['advice'] = {}
+                if log_dict.get('tags'):
+                    try:
+                        log_dict['tags'] = json.loads(log_dict['tags'])
+                    except:
+                        log_dict['tags'] = []
+                log_list.append(log_dict)
+            
+            conn.close()
         
         return jsonify({
-            'success': True,
-            'logs': logs,
-            'total': total,
-            'limit': limit,
-            'offset': offset
-        })
+            "success": True,
+            "logs": log_list,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size
+        }), 200
         
     except Exception as e:
-        logger.error(f"查詢日誌失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '查詢日誌失敗，請稍後重試'
-        }), 500
+        logger.error(f"获取日志失败: {str(e)}")
+        return jsonify({"success": False, "error": "获取日志失败，请稍后重试"}), 500
 
-# API: 获取统计数据
-@app.route('/api/get-stats', methods=['GET'])
-def get_stats():
+@app.route('/api/logs/<int:log_id>', methods=['GET'])
+def get_log_detail(log_id):
+    """获取日志详情"""
     try:
-        email = request.args.get('email')
-        period = request.args.get('period', 'all')  # all, week, month
+        user_id = request.args.get('user_id')
         
-        # 验证输入
-        if not email or not is_valid_email(email):
-            return jsonify({
-                'success': False,
-                'message': '無效的用戶信息'
-            }), 401
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
         
-        conn = get_db()
-        cursor = conn.cursor()
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "SELECT id, input, emotion, created_at, advice, tags, location, weather, activity, intensity "
+                "FROM logs WHERE id = ? AND user_id = ?",
+                (log_id, user_id)
+            )
+            log = cursor.fetchone()
+            
+            if not log:
+                conn.close()
+                return jsonify({"success": False, "error": "日志不存在或无权访问"}), 404
+            
+            # 转换为字典
+            log_dict = dict(log)
+            # 解析JSON字段
+            if log_dict.get('advice'):
+                try:
+                    log_dict['advice'] = json.loads(log_dict['advice'])
+                except:
+                    log_dict['advice'] = {}
+            if log_dict.get('tags'):
+                try:
+                    log_dict['tags'] = json.loads(log_dict['tags'])
+                except:
+                    log_dict['tags'] = []
+            
+            conn.close()
         
-        # 构建時間過濾條件
-        time_filter = ""
-        params = [email]
+        return jsonify({"success": True, "log": log_dict}), 200
         
-        if period == 'week':
-            # 过去7天
-            time_filter = " AND time >= ?"
-            week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-            params.append(week_ago)
-        elif period == 'month':
-            # 过去30天
-            time_filter = " AND time >= ?"
-            month_ago = (datetime.now() - timedelta(days=30)).isoformat()
-            params.append(month_ago)
+    except Exception as e:
+        logger.error(f"获取日志详情失败: {str(e)}")
+        return jsonify({"success": False, "error": "获取日志详情失败，请稍后重试"}), 500
+
+@app.route('/api/logs/<int:log_id>', methods=['PUT'])
+def update_log(log_id):
+    """更新日志"""
+    try:
+        data = request.get_json()
+        user_id = request.args.get('user_id')
         
-        # 查询总数和完成数
-        query = f"""
-            SELECT 
-                COUNT(*) as total, 
-                SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed
-            FROM logs 
-            WHERE email = ? {time_filter}
-        """
-        cursor.execute(query, params)
-        result = cursor.fetchone()
-        total = result[0] or 0
-        completed = result[1] or 0
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
         
-        # 查询情绪转移数
-        transition_query = f"""
-            SELECT COUNT(*) as count 
-            FROM logs 
-            WHERE email = ? AND nft LIKE ? {time_filter}
-        """
-        cursor.execute(transition_query, params + ['%成功緩和%'])
-        transitions = cursor.fetchone()[0]
+        if not data:
+            return jsonify({"success": False, "error": "无效的请求数据"}), 400
         
-        # 查询情绪分布
-        emotion_query = f"""
-            SELECT emotion, COUNT(*) as count 
-            FROM logs 
-            WHERE email = ? {time_filter}
-            GROUP BY emotion
-        """
-        cursor.execute(emotion_query, params)
+        # 准备更新数据
+        update_fields = []
+        update_values = []
         
-        chart_data = {
-            'anxious': 0,
-            'sad': 0,
-            'neutral': 0,
-            'happy': 0,
-            'angry': 0
+        if 'input' in data:
+            update_fields.append("input = ?")
+            update_values.append(data['input'])
+        if 'tags' in data:
+            update_fields.append("tags = ?")
+            update_values.append(json.dumps(data['tags']))
+        if 'location' in data:
+            update_fields.append("location = ?")
+            update_values.append(data['location'])
+        if 'weather' in data:
+            update_fields.append("weather = ?")
+            update_values.append(data['weather'])
+        if 'activity' in data:
+            update_fields.append("activity = ?")
+            update_values.append(data['activity'])
+        if 'intensity' in data:
+            update_fields.append("intensity = ?")
+            update_values.append(data['intensity'])
+        
+        if not update_fields:
+            return jsonify({"success": False, "error": "没有可更新的字段"}), 400
+        
+        # 如果更新了输入内容，重新分析情绪
+        if 'input' in data:
+            emotion, confidence = detect_emotion_local(data['input'])
+            update_fields.append("emotion = ?")
+            update_values.append(emotion)
+            
+            # 更新建议
+            suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+            update_fields.append("advice = ?")
+            update_values.append(json.dumps(suggestion))
+        
+        # 添加WHERE条件的参数
+        update_values.extend([log_id, user_id])
+        
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            try:
+                # 执行更新
+                sql = f"UPDATE logs SET {', '.join(update_fields)} WHERE id = ? AND user_id = ?"
+                cursor.execute(sql, update_values)
+                
+                if cursor.rowcount == 0:
+                    conn.rollback()
+                    conn.close()
+                    return jsonify({"success": False, "error": "日志不存在或无权更新"}), 404
+                
+                conn.commit()
+                conn.close()
+                
+                logger.info(f"日志已更新: 日志ID {log_id}, 用户ID {user_id}")
+                
+                return jsonify({"success": True, "message": "日志更新成功"}), 200
+                
+            except Exception as e:
+                conn.rollback()
+                conn.close()
+                raise
+                
+    except Exception as e:
+        logger.error(f"更新日志失败: {str(e)}")
+        return jsonify({"success": False, "error": "更新日志失败，请稍后重试"}), 500
+
+@app.route('/api/logs/<int:log_id>', methods=['DELETE'])
+def delete_log(log_id):
+    """删除日志"""
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+        
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            try:
+                cursor.execute(
+                    "DELETE FROM logs WHERE id = ? AND user_id = ?",
+                    (log_id, user_id)
+                )
+                
+                if cursor.rowcount == 0:
+                    conn.rollback()
+                    conn.close()
+                    return jsonify({"success": False, "error": "日志不存在或无权删除"}), 404
+                
+                conn.commit()
+                conn.close()
+                
+                logger.info(f"日志已删除: 日志ID {log_id}, 用户ID {user_id}")
+                
+                return jsonify({"success": True, "message": "日志删除成功"}), 200
+                
+            except Exception as e:
+                conn.rollback()
+                conn.close()
+                raise
+                
+    except Exception as e:
+        logger.error(f"删除日志失败: {str(e)}")
+        return jsonify({"success": False, "error": "删除日志失败，请稍后重试"}), 500
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """获取用户统计数据"""
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+        
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # 获取总体统计
+            cursor.execute(
+                "SELECT COUNT(*) as total_logs, "
+                "COUNT(DISTINCT DATE(created_at)) as active_days "
+                "FROM logs WHERE user_id = ?",
+                (user_id,)
+            )
+            stats = dict(cursor.fetchone())
+            
+            # 获取情绪分布
+            cursor.execute(
+                "SELECT emotion, COUNT(*) as count "
+                "FROM logs WHERE user_id = ? "
+                "GROUP BY emotion",
+                (user_id,)
+            )
+            emotion_dist = {row['emotion']: row['count'] for row in cursor.fetchall()}
+            
+            # 获取最近7天的情绪趋势
+            cursor.execute(
+                "SELECT DATE(created_at) as date, emotion, COUNT(*) as count "
+                "FROM logs WHERE user_id = ? AND created_at >= date('now', '-7 days') "
+                "GROUP BY date, emotion "
+                "ORDER BY date",
+                (user_id,)
+            )
+            trends_data = cursor.fetchall()
+            
+            # 整理趋势数据
+            trends = {}
+            for row in trends_data:
+                date = row['date']
+                if date not in trends:
+                    trends[date] = {}
+                trends[date][row['emotion']] = row['count']
+            
+            conn.close()
+        
+        return jsonify({
+            "success": True,
+            "total_logs": stats['total_logs'],
+            "active_days": stats['active_days'],
+            "emotion_distribution": emotion_dist,
+            "weekly_trends": trends
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取统计数据失败: {str(e)}")
+        return jsonify({"success": False, "error": "获取统计数据失败，请稍后重试"}), 500
+
+@app.route('/api/sync', methods=['POST'])
+def sync_data():
+    """数据同步接口"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+        
+        # 验证用户是否存在
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+            if not cursor.fetchone():
+                conn.close()
+                return jsonify({"success": False, "error": "用户不存在"}), 404
+            conn.close()
+        
+        # 处理同步操作
+        sync_results = {
+            "sent_logs": [],
+            "received_logs": []
         }
         
-        for row in cursor.fetchall():
-            if row[0] in chart_data:
-                chart_data[row[0]] = row[1]
+        # 如果有本地日志需要同步
+        if 'logs' in data and isinstance(data['logs'], list):
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                
+                try:
+                    for log in data['logs']:
+                        # 检查日志是否已存在
+                        cursor.execute(
+                            "SELECT id FROM logs WHERE user_id = ? AND created_at = ? AND input = ?",
+                            (user_id, log['created_at'], log['input'])
+                        )
+                        
+                        if not cursor.fetchone():
+                            # 插入新日志
+                            cursor.execute(
+                                "INSERT INTO logs (user_id, input, emotion, created_at, advice, tags, location, weather, activity, intensity) "
+                                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                (user_id, log.get('input'), log.get('emotion', 'neutral'),
+                                 log.get('created_at'), log.get('advice'), log.get('tags', '[]'),
+                                 log.get('location'), log.get('weather'), log.get('activity'),
+                                 log.get('intensity', 5))
+                            )
+                            new_log_id = cursor.lastrowid
+                            sync_results['sent_logs'].append(new_log_id)
+                    
+                    conn.commit()
+                    
+                finally:
+                    conn.close()
         
-        # 计算完成率
-        completion_rate = round((completed/total)*100) if total > 0 else 0
+        # 返回服务器上的最新日志
+        last_sync_time = data.get('last_sync_time', '1970-01-01')
         
-        # 获取连续打卡天数
-        streak_query = f"""
-            SELECT DISTINCT date(time) as log_date 
-            FROM logs 
-            WHERE email = ? AND completed = 1 
-            ORDER BY log_date DESC
-        """
-        cursor.execute(streak_query, [email])
-        dates = [row[0] for row in cursor.fetchall()]
-        
-        streak = 0
-        current_date = datetime.now().date()
-        
-        for log_date_str in dates:
-            log_date = datetime.strptime(log_date_str, '%Y-%m-%d').date()
-            if (current_date - log_date).days == streak:
-                streak += 1
-            else:
-                break
-        
-        logger.info(f"查詢統計數據成功: 用戶={email}, 完成率={completion_rate}%, 轉移次數={transitions}")
-        
-        return jsonify({
-            'success': True,
-            'completion_rate': completion_rate,
-            'transitions': transitions,
-            'chart_data': chart_data,
-            'total_logs': total,
-            'streak': streak,
-            'period': period
-        })
-        
-    except Exception as e:
-        logger.error(f"查詢統計數據失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '查詢統計數據失敗，請稍後重試'
-        }), 500
-
-# 从数据库加载用户数据
-def load_users_from_db():
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute('SELECT user_id, email, password FROM users')
-        for row in cursor.fetchall():
-            users_db[row[1]] = {
-                'user_id': row[0],
-                'password': row[2]
-            }
-        conn.close()
-        logger.info(f"从数据库加载用户成功，共{len(users_db)}个用户")
-    except Exception as e:
-        logger.error(f"從數據庫加載用戶數據失敗: {e}")
-        
-# 從數據庫加載最近的日誌
-def load_recent_logs_from_db():
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        # 只加載最近100條日誌到內存
-        cursor.execute('SELECT log_id, time, email, emotion, task, nft, completed FROM logs ORDER BY time DESC LIMIT 100')
-        for row in cursor.fetchall():
-            log_entry = {
-                'log_id': row[0],
-                'time': row[1],
-                'email': row[2],
-                'emotion': row[3],
-                'task': row[4],
-                'nft': row[5],
-                'completed': row[6] == 1
-            }
-            logs_db.append(log_entry)
-        conn.close()
-        logger.info(f"從數據庫加載日誌成功，共{len(logs_db)}條")
-    except Exception as e:
-        logger.error(f"加載日誌數據失敗: {e}")
-
-# 從數據庫加載用戶情緒數據
-def load_user_emotions_from_db():
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT ue.user_id, u.email, ue.last_emotion 
-            FROM user_emotions ue 
-            JOIN users u ON ue.user_id = u.user_id
-        ''')
-        for row in cursor.fetchall():
-            user_last_emotion[row[1]] = row[2]
-        conn.close()
-        logger.info(f"從資料庫載入使用者情緒資料成功，共{len(user_last_emotion)}條")
-    except Exception as e:
-        logger.error(f"從數據庫加載用戶情緒資料失敗: {e}")
-
-# 定期清理过期的內存緩存
-def cleanup_memory_cache():
-    try:
-        # 限制內存中的日誌數量
-        global logs_db
-        if len(logs_db) > 500:
-            # 只保留最近的300條
-            logs_db = logs_db[:300]
-        
-        # 清理長時間未活動的用戶情緒資料
-        global user_last_emotion
-        # 這裡可以根據需要實現更複雜的清理邏輯
-        
-        logger.info(f"內存緩存清理完成，當前日誌數: {len(logs_db)}, 用戶情緒資料數: {len(user_last_emotion)}")  
-    except Exception as e:
-        logger.error(f"清理內存緩存失敗: {e}")
-
-# 應用上下文處理器
-@app.teardown_appcontext
-def close_db(error):
-    if 'db' in g:
-        g.db.close()
-
-# 根路徑
-@app.route('/')
-def index():
-    return "MoodMend 後端服務正在運行"  
-
-# 健康检查端点
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT 1')
-        conn.close()
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "SELECT id, input, emotion, created_at, advice, tags, location, weather, activity, intensity "
+                "FROM logs WHERE user_id = ? AND created_at > ? "
+                "ORDER BY created_at DESC",
+                (user_id, last_sync_time)
+            )
+            
+            new_logs = cursor.fetchall()
+            for log in new_logs:
+                log_dict = dict(log)
+                # 解析JSON字段
+                if log_dict.get('advice'):
+                    try:
+                        log_dict['advice'] = json.loads(log_dict['advice'])
+                    except:
+                        log_dict['advice'] = {}
+                if log_dict.get('tags'):
+                    try:
+                        log_dict['tags'] = json.loads(log_dict['tags'])
+                    except:
+                        log_dict['tags'] = []
+                sync_results['received_logs'].append(log_dict)
+            
+            conn.close()
         
         return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'version': 'V1.0.4'
-        })
+            "success": True,
+            "sync_results": sync_results,
+            "current_time": datetime.now().isoformat()
+        }), 200
+        
     except Exception as e:
-        logger.error(f"健康檢查失敗: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e)
-        }), 500
+        logger.error(f"数据同步失败: {str(e)}")
+        return jsonify({"success": False, "error": "数据同步失败，请稍后重试"}), 500
 
-# 數據庫備份端點
-@app.route('/api/backup-db', methods=['POST'])
-def backup_database():
+@app.route('/api/suggestions', methods=['GET'])
+def get_suggestions():
+    """获取情绪建议列表"""
     try:
-        # 簡單的數據庫備份邏輯
-        backup_file = f'moodmend_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
-        import shutil
-        shutil.copy2(DB_NAME, backup_file)
+        emotion = request.args.get('emotion')
         
-        logger.info(f"數據庫備份成功: {backup_file}")
+        if emotion and emotion in SUGGESTIONS:
+            suggestions = SUGGESTIONS[emotion]
+        else:
+            suggestions = SUGGESTIONS
         
         return jsonify({
-            'success': True,
-            'message': '數據庫備份成功',
-            'backup_file': backup_file
-        })
+            "success": True,
+            "suggestions": suggestions
+        }), 200
+        
     except Exception as e:
-        logger.error(f"數據庫備份失敗: {e}")
-        return jsonify({
-            'success': False,
-            'message': '數據庫備份失敗'
-        }), 500
+        logger.error(f"获取建议失败: {str(e)}")
+        return jsonify({"success": False, "error": "获取建议失败，请稍后重试"}), 500
 
-# 定时任务初始化
-import atexit
-from threading import Timer
-
-def schedule_cleanup():
-    # 每小时执行一次内存清理
-    cleanup_memory_cache()
-    t = Timer(3600, schedule_cleanup)
-    t.daemon = True
-    t.start()
-
+# 主入口
 if __name__ == '__main__':
     try:
         # 初始化数据库
         init_db()
-        
-        # 加载数据
-        load_users_from_db()
-        load_recent_logs_from_db()
-        load_user_emotions_from_db()
-        
-        # 启动定时任务
-        schedule_cleanup()
-        
-        # 注册程序退出时的清理函数
-        atexit.register(cleanup_memory_cache)
-        
-        logger.info("MoodMend後端服務啟動")
-        
-        # 在生產環境中，應該使用適當的WSGI服務器
-        # 這裡為了演示，使用Flask的開發服務器
-        app.run(debug=True, port=3000, host='0.0.0.0')
-        
+        logger.info("MoodMend 后端服务启动")
+        # 启动服务器
+        app.run(host='0.0.0.0', port=3000, debug=True)
     except Exception as e:
-        logger.critical(f"服務啟動失敗: {e}")
-        raise e
+        logger.critical(f"服务启动失败: {str(e)}")
+        sys.exit(1)

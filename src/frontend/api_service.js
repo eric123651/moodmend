@@ -337,4 +337,38 @@ window.apiService.initApiService = function() {
 if (typeof window !== 'undefined') {
     // 所有方法已经通过window.apiService.xxx方式定义，无需重新赋值
     console.log('API服务已正确注册到window.apiService');
+    
+    // 确保switchPage函数在全局可用
+    if (typeof window.switchPage !== 'function') {
+        window.switchPage = function(id, event = null) {
+            // 先关闭所有菜单
+            const menus = document.querySelectorAll('.menu-dropdown');
+            if (menus.length > 0) {
+                menus.forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+            
+            // 隐藏所有页面
+            const pages = document.querySelectorAll('.page');
+            if (pages.length > 0) {
+                pages.forEach(p => {
+                    p.classList.remove('active');
+                });
+            }
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(id);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // 当切换到page4时，尝试刷新日志
+            if (id === 'page4' && typeof window.loadLogs === 'function') {
+                setTimeout(() => {
+                    window.loadLogs(1);
+                }, 100);
+            }
+        };
+    }
 }

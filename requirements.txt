@@ -1,10 +1,9 @@
 flask
 flask-cors
-# Google Cloud 服务依赖
-google-cloud-speech
-google-cloud-language
-vertexai
-google-auth
+# 阿里云服务依赖
+alibabacloud-dashscope
+aliyun-python-sdk-core
+aliyun-python-sdk-nlp-automl
 # 其他依赖
 Pillow
 requests
