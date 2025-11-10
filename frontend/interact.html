@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodMend - 情绪互动</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MoodMend</h1>
+            <p>请分享你的感受</p>
+        </header>
+        
+        <main class="interact-container">
+            <div class="voice-input">
+                <button id="voiceButton" class="voice-btn">
+                    <img src="icons/MoodMend_Voice_Button_Simple.svg" alt="语音输入">
+                </button>
+                <p id="statusText">点击开始录音</p>
+            </div>
+            
+            <div id="resultContainer" class="hidden">
+                <h3>分析结果</h3>
+                <div id="emotionBadge" class="emotion-badge">
+                    <!-- 情绪徽章将在此显示 -->
+                </div>
+                <p id="analysisText"></p>
+            </div>
+        </main>
+    </div>
+    
+    <script src="assets/script.js"></script>
+</body>
+</html>

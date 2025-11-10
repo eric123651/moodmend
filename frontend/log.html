@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodMend - 情绪记录</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MoodMend</h1>
+            <p>你的情绪变化历程</p>
+        </header>
+        
+        <main class="log-container">
+            <div class="chart-container">
+                <canvas id="emotionChart"></canvas>
+            </div>
+            
+            <div class="log-list">
+                <h3>最近记录</h3>
+                <div id="logsContainer">
+                    <!-- 日志记录将在此显示 -->
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="assets/script.js"></script>
+</body>
+</html>

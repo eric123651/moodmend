@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  moodmend-backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./../backend:/app/backend
+      - ./../frontend:/app/frontend
+      - ./../icons:/app/icons
+      - ./../data:/app/data
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=development
+    restart: always

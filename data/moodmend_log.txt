@@ -1,0 +1,23 @@
+# MoodMend 数据库导出备份
+
+## 导出时间
+导出时间: 2023-07-15 14:30:00
+
+## 表结构概览
+
+### users表
+- id: INTEGER PRIMARY KEY
+- username: TEXT UNIQUE NOT NULL
+- password_hash: TEXT NOT NULL
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+### logs表
+- id: INTEGER PRIMARY KEY
+- user_id: INTEGER REFERENCES users(id)
+- emotion: TEXT NOT NULL
+- confidence: REAL NOT NULL
+- text: TEXT
+- timestamp: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+## 示例数据
+# 此文件用于备份数据库导出内容
