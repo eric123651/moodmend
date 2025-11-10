@@ -16,7 +16,11 @@ import uuid
 import hashlib
 import time
 import re
+import base64
 from datetime import datetime, timedelta
+
+# 导入阿里云服务
+from aliyun_services import get_nlp_service, get_nls_service, get_qwen_service
 
 # 设置编码支持
 if hasattr(sys.stdout, 'reconfigure'):
@@ -24,12 +28,16 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
-# 配置日志
+# 定义基础目录
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 配置日志 - 使用固定的绝对路径
+log_file = os.path.join(BASE_DIR, 'moodmend.log')
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('moodmend.log', encoding='utf-8'),
+        logging.FileHandler(log_file, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -54,6 +62,13 @@ app.static_url_path = '/static'
 
 # 配置CORS，允许所有来源
 CORS(app, origins='*', methods=['GET', 'POST', 'OPTIONS'], allow_headers=['*'])
+
+# 初始化阿里云服务实例
+nlp_service = get_nlp_service()
+nls_service = get_nls_service()
+qwen_service = get_qwen_service()
+
+# 注意：不再使用本地情绪检测，完全依赖阿里云AI服务
 
 # 处理Vite客户端请求，避免404错误
 @app.route('/@vite/client')
@@ -144,72 +159,16 @@ def serve_assets(filename):
         return app.response_class(content)
     return jsonify({"message": f"资源 {filename} 未找到"}), 404
 
-# 数据库配置
-DB_NAME = 'moodmend.db'
+# 数据库配置 - 使用固定的绝对路径避免路径歧义
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, 'moodmend.db')
 
 # 数据库锁，用于线程安全
 db_lock = threading.RLock()
 
-# 情绪关键词定义（与前端保持一致）
-EMOTION_KEYWORDS = {
-    'happy': {
-        'keywords': ['開心', '快樂', '高興', '愉快', '滿足', '興奮', '欣喜', '幸福', '喜悅', '歡樂', '愉悅', '狂喜', '慰問', '滿意', '樂乎', '樂', '爽'],
-        'weight': 1
-    },
-    'sad': {
-        'keywords': ['傷心', '難過', '悲傷', '憂傷', '沮喪', '抑鬱', '絕望', '悲痛', '悲哀', '難過', '傷心欲絕', '哀傷', '惆悵', '失落', '痛苦', '哭', '泣', '慘'],
-        'weight': 1
-    },
-    'anxious': {
-        'keywords': ['焦慮', '緊張', '不安', '擔憂', '害怕', '恐懼', '恐慌', '驚嚇', '擔憂', '焦慮不安', '心悸', '發抖', '哆嗦', '忐忑', '惴惴', '慌'],
-        'weight': 1
-    },
-    'angry': {
-        'keywords': ['生氣', '憤怒', '惱怒', '惱火', '氣憤', '暴躁', '暴怒', '火大', '發飆', '怒不可遏', '氣死', '冒火', '動怒', '怒火', '憤恨', '怒'],
-        'weight': 1
-    },
-    'neutral': {
-        'keywords': ['平靜', '平常', '一般', '普通', '淡定', '冷靜', '沉穩', '心平氣和', '無所謂', '還行', '可以', '不錯', '馬馬虎虎', '過得去'],
-        'weight': 1
-    }
-}
-
-# 情绪分类
+# 情绪分类（仅用于参考，实际分析使用阿里云AI）
 NEGATIVE_EMOTIONS = ['sad', 'anxious', 'angry']
 POSITIVE_EMOTIONS = ['happy']
-
-# 建议内容
-SUGGESTIONS = {
-    'happy': {
-        'daily_task': '與朋友分享你的快樂，傳遞正能量。',
-        'advice': '保持良好的作息和饮食习惯，延续快樂的狀態。',
-        'resources': '推薦閱讀：《快樂競爭力》'
-    },
-    'sad': {
-        'tips': '允許自己感受悲傷，但不要沉浸其中太久。',
-        'daily_task': '進行一項讓自己休息的活動，如冥想或聽音樂。',
-        'advice': '與信任的人交流你的感受，尋求支持。',
-        'resources': '推薦APP：潮汐（冥想放松）'
-    },
-    'anxious': {
-        'tips': '嘗試深呼吸練習，幫助缓解緊張情緒。',
-        'daily_task': '進行15分鐘的身體活動，釋放壓力。',
-        'advice': '將大問題分解成小步驟，逐一解決。',
-        'resources': '推薦練習：4-7-8呼吸法'
-    },
-    'angry': {
-        'tips': '先深呼吸，數到10再做決定。',
-        'daily_task': '進行一項體育活動，釋放能量。',
-        'advice': '嘗試從對方角度思考問題，尋求理解。',
-        'resources': '推薦APP：Calm'
-    },
-    'neutral': {
-        'tips': '探索新的興趣爱好，豐富生活體驗。',
-        'daily_task': '學習一項新技能或知識。',
-        'advice': '設定小目標，逐步提升生活滿意度。',
-        'resources': '推薦平台：Coursera（線上學習）'
-    }
-}
 
 def init_db():
     """初始化数据库，创建必要的表"""
@@ -302,41 +261,7 @@ def init_db():
         logger.error(f"数据库初始化失败: {str(e)}")
         raise
 
-def detect_emotion_local(text):
-    """本地情绪检测算法"""
-    if not text or not isinstance(text, str):
-        return 'neutral', 0.0
-    
-    # 情绪得分统计
-    emotion_scores = {}
-    
-    # 遍历每种情绪的关键词
-    for emotion, config in EMOTION_KEYWORDS.items():
-        score = 0
-        keywords = config.get('keywords', [])
-        weight = config.get('weight', 1)
-        
-        # 统计关键词出现次数
-        for keyword in keywords:
-            if keyword in text:
-                score += text.count(keyword) * weight
-        
-        emotion_scores[emotion] = score
-    
-    # 找到得分最高的情绪
-    if emotion_scores:
-        max_emotion = max(emotion_scores, key=emotion_scores.get)
-        max_score = emotion_scores[max_emotion]
-        
-        # 如果最高得分大于0，则返回对应的情绪，否则返回中性
-        if max_score > 0:
-            # 计算置信度（简单归一化）
-            total_score = sum(emotion_scores.values())
-            confidence = max_score / total_score if total_score > 0 else 0
-            return max_emotion, confidence
-    
-    # 默认返回中性情绪
-    return 'neutral', 0.5
+# 注意：不再使用本地情绪检测函数，完全依赖阿里云AI服务
 
 def get_db():
     """获取数据库连接"""
@@ -515,7 +440,7 @@ def login():
 
 @app.route('/api/process-emotion', methods=['POST'])
 def process_emotion():
-    """情绪分析接口"""
+    """情绪分析接口（兼容前端调用格式，支持email或user_id参数）"""
     try:
         data = request.get_json()
         
@@ -523,11 +448,26 @@ def process_emotion():
         if not data:
             return jsonify({"success": False, "error": "无效的请求数据"}), 400
         
+        # 支持前端使用email参数的调用方式
+        email = data.get('email')
         user_id = data.get('user_id')
         text = data.get('input')
+        task_completed = data.get('task_completed', False)
+        is_voice_input = False
         
-        if not user_id or not text:
-            return jsonify({"success": False, "error": "缺少用户ID或输入内容"}), 400
+        # 如果提供了email但没有user_id，通过email查找用户ID
+        if email and not user_id:
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+                user = cursor.fetchone()
+                conn.close()
+            
+            user_id = user[0] if user else str(uuid.uuid4())  # 如果找不到用户，生成临时ID
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
         
         # 验证用户是否存在
         with db_lock:
@@ -539,29 +479,113 @@ def process_emotion():
                 return jsonify({"success": False, "error": "用户不存在"}), 404
             conn.close()
         
-        # 执行情绪检测
-        emotion, confidence = detect_emotion_local(text)
+        # 处理语音输入
+        if 'audio_data' in data and not text:
+            is_voice_input = True
+            logger.info(f"处理语音输入: 用户ID {user_id}")
+            
+            # 检查语音服务是否可用
+            if nls_service:
+                # 调用语音识别服务
+                format_type = data.get('format', 'wav')
+                sample_rate = data.get('sample_rate', 16000)
+                
+                speech_result = nls_service.recognize_speech(
+                    data['audio_data'], 
+                    format_type, 
+                    sample_rate
+                )
+                
+                if speech_result.get('success'):
+                    text = speech_result['text']
+                    logger.info(f"语音识别成功: {text[:30]}...")
+                else:
+                    logger.error(f"语音识别失败: {speech_result.get('error', '未知错误')}")
+                    return jsonify({"success": False, "error": "语音识别失败"}), 400
+            else:
+                logger.warning("语音识别服务不可用，回退到本地处理")
+                return jsonify({"success": False, "error": "语音识别服务不可用"}), 503
         
-        # 获取对应的建议
-        suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+        # 验证文本内容
+        if not text:
+            return jsonify({"success": False, "error": "缺少输入内容"}), 400
+        
+        # 执行情绪检测 - 仅使用阿里云NLP服务
+        emotion = 'neutral'
+        confidence = 0.5
+        detect_method = 'alicloud'
+        
+        # 必须使用阿里云NLP服务
+        if nlp_service:
+            logger.info(f"使用阿里云NLP服务进行情绪分析: 用户ID {user_id}")
+            nlp_result = nlp_service.analyze_sentiment(text)
+            
+            if nlp_result:
+                emotion = nlp_result['emotion']
+                confidence = nlp_result['confidence']
+                logger.info(f"阿里云NLP分析结果: 情绪={emotion}, 置信度={confidence}")
+            else:
+                logger.error("阿里云NLP服务分析失败")
+                return jsonify({"success": False, "error": "情绪分析服务暂时不可用，请稍后重试"}), 503
+        else:
+            logger.error("阿里云NLP服务不可用")
+            return jsonify({"success": False, "error": "情绪分析服务未配置，请检查系统设置"}), 503
+        
+        # 生成个性化建议 - 仅使用通义千问服务
+        suggestion = None
+        suggestion_method = 'alicloud'
+        
+        # 必须使用通义千问服务
+        if qwen_service:
+            logger.info(f"使用通义千问生成个性化建议: 用户ID {user_id}, 情绪={emotion}")
+            
+            # 获取用户历史数据作为上下文
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT emotion, input FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 3",
+                    (user_id,)
+                )
+                recent_moods = cursor.fetchall()
+                conn.close()
+            
+            # 构建用户上下文
+            user_context = {
+                'recent_moods': [dict(mood) for mood in recent_moods],
+                'current_input': text[:100]  # 限制上下文长度
+            }
+            
+            # 调用通义千问生成建议
+            qwen_result = qwen_service.generate_task_suggestion(emotion, user_context)
+            
+            if qwen_result.get('success'):
+                suggestion = qwen_result['suggestion']
+                logger.info("通义千问成功生成个性化建议")
+            else:
+                logger.error(f"通义千问生成建议失败: {qwen_result.get('error', '未知错误')}")
+                return jsonify({"success": False, "error": "建议生成服务暂时不可用，请稍后重试"}), 503
+        else:
+            logger.error("通义千问服务不可用")
+            return jsonify({"success": False, "error": "建议生成服务未配置，请检查系统设置"}), 503
         
         # 准备日志数据
         log_data = {
             'user_id': user_id,
             'input': text,
             'emotion': emotion,
-            'advice': json.dumps(suggestion) if suggestion else None,
+            'advice': json.dumps({
+                'content': suggestion,
+                'method': suggestion_method
+            }) if suggestion else None,
             'tags': json.dumps([]),  # 默认空标签
-            'intensity': int(confidence * 10)  # 转换置信度为强度值
+            'intensity': int(confidence * 10),  # 转换置信度为强度值
+            'location': data.get('location'),
+            'weather': data.get('weather'),
+            'activity': data.get('activity')
         }
         
         # 可选字段
-        if 'location' in data:
-            log_data['location'] = data['location']
-        if 'weather' in data:
-            log_data['weather'] = data['weather']
-        if 'activity' in data:
-            log_data['activity'] = data['activity']
         if 'tags' in data:
             log_data['tags'] = json.dumps(data['tags'])
         if 'intensity' in data:
@@ -583,7 +607,8 @@ def process_emotion():
                 log_id = cursor.lastrowid
                 conn.commit()
                 
-                logger.info(f"情绪分析结果已保存: 用户ID {user_id}, 情绪 {emotion}, 日志ID {log_id}")
+                logger.info(f"情绪分析结果已保存: 用户ID {user_id}, 情绪 {emotion}, 日志ID {log_id}, "
+                          f"检测方法 {detect_method}, 建议方法 {suggestion_method}")
                 
             finally:
                 conn.close()
@@ -594,11 +619,14 @@ def process_emotion():
             "emotion": emotion,
             "confidence": confidence,
             "suggestion": suggestion,
-            "log_id": log_id
+            "log_id": log_id,
+            "detect_method": detect_method,
+            "suggestion_method": suggestion_method,
+            "is_voice_input": is_voice_input
         }), 200
         
     except Exception as e:
-        logger.error(f"情绪分析失败: {str(e)}")
+        logger.error(f"情绪分析失败: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": "情绪分析失败，请稍后重试"}), 500
 
 @app.route('/api/logs', methods=['GET'])
@@ -749,16 +777,39 @@ def update_log(log_id):
         if not update_fields:
             return jsonify({"success": False, "error": "没有可更新的字段"}), 400
         
-        # 如果更新了输入内容，重新分析情绪
+        # 如果更新了输入内容，使用阿里云服务重新分析情绪
         if 'input' in data:
-            emotion, confidence = detect_emotion_local(data['input'])
-            update_fields.append("emotion = ?")
-            update_values.append(emotion)
-            
-            # 更新建议
-            suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
-            update_fields.append("advice = ?")
-            update_values.append(json.dumps(suggestion))
+            if nlp_service:
+                logger.info(f"使用阿里云NLP服务重新分析情绪: 日志ID {log_id}")
+                nlp_result = nlp_service.analyze_sentiment(data['input'])
+                
+                if nlp_result:
+                    emotion = nlp_result['emotion']
+                    update_fields.append("emotion = ?")
+                    update_values.append(emotion)
+                    
+                    # 使用通义千问生成新建议
+                    if qwen_service:
+                        # 构建最小上下文
+                        user_context = {
+                            'recent_moods': [],
+                            'current_input': data['input'][:100]
+                        }
+                        qwen_result = qwen_service.generate_task_suggestion(emotion, user_context)
+                        
+                        if qwen_result.get('success'):
+                            suggestion = qwen_result['suggestion']
+                            update_fields.append("advice = ?")
+                            update_values.append(json.dumps({
+                                'content': suggestion,
+                                'method': 'alicloud'
+                            }))
+                else:
+                    logger.error("阿里云NLP服务重新分析失败")
+                    return jsonify({"success": False, "error": "情绪重新分析失败，请稍后重试"}), 503
+            else:
+                logger.error("阿里云NLP服务不可用")
+                return jsonify({"success": False, "error": "情绪分析服务未配置"}), 503
         
         # 添加WHERE条件的参数
         update_values.extend([log_id, user_id])
@@ -1015,6 +1066,295 @@ def get_suggestions():
     except Exception as e:
         logger.error(f"获取建议失败: {str(e)}")
         return jsonify({"success": False, "error": "获取建议失败，请稍后重试"}), 500
+
+# 阿里云AI服务API端点
+@app.route('/api/analyze-sentiment', methods=['POST'])
+def analyze_sentiment():
+    """使用阿里云NLP服务进行情感分析"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        text = data.get('text', '').strip()
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+        
+        if not text:
+            return jsonify({"success": False, "error": "请提供要分析的文本"}), 400
+        
+        # 检查NLP服务是否可用
+        if not nlp_service:
+            # 如果服务不可用，回退到本地情绪检测
+            emotion, confidence = detect_emotion_local(text)
+            return jsonify({
+                "success": True,
+                "emotion": emotion,
+                "confidence": confidence,
+                "method": "local"
+            })
+        
+        # 调用NLP服务进行情感分析
+        result = nlp_service.analyze_sentiment(text)
+        
+        if result:
+            # 记录分析结果到数据库
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO logs (user_id, input, emotion, created_at, intensity) VALUES (?, ?, ?, ?, ?)",
+                    (user_id, text, result['emotion'], datetime.now(), int(result['confidence'] * 10))
+                )
+                conn.commit()
+                conn.close()
+                
+            return jsonify({
+                "success": True,
+                "emotion": result['emotion'],
+                "confidence": result['confidence'],
+                "details": result.get('details', {}),
+                "method": "alicloud"
+            })
+        else:
+            # 失败时回退到本地检测
+            emotion, confidence = detect_emotion_local(text)
+            return jsonify({
+                "success": True,
+                "emotion": emotion,
+                "confidence": confidence,
+                "method": "local_fallback"
+            })
+            
+    except Exception as e:
+        logger.error(f"情感分析过程中发生错误: {str(e)}")
+        return jsonify({"success": False, "error": "处理请求时发生错误"}), 500
+
+# 保留原始的process_emotion函数，已经在文件上方定义
+
+@app.route('/api/recognize-speech', methods=['POST'])
+def recognize_speech():
+    """语音识别接口（增强版）"""
+    try:
+        # 支持JSON和FormData两种格式
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # 处理文件上传
+            file = request.files.get('audio_file')
+            if not file:
+                return jsonify({"success": False, "error": "缺少音频文件"}), 400
+            
+            # 读取文件内容并进行Base64编码
+            audio_bytes = file.read()
+            audio_data = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            # 获取其他参数
+            user_id = request.form.get('user_id')
+            format_type = request.form.get('format', 'wav')
+            sample_rate = int(request.form.get('sample_rate', 16000))
+            
+            logger.info(f"处理文件上传的语音识别请求，用户ID: {user_id}, 格式: {format_type}")
+        else:
+            # 处理JSON请求
+            data = request.get_json()
+            
+            if not data:
+                return jsonify({"success": False, "error": "无效的请求数据"}), 400
+            
+            user_id = data.get('user_id')
+            audio_data = data.get('audio_data')
+            format_type = data.get('format', 'wav')
+            sample_rate = data.get('sample_rate', 16000)
+            
+            logger.info(f"处理JSON格式的语音识别请求，用户ID: {user_id}, 格式: {format_type}")
+        
+        # 验证必要参数
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+            
+        if not audio_data:
+            return jsonify({"success": False, "error": "请提供音频数据"}), 400
+        
+        # 检查服务可用性
+        if not nls_service:
+            logger.warning("语音识别服务不可用")
+            return jsonify({"success": False, "error": "语音识别服务暂不可用"}), 503
+        
+        # 支持的音频格式
+        supported_formats = ['wav', 'mp3', 'opus', 'pcm']
+        if format_type.lower() not in supported_formats:
+            return jsonify({
+                "success": False, 
+                "error": f"不支持的音频格式，请使用以下格式之一: {', '.join(supported_formats)}"
+            }), 400
+        
+        # 验证音频数据长度
+        if len(audio_data) > 5 * 1024 * 1024:  # 5MB限制
+            return jsonify({"success": False, "error": "音频文件过大，请控制在5MB以内"}), 413
+        
+        # 调用语音服务进行识别
+        logger.info(f"开始语音识别处理，用户ID: {user_id}")
+        result = nls_service.recognize_speech(audio_data, format_type, sample_rate)
+        
+        # 处理识别结果
+        if result.get('success'):
+            # 对识别结果进行基本的文本清理
+            recognized_text = result['text'].strip()
+            
+            # 可选：如果识别到文本，自动进行情绪分析
+            emotion_result = None
+            if recognized_text and nlp_service:
+                try:
+                    emotion_analysis = nlp_service.analyze_sentiment(recognized_text)
+                    if emotion_analysis:
+                        emotion_result = {
+                            'emotion': emotion_analysis['emotion'],
+                            'confidence': emotion_analysis['confidence']
+                        }
+                except Exception as e:
+                    logger.warning(f"自动情绪分析失败: {str(e)}")
+            
+            # 记录语音识别结果到日志表
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO logs (user_id, input, emotion, created_at) VALUES (?, ?, ?, ?)",
+                    (user_id, recognized_text, emotion_result['emotion'] if emotion_result else 'neutral', datetime.now())
+                )
+                conn.commit()
+                conn.close()
+            
+            response = {
+                "success": True,
+                "text": recognized_text,
+                "confidence": result.get('confidence', 0),
+                "format": format_type,
+                "sample_rate": sample_rate,
+                "audio_size": len(audio_data)
+            }
+            
+            # 如果有情绪分析结果，添加到响应中
+            if emotion_result:
+                response['emotion_analysis'] = emotion_result
+            
+            logger.info(f"用户 {user_id} 语音识别成功，识别文本长度: {len(recognized_text)} 字符")
+            return jsonify(response), 200
+        else:
+            error_message = result.get('error', '语音识别失败')
+            error_code = result.get('error_code')
+            logger.error(f"语音识别失败，用户ID: {user_id}, 错误: {error_message}, 错误码: {error_code}")
+            
+            # 提供更具体的错误信息
+            detailed_error = error_message
+            if error_code == 'INVALID_AUDIO':
+                detailed_error = "音频数据格式无效，请检查音频文件是否正确"
+            elif error_code == 'SERVICE_BUSY':
+                detailed_error = "服务暂时繁忙，请稍后重试"
+            
+            return jsonify({
+                "success": False,
+                "error": detailed_error,
+                "error_code": error_code,
+                "format": format_type
+            }), 500
+            
+    except ValueError as e:
+        logger.error(f"语音识别参数错误: {str(e)}")
+        return jsonify({"success": False, "error": f"参数错误: {str(e)}"}), 400
+    except Exception as e:
+        logger.error(f"语音识别处理失败: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "error": "处理请求时发生错误，请稍后重试"}), 500
+
+@app.route('/api/generate-task-suggestion', methods=['POST'])
+def generate_task_suggestion():
+    """使用通义千问生成个性化任务建议（增强版）"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        emotion = data.get('emotion', 'neutral')
+        current_input = data.get('input', '')
+        
+        if not user_id:
+            return jsonify({"success": False, "error": "缺少用户ID"}), 400
+        
+        # 构建丰富的用户上下文
+        user_context = {
+            'current_input': current_input,
+            'recent_moods': []
+        }
+        
+        # 获取用户最近的情绪记录作为上下文
+        try:
+            with db_lock:
+                conn = get_db()
+                cursor = conn.cursor()
+                # 获取最近5条记录，并设置row_factory以便于访问
+                cursor.row_factory = sqlite3.Row
+                cursor.execute(
+                    "SELECT emotion, input, created_at FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 5",
+                    (user_id,)
+                )
+                recent_moods = cursor.fetchall()
+                conn.close()
+            
+            # 转换为字典列表
+            user_context['recent_moods'] = [dict(row) for row in recent_moods]
+            logger.info(f"为用户 {user_id} 获取了 {len(user_context['recent_moods'])} 条历史情绪记录")
+        except Exception as e:
+            logger.warning(f"获取用户历史记录失败: {str(e)}")
+            # 继续处理，即使没有历史记录
+        
+        # 检查通义千问服务是否可用
+        if not qwen_service:
+            logger.warning("通义千问服务不可用，使用本地预设建议")            # 如果服务不可用，回退到预设建议
+            fallback_suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+            return jsonify({
+                "success": True,
+                "suggestion": fallback_suggestion,
+                "method": "local"
+            })
+        
+        # 获取用户历史数据作为上下文
+        with db_lock:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # 获取用户最近的情绪记录
+            cursor.execute(
+                "SELECT emotion, input FROM logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 3",
+                (user_id,)
+            )
+            recent_moods = cursor.fetchall()
+            conn.close()
+        
+        # 构建用户上下文
+        enhanced_context = {
+            'recent_moods': [dict(mood) for mood in recent_moods],
+            'additional_context': user_context
+        }
+        
+        # 调用通义千问生成任务建议
+        result = qwen_service.generate_task_suggestion(emotion, enhanced_context)
+        
+        if result.get('success'):
+            # 记录任务建议生成
+            logger.info(f"为用户 {user_id} 生成任务建议，情绪: {emotion}")
+            return jsonify({
+                "success": True,
+                "suggestion": result['suggestion'],
+                "method": "alicloud"
+            })
+        else:
+            # 失败时回退到预设建议
+            fallback_suggestion = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+            return jsonify({
+                "success": True,
+                "suggestion": fallback_suggestion,
+                "method": "local_fallback"
+            })
+            
+    except Exception as e:
+        logger.error(f"生成任务建议过程中发生错误: {str(e)}")
+        return jsonify({"success": False, "error": "处理请求时发生错误"}), 500
 
 # 主入口
 if __name__ == '__main__':

@@ -86,39 +86,22 @@
             });
         }
         
-        // 初始化IndexedDB数据库
+        // 使用统一的数据库初始化函数
         let db;
-        const initDatabase = () => {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('MoodMendDB', 1);
-                
-                request.onerror = event => {
-                    console.error('打开数据库失败:', event.target.error);
-                    reject(event.target.error);
-                };
-                
-                request.onsuccess = event => {
-                    db = event.target.result;
-                    console.log('数据库连接成功');
-                    resolve(db);
-                };
-                
-                request.onupgradeneeded = event => {
-                    db = event.target.result;
-                    
-                    // 创建情绪记录表
-                    if (!db.objectStoreNames.contains('emotions')) {
-                        const emotionStore = db.createObjectStore('emotions', {
-                            keyPath: 'id',
-                            autoIncrement: true
-                        });
-                        emotionStore.createIndex('date', 'date', { unique: false });
-                        emotionStore.createIndex('synced', 'synced', { unique: false });
-                    }
-                    
-                    console.log('数据库升级完成');
-                };
-            });
+        const initDatabase = async () => {
+            try {
+                if (typeof window.initDatabase === 'function') {
+                    db = await window.initDatabase();
+                } else {
+                    // 动态导入数据库工具模块作为后备方案
+                    const dbModule = await import('./assets/db.js');
+                    db = await dbModule.initDatabase();
+                }
+                return db;
+            } catch (error) {
+                console.error('数据库初始化失败:', error);
+                throw error;
+            }
         };
         
         // 页面切换函数

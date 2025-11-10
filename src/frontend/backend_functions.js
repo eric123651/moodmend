@@ -153,47 +153,13 @@ function getEmotionColor(emotion) {
     return colors[emotion] || '#6BCF7F';
 }
 
-// 初始化数据库
-// 初始化数据库函数 - 避免重复声明
+// 从统一的数据库工具模块导入初始化函数
+import { initDatabase, addLog, getUnsyncedData, markAsSynced } from './assets/db.js';
+
+// 将初始化函数挂载到window对象
 if (typeof window.initDatabase !== 'function') {
-    window.initDatabase = async function() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('MoodMendDB', 1);
-        
-        request.onerror = event => {
-            console.error('打開數據庫失敗:', event.target.error);
-            reject(event.target.error);
-        };
-        
-        request.onsuccess = event => {
-            const db = event.target.result;
-            console.log('数据库连接成功');
-            resolve(db);
-        };
-        
-        request.onupgradeneeded = event => {
-            const db = event.target.result;
-            
-            // 创建情绪记录表
-            if (!db.objectStoreNames.contains('emotions')) {
-                const emotionStore = db.createObjectStore('emotions', {
-                    keyPath: 'id',
-                    autoIncrement: true
-                });
-                emotionStore.createIndex('date', 'date', { unique: false });
-                emotionStore.createIndex('synced', 'synced', { unique: false });
-                emotionStore.createIndex('email', 'email', { unique: false });
-            }
-            
-            // 创建用户表
-            if (!db.objectStoreNames.contains('users')) {
-                const userStore = db.createObjectStore('users', {
-                    keyPath: 'email'
-                });
-            }
-        }
-    });
-    }
+    window.initDatabase = initDatabase;
+}
 }
 
 // 保存情绪日志

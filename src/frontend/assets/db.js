@@ -1,7 +1,7 @@
 // IndexedDB 工具函数，用于离线数据存储和同步
 
-// 打开数据库连接
-export async function openDB() {
+// 统一的数据库初始化函数
+export async function initDatabase() {
   return new Promise((resolve, reject) => {
     // 打开MoodMendDB数据库，版本号为1
     const request = indexedDB.open('MoodMendDB', 1);
@@ -25,6 +25,13 @@ export async function openDB() {
         emotionStore.createIndex('synced', 'synced', { unique: false });
         emotionStore.createIndex('email', 'email', { unique: false });
       }
+      
+      // 创建用户表，如果不存在
+      if (!db.objectStoreNames.contains('users')) {
+        const userStore = db.createObjectStore('users', {
+          keyPath: 'email'
+        });
+      }
     };
     
     request.onsuccess = event => {
@@ -40,6 +47,11 @@ export async function openDB() {
       resolve(db);
     };
   });
+}
+
+// 为了向后兼容，保留openDB函数
+export async function openDB() {
+  return initDatabase();
 }
 
 // 添加日志到数据库
