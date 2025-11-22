@@ -103,9 +103,9 @@ for i in range(29):
     
     # 插入情绪记录
     cursor.execute('''
-    INSERT INTO user_emotions (user_id, email, emotion)
+    INSERT OR REPLACE INTO user_emotions (user_id, last_emotion, last_update)
     VALUES (?, ?, ?)
-    ''', (user_id, 'test@test.com', emotion_type))
+    ''', (user_id, emotion_type, datetime.datetime.now().isoformat()))
 
 # 提交事务并关闭连接
 conn.commit()

@@ -279,7 +279,7 @@ def is_valid_email(email):
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(DB_NAME)
-        # 移除row_factory设置，让查询返回元组格式
+        g.db.row_factory = sqlite3.Row  # Set row_factory to allow accessing columns by name
     return g.db
 
 # API: 註冊
@@ -682,6 +682,18 @@ def get_logs():
         if date_filter:
             query += " AND time LIKE ?"
             params.append(f"{date_filter}%")
+            
+        # Add date range filtering
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        if start_date:
+            query += " AND time >= ?"
+            params.append(start_date)
+            
+        if end_date:
+            query += " AND time <= ?"
+            params.append(end_date)
         
         # 添加排序和分页
         query += " ORDER BY time DESC LIMIT ? OFFSET ?"
@@ -712,6 +724,14 @@ def get_logs():
         if date_filter:
             count_query += " AND time LIKE ?"
             count_params.append(f"{date_filter}%")
+            
+        if start_date:
+            count_query += " AND time >= ?"
+            count_params.append(start_date)
+            
+        if end_date:
+            count_query += " AND time <= ?"
+            count_params.append(end_date)
         
         cursor.execute(count_query, count_params)
         total = cursor.fetchone()[0]  # 使用索引访问而不是字典访问，因为没有设置row_factory
@@ -1009,7 +1029,7 @@ if __name__ == '__main__':
         
         # 在生產環境中，應該使用適當的WSGI服務器
         # 這裡為了演示，使用Flask的開發服務器
-        app.run(debug=True, port=5000, host='0.0.0.0')
+        app.run(debug=True, port=3000, host='0.0.0.0')
         
     except Exception as e:
         logger.critical(f"服務啟動失敗: {e}")

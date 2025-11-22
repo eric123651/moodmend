@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,9 +13,9 @@
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
     <link rel="manifest" href="../config/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/icon-moodmend.svg">
-    <link rel="mask-icon" href="/icons/icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="/icons/icon-moodmend.svg">
+    <link rel="apple-touch-icon" href="./icons/icon-moodmend.svg">
+    <link rel="mask-icon" href="./icons/icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="./icons/icon-moodmend.svg">
     <!-- 预加载核心资源 -->
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -27,82 +29,111 @@
         }
     </script>
     <style>
-        :root { 
-            --card-bg: rgba(255,255,255,0.92); /* 毛玻璃 */ 
-            --shadow-sparkle: 0 8px 32px rgba(255,215,0,0.2); /* 金陰影 */ 
-            --transition-magic: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94); /* 奢華緩動 */ 
+        :root {
+            --card-bg: rgba(255, 255, 255, 0.92);
+            /* 毛玻璃 */
+            --shadow-sparkle: 0 8px 32px rgba(255, 215, 0, 0.2);
+            /* 金陰影 */
+            --transition-magic: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* 奢華緩動 */
         }
-        body { 
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f8f9fa; /* 浅灰色背景 */ 
-            min-height: 100vh; 
-            margin: 0; 
-            padding: 0; 
+            background: #f8f9fa;
+            /* 浅灰色背景 */
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
             color: #333;
             -webkit-overflow-scrolling: touch;
             position: relative;
         }
-        .container { 
-            backdrop-filter: blur(16px); 
-            box-shadow: var(--shadow-sparkle); 
-            border-radius: 0 0 32px 32px; 
+
+        .container {
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-sparkle);
+            border-radius: 0 0 32px 32px;
         }
-        h1 { 
-            background: var(--hero-gradient); 
-            -webkit-background-clip: text; 
-            background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            font-size: 32px; 
+
+        h1 {
+            background: var(--hero-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 32px;
         }
-        .card { 
-            background: var(--card-bg); 
-            border: 1px solid rgba(255,105,180,0.1); 
-            transition: var(--transition-magic); 
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 105, 180, 0.1);
+            transition: var(--transition-magic);
         }
-        .card:hover { 
-            transform: translateY(-6px); 
-            box-shadow: var(--shadow-sparkle); 
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-sparkle);
         }
-        .emotion-badge { 
-            background: var(--hero-gradient); 
-            border-radius: 30px; 
-            padding: 10px 20px; 
-            color: white; 
-            font-weight: 600; 
+
+        .emotion-badge {
+            background: var(--hero-gradient);
+            border-radius: 30px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 600;
         }
-        .log-entry { 
-            border-left: 5px solid #FF69B4; 
-            margin-left: 40px; 
-            position: relative; 
-        } /* 粉邊時間線 */
-        .log-timeline::before { 
-            content: ''; 
-            position: absolute; 
-            left: 20px; 
-            top: 0; 
-            bottom: 0; 
-            width: 2px; 
-            background: var(--hero-gradient); 
-        } /* 波浪線靈感 */
-        #logChart { 
-            height: 320px; 
-            border-radius: 20px; 
-            background: var(--card-bg); 
-            padding: 24px; 
-            box-shadow: var(--shadow-sparkle); 
+
+        .log-entry {
+            border-left: 5px solid #FF69B4;
+            margin-left: 40px;
+            position: relative;
         }
-        .hero-logo { 
-            width: 120px; 
-            animation: float 3s ease-in-out infinite; 
-            margin: 20px auto; 
-            display: block; 
-        } /* Logo 浮動 */
-        @keyframes float { 
-            0%, 100% { transform: translateY(0px); } 
-            50% { transform: translateY(-10px); } 
+
+        /* 粉邊時間線 */
+        .log-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--hero-gradient);
         }
+
+        /* 波浪線靈感 */
+        #logChart {
+            height: 320px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            padding: 24px;
+            box-shadow: var(--shadow-sparkle);
+        }
+
+        .hero-logo {
+            width: 120px;
+            animation: float 3s ease-in-out infinite;
+            margin: 20px auto;
+            display: block;
+        }
+
+        /* Logo 浮動 */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
         /* 基础重置和APP样式 */
-        * { -webkit-tap-highlight-color: transparent; }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
         /* 功能菜单样式 */
         .menu-container {
             position: absolute;
@@ -110,6 +141,7 @@
             right: 20px;
             z-index: 100;
         }
+
         .menu-button {
             width: 48px;
             height: 48px;
@@ -126,22 +158,32 @@
             margin: 0;
             padding: 0;
         }
+
         .menu-dropdown {
             position: absolute;
             top: 60px;
             right: 0;
             background: white;
             border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
             overflow: hidden;
             width: 200px;
             display: none;
             animation: slideIn 0.2s ease-out;
         }
+
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .menu-dropdown button {
             width: 100%;
             padding: 16px 20px;
@@ -155,89 +197,133 @@
             box-shadow: none;
             border-bottom: 1px solid #f0f0f0;
         }
+
         .menu-dropdown button:last-child {
             border-bottom: none;
         }
-        .menu-dropdown button:hover, .menu-dropdown button:active {
+
+        .menu-dropdown button:hover,
+        .menu-dropdown button:active {
             background: #f8f9fa;
             transform: none;
         }
+
         .menu-dropdown.show {
             display: block;
         }
-        .page { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100vh; 
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); 
-            box-sizing: border-box; 
+
+        .page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
             overflow-y: auto;
         }
-        .page.active { display: block; }
-        .container { 
-            width: 100%; 
-            max-width: 100%; 
-            margin: 0; 
-            background: rgba(255,255,255,0.95); 
-            border-radius: 0; 
-            min-height: 100%; 
-            padding: 20px; 
-            box-sizing: border-box; 
+
+        .page.active {
+            display: block;
         }
-        h1 { text-align: center; color: #6A82FB; font-size: 24px; margin: 20px 0; }
-        input, select { 
-            width: 100%; 
-            padding: 16px; 
-            margin: 12px 0; 
-            border: 2px solid #FC5C7D; 
-            border-radius: 12px; 
-            box-sizing: border-box; 
-            font-size: 16px; /* 防止iOS缩放 */
+
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 0;
+            min-height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #6A82FB;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 16px;
+            margin: 12px 0;
+            border: 2px solid #FC5C7D;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+            /* 防止iOS缩放 */
             appearance: none;
             -webkit-appearance: none;
         }
-        button { 
-            background: #FC5C7D; 
-            color: white; 
-            border: none; 
-            padding: 16px 24px; 
-            border-radius: 12px; 
-            font-size: 18px; 
+
+        button {
+            background: #FC5C7D;
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 18px;
             font-weight: 600;
-            cursor: pointer; 
+            cursor: pointer;
             transition: transform 0.2s, background-color 0.2s;
-            width: 100%; 
-            margin: 12px 0; 
+            width: 100%;
+            margin: 12px 0;
             box-shadow: 0 4px 12px rgba(252, 92, 125, 0.3);
         }
-        button:hover, button:active { 
-            transform: scale(1.02); 
-            background-color: #ff4a69; 
+
+        button:hover,
+        button:active {
+            transform: scale(1.02);
+            background-color: #ff4a69;
         }
-        .card { 
-            background: white; 
-            border-radius: 20px; 
-            padding: 20px; 
-            margin: 15px 0; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         }
-        .emotion-badge { 
-            display: inline-block; 
-            padding: 8px 16px; 
-            border-radius: 25px; 
-            color: white; 
-            font-weight: bold; 
-            margin: 5px; 
+
+        .emotion-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            margin: 5px;
             font-size: 14px;
         }
-        .anxious { background: #FF6B6B; color: white; } 
-        .sad { background: #4ECDC4; color: white; } 
-        .neutral { background: #45B7D1; color: white; } 
-        .happy { background: #96CEB4; color: white; } 
-        .angry { background: #FFEAA7; color: #333; }
+
+        .anxious {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .sad {
+            background: #4ECDC4;
+            color: white;
+        }
+
+        .neutral {
+            background: #45B7D1;
+            color: white;
+        }
+
+        .happy {
+            background: #96CEB4;
+            color: white;
+        }
+
+        .angry {
+            background: #FFEAA7;
+            color: #333;
+        }
+
         /* To-Do List样式 */
         .todo-item {
             display: flex;
@@ -246,13 +332,15 @@
             background: white;
             border-radius: 16px;
             margin: 12px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             transition: all 0.2s ease;
         }
+
         .todo-item:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
             transform: translateY(-2px);
         }
+
         .todo-checkbox {
             width: 24px;
             height: 24px;
@@ -265,10 +353,12 @@
             position: relative;
             flex-shrink: 0;
         }
+
         .todo-checkbox:checked {
             background: #6A82FB;
             border-color: #6A82FB;
         }
+
         .todo-checkbox:checked::after {
             content: '✓';
             position: absolute;
@@ -279,329 +369,554 @@
             font-size: 16px;
             font-weight: bold;
         }
+
         .todo-text {
             flex: 1;
             font-size: 16px;
             line-height: 1.5;
             transition: opacity 0.2s ease;
         }
-        .todo-checkbox:checked + .todo-text {
+
+        .todo-checkbox:checked+.todo-text {
             text-decoration: line-through;
             opacity: 0.7;
         }
-        .log-entry { 
-            background: #f0f8ff; 
-            padding: 16px; 
-            border-radius: 16px; 
-            margin: 10px 0; 
+
+        .log-entry {
+            background: #f0f8ff;
+            padding: 16px;
+            border-radius: 16px;
+            margin: 10px 0;
             line-height: 1.6;
         }
-        .filter-bar { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 12px; 
-            margin-bottom: 20px; 
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
         }
-        .filter-bar select { 
-            border-radius: 30px; 
-            padding: 14px 20px; 
+
+        .filter-bar select {
+            border-radius: 30px;
+            padding: 14px 20px;
         }
-        .filter-bar select, .filter-bar input { 
-            flex: 1; 
-            min-width: 0; 
+
+        .filter-bar select,
+        .filter-bar input {
+            flex: 1;
+            min-width: 0;
         }
-        #logChart { max-height: 200px; margin: 20px 0; }
+
+        #logChart {
+            max-height: 200px;
+            margin: 20px 0;
+        }
+
         /* 底部导航栏 - 模拟APP底部标签栏 */
-        .nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            display: flex; 
-            gap: 0; 
-            background: rgba(255,255,255,0.98);
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
             padding: 12px 0;
-            border-top: 1px solid rgba(0,0,0,0.1);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
             padding-bottom: calc(12px + env(safe-area-inset-bottom));
         }
-        .nav button { 
-            flex: 1; 
+
+        .nav button {
+            flex: 1;
             margin: 0 8px;
             border-radius: 16px;
             font-size: 14px;
             padding: 14px 10px;
             box-shadow: none;
         }
-        .stats { 
-            text-align: center; 
-            margin: 20px 0; 
-            font-weight: bold; 
-            color: #6A82FB; 
+
+        .stats {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #6A82FB;
             font-size: 16px;
             padding: 12px;
             background: rgba(106, 130, 251, 0.1);
             border-radius: 16px;
-        } 
-        /* Page 1 改善：SVG 療癒 Bar */ 
-        #page1 .container { 
-            background: rgba(255,255,255,0.95); /* 恢复原始背景色 */ 
-            backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 12px 40px rgba(255,105,180,0.2); 
-            max-width: 400px; margin: 0 auto; padding: 40px 24px; /* 中央 bar */ 
-        } 
-        #page1 h1 { background: linear-gradient(135deg, #FF69B4, #8A2BE2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 28px; margin-bottom: 20px; } 
-        #page1 .login-form { position: relative; overflow: hidden; } /* 波浪容器 */ 
-        #page1 input { border: 2px solid transparent; border-radius: 12px; padding: 16px; margin: 12px 0; background: rgba(255,255,255,0.9); transition: all 0.3s ease; font-size: 16px; } 
-        #page1 input:focus { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.3); transform: scale(1.02); } /* 金脈動 */ 
-        #page1 input::placeholder { color: #8A2BE2; opacity: 0.7; } /* 紫 placeholder */ 
-        #page1 button { background: linear-gradient(135deg, #4169E1, #8A2BE2); color: white; border: none; border-radius: 12px; padding: 16px; width: 100%; font-weight: 600; margin: 8px 0; position: relative; overflow: hidden; } 
-        #page1 button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.5s; } 
-        #page1 button:hover::before { left: 100%; } /* 閃光波浪 */ 
-        #page1 button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(65,105,225,0.4); } 
-        #page1 .tab-bar { display: flex; justify-content: center; margin-bottom: 20px; } /* 註冊/登入 tab */ 
-        #page1 .tab { padding: 10px 20px; border-radius: 25px; background: rgba(255,105,180,0.2); color: #FF69B4; cursor: pointer; margin: 0 5px; transition: all 0.3s; } 
-        #page1 .tab.active { background: #FF69B4; color: white; transform: scale(1.05); } 
-        #page1 .hero-logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 4px 20px rgba(255,215,0,0.3); animation: float 3s infinite; } /* Logo 浮動 */ 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } 
-        #page1 .slogan { text-align: center; color: #8A2BE2; font-size: 14px; margin-bottom: 20px; opacity: 0.8; }
-    /* 3 表情 Bar：毛玻璃導航 */ 
- .nav-bar { 
-     position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; 
-     background: rgba(52, 152, 219, 0.1); /* 藍灰毛玻璃 */ 
-     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
-     border-top: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 0; z-index: 1000; 
-     box-shadow: 0 -4px 20px rgba(52, 152, 219, 0.1); 
-     transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; 
- } 
- .nav-item { 
-     width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); 
-     display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; 
-     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; 
-     padding: 5px; 
- } 
- .nav-item:hover, .nav-item.active { 
-     background: rgba(255, 215, 0, 0.3); 
-     transform: scale(1.1); 
-     box-shadow: 0 6px 24px rgba(255, 215, 0, 0.3); 
- } 
- .nav-item::before { 
-     content: ''; 
-     position: absolute; 
-     top: 50%; 
-     left: 50%; 
-     width: 0; 
-     height: 0; 
-     background: rgba(255, 255, 255, 0.5); 
-     border-radius: 50%; 
-     transform: translate(-50%, -50%); 
-     transition: width 0.3s, height 0.3s; 
- } 
- .nav-item:active::before { 
-     width: 100px; 
-     height: 100px; 
- } 
- .mood-icon { 
-     width: 32px; 
-     height: 32px; 
-     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); 
-     transition: all 0.3s ease; 
- } /* SVG 圖標 */ 
- .mood-icon-center { 
-     width: 48px; 
-     height: 48px; 
- } /* 中間放大 */ 
- .nav-item.active .mood-icon { 
-     filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.5)); 
-     transform: scale(1.1); 
- } 
- .nav-label { 
-     font-size: 12px; 
-     margin-top: 3px; 
-     opacity: 0.8; 
-     transition: opacity 0.3s ease; 
- } 
- .nav-item:hover .nav-label, .nav-item.active .nav-label { 
-     opacity: 1; 
-     font-weight: bold; 
- } 
- #page1 .nav-bar { display: none; } /* 登入前隱藏 */ 
- .page { padding-bottom: 80px; } /* 避開 Bar */ 
- 
- /* 响应式设计 - 适配不同设备尺寸 */ 
- @media (max-width: 375px) { 
-     .nav-bar { 
-         padding: 8px 0; 
-     } 
-     .nav-item { 
-         width: 50px; 
-         height: 50px; 
-     } 
-     .mood-icon { 
-         width: 28px; 
-         height: 28px; 
-     } 
-     .mood-icon-center { 
-         width: 40px; 
-         height: 40px; 
-     } 
-     .nav-label { 
-         font-size: 11px; 
-     } 
-     .page { 
-         padding-bottom: 70px; 
-     } 
- } 
- 
- @media (min-width: 768px) { 
-     .nav-bar { 
-         padding: 12px 0; 
-     } 
-     .nav-item { 
-         width: 70px; 
-         height: 70px; 
-     } 
-     .mood-icon { 
-         width: 36px; 
-         height: 36px; 
-     } 
-     .mood-icon-center { 
-         width: 56px; 
-         height: 56px; 
-     } 
-     .nav-label { 
-         font-size: 14px; 
-     } 
-     .page { 
-         padding-bottom: 100px; 
-     } 
- } 
- 
- /* 深色模式支持 */ 
- @media (prefers-color-scheme: dark) { 
-     .nav-bar { 
-         background: rgba(30, 41, 59, 0.8); 
-         border-top: 1px solid rgba(255, 255, 255, 0.1); 
-         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3); 
-     } 
-     .nav-item { 
-         background: rgba(71, 85, 105, 0.5); 
-         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); 
-     } 
-     .nav-item:hover, .nav-item.active { 
-         background: rgba(255, 215, 0, 0.4); 
-         box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4); 
-     } 
-     .nav-label { 
-         color: rgba(255, 255, 255, 0.8); 
-     } 
-     .nav-item:hover .nav-label, .nav-item.active .nav-label { 
-         color: rgba(255, 255, 255, 1); 
-     } 
- }
- 
- /* 用户中心相关样式 */
- .menu-item {
-     display: flex;
-     align-items: center;
-     padding: 15px 20px;
-     cursor: pointer;
-     transition: background-color 0.3s ease;
- }
- 
- .menu-item:hover {
-     background-color: rgba(106, 130, 251, 0.1);
- }
- 
- .menu-icon {
-     font-size: 18px;
-     margin-right: 15px;
-     width: 24px;
-     text-align: center;
- }
- 
- .menu-text {
-     flex: 1;
-     font-size: 16px;
- }
- 
- .menu-arrow {
-     color: #999;
-     font-size: 20px;
-     font-weight: bold;
- }
- 
- .menu-divider {
-     height: 1px;
-     background-color: #eee;
-     margin: 0 20px;
- }
- 
- /* 语言选择相关样式 */
- .language-option {
-     display: flex;
-     justify-content: space-between;
-     align-items: center;
-     padding: 15px 20px;
-     cursor: pointer;
-     transition: background-color 0.3s ease;
- }
- 
- .language-option:hover {
-     background-color: rgba(106, 130, 251, 0.1);
- }
- 
- .language-option .checkmark {
-     color: #6A82FB;
-     font-weight: bold;
- }
- 
- /* 深色模式下用户中心样式 */
- @media (prefers-color-scheme: dark) {
-     .menu-item:hover {
-         background-color: rgba(106, 130, 251, 0.2);
-     }
-     
-     .menu-divider {
-         background-color: rgba(255, 255, 255, 0.1);
-     }
-     
-     .menu-arrow {
-         color: #666;
-     }
-     
-     .language-option:hover {
-         background-color: rgba(106, 130, 251, 0.2);
-     }
- }
-</style>
+        }
+
+        /* Page 1 改善：SVG 療癒 Bar */
+        #page1 .container {
+            background: rgba(255, 255, 255, 0.95);
+            /* 恢复原始背景色 */
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(255, 105, 180, 0.2);
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            /* 中央 bar */
+        }
+
+        #page1 h1 {
+            background: linear-gradient(135deg, #FF69B4, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        #page1 .login-form {
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 波浪容器 */
+        #page1 input {
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        #page1 input:focus {
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            transform: scale(1.02);
+        }
+
+        /* 金脈動 */
+        #page1 input::placeholder {
+            color: #8A2BE2;
+            opacity: 0.7;
+        }
+
+        /* 紫 placeholder */
+        #page1 button {
+            background: linear-gradient(135deg, #4169E1, #8A2BE2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            width: 100%;
+            font-weight: 600;
+            margin: 8px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #page1 button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        #page1 button:hover::before {
+            left: 100%;
+        }
+
+        /* 閃光波浪 */
+        #page1 button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(65, 105, 225, 0.4);
+        }
+
+        #page1 .tab-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* 註冊/登入 tab */
+        #page1 .tab {
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: rgba(255, 105, 180, 0.2);
+            color: #FF69B4;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+
+        #page1 .tab.active {
+            background: #FF69B4;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        #page1 .hero-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: block;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+            animation: float 3s infinite;
+        }
+
+        /* Logo 浮動 */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        #page1 .slogan {
+            text-align: center;
+            color: #8A2BE2;
+            font-size: 14px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        /* 3 表情 Bar：毛玻璃導航 */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(52, 152, 219, 0.1);
+            /* 藍灰毛玻璃 */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 0;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(52, 152, 219, 0.1);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .nav-item {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            padding: 5px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(255, 215, 0, 0.3);
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .nav-item:active::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        .mood-icon {
+            width: 32px;
+            height: 32px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            transition: all 0.3s ease;
+        }
+
+        /* SVG 圖標 */
+        .mood-icon-center {
+            width: 48px;
+            height: 48px;
+        }
+
+        /* 中間放大 */
+        .nav-item.active .mood-icon {
+            filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.5));
+            transform: scale(1.1);
+        }
+
+        .nav-label {
+            font-size: 12px;
+            margin-top: 3px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-item:hover .nav-label,
+        .nav-item.active .nav-label {
+            opacity: 1;
+            font-weight: bold;
+        }
+
+        #page1 .nav-bar {
+            display: none;
+        }
+
+        /* 登入前隱藏 */
+        .page {
+            padding-bottom: 80px;
+        }
+
+        /* 避開 Bar */
+
+        /* 响应式设计 - 适配不同设备尺寸 */
+        @media (max-width: 375px) {
+            .nav-bar {
+                padding: 8px 0;
+            }
+
+            .nav-item {
+                width: 50px;
+                height: 50px;
+            }
+
+            .mood-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .mood-icon-center {
+                width: 40px;
+                height: 40px;
+            }
+
+            .nav-label {
+                font-size: 11px;
+            }
+
+            .page {
+                padding-bottom: 70px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .nav-bar {
+                padding: 12px 0;
+            }
+
+            .nav-item {
+                width: 70px;
+                height: 70px;
+            }
+
+            .mood-icon {
+                width: 36px;
+                height: 36px;
+            }
+
+            .mood-icon-center {
+                width: 56px;
+                height: 56px;
+            }
+
+            .nav-label {
+                font-size: 14px;
+            }
+
+            .page {
+                padding-bottom: 100px;
+            }
+        }
+
+        /* 深色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            .nav-bar {
+                background: rgba(30, 41, 59, 0.8);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            .nav-item {
+                background: rgba(71, 85, 105, 0.5);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            }
+
+            .nav-item:hover,
+            .nav-item.active {
+                background: rgba(255, 215, 0, 0.4);
+                box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4);
+            }
+
+            .nav-label {
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .nav-item:hover .nav-label,
+            .nav-item.active .nav-label {
+                color: rgba(255, 255, 255, 1);
+            }
+        }
+
+        /* 用户中心相关样式 */
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(106, 130, 251, 0.1);
+        }
+
+        .menu-icon {
+            font-size: 18px;
+            margin-right: 15px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .menu-text {
+            flex: 1;
+            font-size: 16px;
+        }
+
+        .menu-arrow {
+            color: #999;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .menu-divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 0 20px;
+        }
+
+        /* 语言选择相关样式 */
+        .language-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .language-option:hover {
+            background-color: rgba(106, 130, 251, 0.1);
+        }
+
+        .language-option .checkmark {
+            color: #6A82FB;
+            font-weight: bold;
+        }
+
+        /* 深色模式下用户中心样式 */
+        @media (prefers-color-scheme: dark) {
+            .menu-item:hover {
+                background-color: rgba(106, 130, 251, 0.2);
+            }
+
+            .menu-divider {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .menu-arrow {
+                color: #666;
+            }
+
+            .language-option:hover {
+                background-color: rgba(106, 130, 251, 0.2);
+            }
+        }
+
+        .interval-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            color: #666;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0;
+            width: auto;
+            /* Override global button width */
+            box-shadow: none;
+        }
+
+        .interval-btn.active {
+            background: #6A82FB;
+            color: white;
+            border-color: #6A82FB;
+            box-shadow: 0 2px 8px rgba(106, 130, 251, 0.3);
+        }
+
+        .toggle-btn {
+            transition: all 0.2s;
+            cursor: pointer;
+            width: auto;
+            /* Override global button width */
+        }
+    </style>
 </head>
+
 <body>
     <!-- 頁1: 登錄 -->
     <div id="page1" class="page active">
         <div class="container">
             <div class="hero-section" style="text-align: center; padding: 20px;">
-                <img src="/icons/MoodMend_Logo_Option4.svg" alt="MoodMend" class="hero-logo">
+                <img src="./icons/MoodMend_Logo_Option4.svg" alt="MoodMend" class="hero-logo">
                 <h1>讓每一次情緒，都成為療癒起點</h1>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+                <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
+                    style="width: 160px; height: 160px; object-fit: contain;">
             </div>
             <h1>MoodMend 歡迎</h1>
             <div class="card">
                 <input type="email" id="loginEmail" placeholder="Email">
                 <input type="password" id="loginPassword" placeholder="Password">
                 <button onclick="login()">登錄</button>
-                <button onclick="switchPage('pageRegister', event)" style="background-color: #6A82FB; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">註冊新帳號</button>
+                <button onclick="switchPage('pageRegister', event)"
+                    style="background-color: #6A82FB; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">註冊新帳號</button>
                 <p style="text-align: center; font-size: 12px;">Demo: 用 test@test.com / 123 登入</p>
             </div>
         </div>
     </div>
-    
+
     <!-- 頁5: 註冊 -->
     <div id="pageRegister" class="page">
         <div class="container">
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 160px; height: 160px; object-fit: contain;">
+                <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
+                    style="width: 160px; height: 160px; object-fit: contain;">
             </div>
             <h1>創建新帳號</h1>
             <div class="card">
@@ -610,7 +925,8 @@
                 <input type="password" id="registerPassword" placeholder="密碼 (至少6位)">
                 <input type="password" id="confirmPassword" placeholder="確認密碼">
                 <button onclick="register()">註冊</button>
-                <button onclick="switchPage('page1', event)" style="background-color: #666; box-shadow: 0 4px 12px rgba(102, 102, 102, 0.3);">返回登錄</button>
+                <button onclick="switchPage('page1', event)"
+                    style="background-color: #666; box-shadow: 0 4px 12px rgba(102, 102, 102, 0.3);">返回登錄</button>
             </div>
         </div>
     </div>
@@ -623,14 +939,18 @@
                 <button id="userButton2" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="/icons/icon-moodmend.svg" alt="MoodMend Logo" style="width: 120px; height: 120px; object-fit: contain;">
+                <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
+                    style="width: 120px; height: 120px; object-fit: contain;">
             </div>
             <h1>歡迎來到 MoodMend</h1>
-            <p id="welcomeMessage" class="welcome-message" style="text-align: center; font-size: 18px; color: #6A82FB; margin-bottom: 20px;"></p>
+            <p id="welcomeMessage" class="welcome-message"
+                style="text-align: center; font-size: 18px; color: #6A82FB; margin-bottom: 20px;"></p>
             <div class="card" style="text-align: center; padding: 30px 15px; margin-top: 40px;">
                 <p style="font-size: 18px; margin-bottom: 30px; font-weight: 500;">「每一種情緒都值得被理解和關照」</p>
-                <p style="margin-bottom: 40px; line-height: 1.6; font-size: 16px;">在這裡，我們將一起探索你的情緒世界，提供專屬的調適方案，幫助你度過每一個心情時刻。</p>
-                <button onclick="switchPage('page3', event)" style="margin-top: 20px; font-size: 18px; padding: 16px;">開始調適之旅</button>
+                <p style="margin-bottom: 40px; line-height: 1.6; font-size: 16px;">
+                    在這裡，我們將一起探索你的情緒世界，提供專屬的調適方案，幫助你度過每一個心情時刻。</p>
+                <button onclick="switchPage('page3', event)"
+                    style="margin-top: 20px; font-size: 18px; padding: 16px;">開始調適之旅</button>
             </div>
             <div style="text-align: center; margin-top: 40px; padding: 0 20px;">
                 <p style="color: #666; font-size: 14px;">今天，你想如何照顧自己的心情？</p>
@@ -682,6 +1002,30 @@
                 <button onclick="filterLogs()" style="flex-shrink: 0; min-width: 80px;">過濾</button>
             </div>
             <div class="stats" id="stats">本週完成率：0% | 轉移成就：0</div>
+
+            <!-- Chart Controls -->
+            <div class="chart-controls"
+                style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="chart-type-toggle"
+                        style="display: flex; background: #f0f2f5; padding: 4px; border-radius: 12px;">
+                        <button onclick="setChartType('doughnut')" id="btnPie" class="toggle-btn active"
+                            style="padding: 8px 16px; border-radius: 8px; border: none; background: white; color: #6A82FB; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0;">圓餅圖</button>
+                        <button onclick="setChartType('line')" id="btnLine" class="toggle-btn"
+                            style="padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: #666; font-weight: 600; margin: 0;">折線圖</button>
+                    </div>
+                </div>
+
+                <div class="time-intervals" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;">
+                    <button onclick="setTimeInterval('1W')" class="interval-btn active">1週</button>
+                    <button onclick="setTimeInterval('1M')" class="interval-btn">1月</button>
+                    <button onclick="setTimeInterval('3M')" class="interval-btn">3月</button>
+                    <button onclick="setTimeInterval('6M')" class="interval-btn">6月</button>
+                    <button onclick="setTimeInterval('1Y')" class="interval-btn">1年</button>
+                    <button onclick="setTimeInterval('ALL')" class="interval-btn">全部</button>
+                </div>
+            </div>
+
             <canvas id="logChart"></canvas>
             <div class="log-timeline" id="logTimeline">
                 <!-- loadLogs 會渲染這裡 -->
@@ -696,13 +1040,70 @@
         window.currentUser = null;
         let currentPackage = null;
         let userLogs = [];
+        // Chart settings
+        let currentChartType = 'doughnut';
+        let currentTimeInterval = '1W';
+
         // 请求锁，避免重复请求
         let isLoadingLogs = false;
         let isUpdatingStats = false;
-        
+
+        // Chart Control Functions
+        function setChartType(type) {
+            currentChartType = type;
+
+            // Update UI
+            document.getElementById('btnPie').className = type === 'doughnut' ? 'toggle-btn active' : 'toggle-btn';
+            document.getElementById('btnLine').className = type === 'line' ? 'toggle-btn active' : 'toggle-btn';
+
+            // Apply styles to active button
+            const activeStyle = "padding: 8px 16px; border-radius: 8px; border: none; background: white; color: #6A82FB; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0;";
+            const inactiveStyle = "padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: #666; font-weight: 600; margin: 0;";
+
+            document.getElementById('btnPie').style.cssText = type === 'doughnut' ? activeStyle : inactiveStyle;
+            document.getElementById('btnLine').style.cssText = type === 'line' ? activeStyle : inactiveStyle;
+
+            drawChart();
+        }
+
+        function setTimeInterval(interval) {
+            currentTimeInterval = interval;
+
+            // Update UI
+            document.querySelectorAll('.interval-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.includes(interval === 'ALL' ? '全部' : interval.replace('W', '週').replace('M', '月').replace('Y', '年'))) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Reload logs with new interval
+            loadLogs(1);
+        }
+
+        function getDateRange(interval) {
+            if (interval === 'ALL') return { start: null, end: null };
+
+            const end = new Date();
+            const start = new Date();
+
+            switch (interval) {
+                case '1W': start.setDate(end.getDate() - 7); break;
+                case '1M': start.setMonth(end.getMonth() - 1); break;
+                case '3M': start.setMonth(end.getMonth() - 3); break;
+                case '6M': start.setMonth(end.getMonth() - 6); break;
+                case '1Y': start.setFullYear(end.getFullYear() - 1); break;
+            }
+
+            return {
+                start: start.toISOString().split('T')[0],
+                end: end.toISOString().split('T')[0]
+            };
+        }
+
         // 修复iOS Safari中状态栏覆盖问题
         if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-            document.documentElement.style.paddingTop = env(safe-area-inset-top) + 'px';
+            document.documentElement.style.paddingTop = env(safe - area - inset - top) + 'px';
         }
 
         // 功能菜单切换
@@ -711,16 +1112,16 @@
             document.querySelectorAll('.menu-dropdown').forEach(menu => {
                 menu.classList.remove('show');
             });
-            
+
             // 切换当前菜单
             const button = document.getElementById(buttonId);
             const menuId = buttonId.replace('Button', '');
             const menu = document.getElementById(menuId);
             menu.classList.toggle('show');
         }
-        
+
         // 点击页面其他地方关闭菜单
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', function (event) {
             if (!event.target.closest('.menu-container')) {
                 document.querySelectorAll('.menu-dropdown').forEach(menu => {
                     menu.classList.remove('show');
@@ -734,9 +1135,9 @@
         async function showVersionInfo() {
             try {
                 // 从后端获取版本信息
-                const response = await fetch('http://localhost:5000/api/health');
+                const response = await fetch('http://localhost:3000/api/health');
                 const data = await response.json();
-                
+
                 if (data.version) {
                     showToast(`MoodMend ${data.version}`);
                 } else {
@@ -747,7 +1148,7 @@
                 showToast('MoodMend V1.0.4');
             }
         }
-        
+
         function showLanguageSelection() {
             // 创建语言选择对话框
             const dialog = document.createElement('div');
@@ -760,7 +1161,7 @@
             dialog.style.width = '90%';
             dialog.style.maxWidth = '300px';
             dialog.style.padding = '0';
-            
+
             dialog.innerHTML = `
                 <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
                     <h3>選擇語言</h3>
@@ -779,40 +1180,40 @@
                     <button onclick="this.parentNode.parentNode.remove()">確定</button>
                 </div>
             `;
-            
+
             document.body.appendChild(dialog);
         }
-        
+
         function setLanguage(lang) {
             // 这里可以实现语言切换逻辑
             localStorage.setItem('appLanguage', lang);
             showToast('語言已設置為：' + (lang === 'zh-CN' ? '繁體中文' : 'English'));
-            
+
             // 更新选中状态
             document.querySelectorAll('.language-option').forEach(option => {
                 option.querySelector('.checkmark').textContent = '';
             });
             event.currentTarget.querySelector('.checkmark').textContent = '✓';
         }
-        
+
         function showPrivacyPolicy() {
             showToast('隱私政策頁面將在未來版本開放');
         }
-        
+
         function showTermsOfService() {
             showToast('服務條款頁面將在未來版本開放');
         }
-        
+
         function showAbout() {
             showToast('MoodMend - 您的心情調適助手');
         }
-        
+
         // 显示加载中 - 改进加载动画
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
             element.innerHTML = '<div style="text-align: center; padding: 20px; color: #6A82FB;"><div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(106, 130, 251, 0.3); border-radius: 50%; border-top-color: #6A82FB; animation: spin 1s ease-in-out infinite;"></div><p style="margin-top: 10px;">加載中...</p></div>';
         }
-        
+
         // 添加旋转动画
         const style = document.createElement('style');
         style.textContent = `
@@ -837,9 +1238,9 @@
             errorCard.style.padding = '15px 20px';
             errorCard.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
             errorCard.textContent = '錯誤：' + message;
-            
+
             document.body.appendChild(errorCard);
-            
+
             // 3秒后自动消失
             setTimeout(() => {
                 errorCard.style.opacity = '0';
@@ -854,31 +1255,31 @@
         async function login() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
-            
+
             if (!email || !password) {
                 return alert('請填寫完整的登錄資訊');
             }
-            
+
             try {
                 // 显示加载状态
                 const loginButton = document.querySelector('#page1 button');
                 const originalText = loginButton.textContent;
                 loginButton.textContent = '登入中...';
                 loginButton.disabled = true;
-                
+
                 console.log('正在发送登录请求:', email);
-                const response = await fetch('http://localhost:5000/api/login', {
+                const response = await fetch('http://localhost:3000/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ email, password })
                 });
-                
+
                 console.log('登录请求响应状态:', response.status);
                 const data = await response.json();
                 console.log('登录响应数据:', data);
-                
+
                 if (data.success) {
                     // 保存用户信息（包含用户名）
                     window.currentUser = {
@@ -904,42 +1305,42 @@
                 loginButton.disabled = false;
             }
         }
-        
+
         // 註冊
         async function register() {
             const user_name = document.getElementById('registerUserName').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            
+
             // 表单验证
             if (!email || !password || !user_name) {
                 return alert('請填寫完整的註冊資訊');
             }
-            
+
             if (user_name.length < 2 || user_name.length > 20) {
                 return alert('用户名长度应在2-20个字符之间');
             }
-            
+
             if (password.length < 6) {
                 return alert('密碼長度至少需要6位');
             }
-            
+
             if (password !== confirmPassword) {
                 return alert('兩次輸入的密碼不一致');
             }
-            
+
             try {
-                const response = await fetch('http://localhost:5000/api/register', {
+                const response = await fetch('http://localhost:3000/api/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ email, password, user_name })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // 註冊成功後自動登錄
                     currentUser = {
@@ -965,38 +1366,38 @@
         async function processEmotion() {
             const input = document.getElementById('emotionInput').value;
             if (!input) return alert('請輸入');
-            
+
             try {
                 const taskCompleteElem = document.getElementById('taskComplete');
-const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
-                
+                const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
+
                 showLoading('packageCard');
-                
+
                 // 检查网络连接
                 if (!navigator.onLine) {
                     // 离线模式 - 提示用户
                     showError('当前处于离线状态，请检查网络连接后重试。');
                     return;
                 }
-                
-                const response = await fetch('http://localhost:5000/api/process-emotion', {
+
+                const response = await fetch('http://localhost:3000/api/process-emotion', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        input, 
+                    body: JSON.stringify({
+                        input,
                         email: window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser,
                         task_completed: taskCompleted
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     currentPackage = data;
                     const pkg = data.package;
-                    
+
                     document.getElementById('packageCard').innerHTML = `
                         <h3><span class="emotion-badge ${pkg.color}">${data.emotion}</span></h3>
                         <p><strong>技巧：</strong>${pkg.tips}</p>
@@ -1019,7 +1420,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
         function checkCompletion() {
             const completed = document.getElementById('taskComplete').checked;
             const nftButton = document.getElementById('nftButton');
-            
+
             if (completed) {
                 nftButton.style.backgroundColor = '#4CAF50';
                 nftButton.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
@@ -1032,10 +1433,10 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
         // 显示徽章并保存日志
         async function showNFT() {
             if (!currentPackage) return;
-            
+
             const completed = document.getElementById('taskComplete').checked;
             const badge = currentPackage.nft;
-            
+
             // 移动端友好的提示
             const notification = document.createElement('div');
             notification.className = 'card';
@@ -1050,16 +1451,16 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
             notification.style.boxShadow = '0 8px 30px rgba(0,0,0,0.3)';
             notification.style.textAlign = 'center';
             notification.innerHTML = `<h3 style="margin-top: 0;">🏆 恭喜！</h3><p style="font-size: 18px; margin-bottom: 20px;">${badge}</p>`;
-            
+
             const okButton = document.createElement('button');
             okButton.textContent = '太棒了！';
             okButton.style.maxWidth = '200px';
             okButton.style.margin = '0 auto';
             okButton.style.display = 'block';
-            
+
             document.body.appendChild(notification);
             notification.appendChild(okButton);
-            
+
             // 等待用户点击确认
             await new Promise(resolve => {
                 okButton.onclick = () => {
@@ -1067,7 +1468,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                     resolve();
                 };
             });
-            
+
             // 准备日志数据
             const logData = {
                 email: window.currentUser?.email || window.currentUser,
@@ -1077,21 +1478,21 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 completed: completed,
                 timestamp: new Date().toISOString()
             };
-            
+
             try {
                 // 检查网络连接
                 if (navigator.onLine) {
                     // 在线模式 - 直接保存到服务器
-                    const response = await fetch('http://localhost:5000/api/add-log', {
+                    const response = await fetch('http://localhost:3000/api/add-log', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(logData)
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (!data.success) {
                         // 保存失败，尝试保存到本地
                         saveLogToOffline(logData);
@@ -1101,7 +1502,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                     // 离线模式 - 保存到本地
                     saveLogToOffline(logData);
                     showError('当前处于离线状态，记录已保存，将在网络恢复后同步。');
-                    
+
                     // 注册后台同步
                     if ('serviceWorker' in navigator && 'SyncManager' in window) {
                         const sw = await navigator.serviceWorker.ready;
@@ -1112,7 +1513,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                         }
                     }
                 }
-                
+
                 // 重置界面
                 document.getElementById('emotionInput').value = '';
                 document.getElementById('taskComplete').checked = false;
@@ -1123,7 +1524,7 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 document.getElementById('packageCard').style.display = 'none';
                 document.getElementById('taskSection').style.display = 'none';
                 currentPackage = null;
-                
+
                 switchPage('page4');
             } catch (error) {
                 // 保存失败，尝试保存到本地
@@ -1139,31 +1540,38 @@ const taskCompleted = taskCompleteElem ? taskCompleteElem.checked : false;
                 console.log('日志加载已在进行中，跳过重复请求');
                 return;
             }
-            
+
             try {
                 isLoadingLogs = true;
                 showLoading('logSection');
-                
+
                 const emotionFilter = document.getElementById('emotionFilter').value;
                 const dateFilter = document.getElementById('dateFilter').value;
                 const limit = 50; // 每页显示50条记录
                 const offset = (page - 1) * limit; // 计算偏移量
-                
+
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
+                let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
+
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
-                
+
+                // Add interval filtering
+                const { start, end } = getDateRange(currentTimeInterval);
+                if (start) url += `&start_date=${start}`;
+                if (end) url += `&end_date=${end}`;
+
+                console.log('Loading logs from:', url);
                 const response = await fetch(url, {
                     method: 'GET'
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     userLogs = data.logs;
                     const totalPages = Math.ceil(data.total / limit);
@@ -1190,23 +1598,23 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         function renderLogs(totalPages, currentPage, totalLogs) {
             const section = document.getElementById('logSection');
             section.innerHTML = '';
-            
+
             // 显示日志总数
             const logCount = document.createElement('div');
             logCount.className = 'log-count';
             logCount.innerHTML = `<p style="text-align: center; color: #666; margin-bottom: 15px;">共 ${totalLogs} 條記錄</p>`;
             section.appendChild(logCount);
-            
+
             if (userLogs.length === 0) {
                 section.innerHTML += '<p style="text-align: center; color: #666;">此頁面沒有記錄</p>';
             } else {
                 // 按時間倒序排列
                 userLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
-                
+
                 userLogs.forEach(log => {
                     const entry = document.createElement('div');
                     entry.className = 'log-entry card';
-                    
+
                     // 情緒顏色映射
                     const emotionColors = {
                         'anxious': 'anxious',
@@ -1215,26 +1623,26 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                         'happy': 'happy',
                         'angry': 'angry'
                     };
-                    
+
                     const colorClass = emotionColors[log.emotion] || 'neutral';
-                    
+
                     entry.innerHTML = `
                         <strong>${log.time}:</strong> <span class="emotion-badge ${colorClass}">${log.emotion}</span>
                         | 任務: ${log.task} ${log.completed ? '✅' : ''} | 徽章: ${log.nft}
                     `;
                     section.appendChild(entry);
                 });
-                
+
                 drawChart();
             }
-            
+
             // 添加分页控件
             if (totalPages > 1) {
                 const pagination = document.createElement('div');
                 pagination.className = 'pagination';
                 pagination.style.textAlign = 'center';
                 pagination.style.marginTop = '20px';
-                
+
                 // 上一页按钮
                 const prevButton = document.createElement('button');
                 prevButton.textContent = '上一頁';
@@ -1242,13 +1650,13 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 prevButton.onclick = () => loadLogs(currentPage - 1);
                 prevButton.className = 'btn';
                 prevButton.style.marginRight = '10px';
-                
+
                 // 页码显示
                 const pageInfo = document.createElement('span');
                 pageInfo.textContent = `${currentPage} / ${totalPages}`;
                 pageInfo.style.margin = '0 15px';
                 pageInfo.style.lineHeight = '36px';
-                
+
                 // 下一页按钮
                 const nextButton = document.createElement('button');
                 nextButton.textContent = '下一頁';
@@ -1256,7 +1664,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 nextButton.onclick = () => loadLogs(currentPage + 1);
                 nextButton.className = 'btn';
                 nextButton.style.marginLeft = '10px';
-                
+
                 pagination.appendChild(prevButton);
                 pagination.appendChild(pageInfo);
                 pagination.appendChild(nextButton);
@@ -1276,7 +1684,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 console.log('统计更新已在进行中，跳过重复请求');
                 return;
             }
-            
+
             try {
                 isUpdatingStats = true;
                 // 首先检查网络状态
@@ -1290,21 +1698,21 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     }
                     return;
                 }
-                
+
                 const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 const response = await fetch(
-                     `http://localhost:5000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
-                    { 
+                    `http://localhost:3000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
+                    {
                         method: 'GET'
                     }
                 );
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
                     document.getElementById('stats').innerText = statsText;
@@ -1344,90 +1752,212 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         // 绘制图表 - 优化移动端显示
         function drawChart() {
             const ctx = document.getElementById('logChart').getContext('2d');
-            
+
             // 销毁旧图表
             if (window.emotionChart) {
                 window.emotionChart.destroy();
             }
-            
-            // 计算情绪分布
-            const emotionCounts = {
-                'anxious': 0,
-                'sad': 0,
-                'neutral': 0,
-                'happy': 0,
-                'angry': 0
-            };
-            
-            userLogs.forEach(log => {
-                if (emotionCounts.hasOwnProperty(log.emotion)) {
-                    emotionCounts[log.emotion]++;
-                }
-            });
-            
-            // 创建图表 - 优化移动端交互
-            window.emotionChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['焦慮', '傷心', '平靜', '快樂', '生氣'],
-                    datasets: [{
-                        data: [
-                            emotionCounts.anxious,
-                            emotionCounts.sad,
-                            emotionCounts.neutral,
-                            emotionCounts.happy,
-                            emotionCounts.angry
-                        ],
-                        backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-                        borderWidth: 0,
-                        hoverOffset: 15
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '60%',
-                    animation: { duration: 2000, easing: 'easeInOutQuart' }, // 奢華動畫
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 14
-                                },
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                color: '#FFD700' // 金色
+
+            if (currentChartType === 'line') {
+                // Line Chart Logic (Mood Trend)
+                // 1. Group by date
+                const logsByDate = {};
+                userLogs.forEach(log => {
+                    // Format date as YYYY.MM.DD
+                    const dateObj = new Date(log.time);
+                    const date = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`;
+
+                    if (!logsByDate[date]) logsByDate[date] = [];
+                    logsByDate[date].push(log);
+                });
+
+                // 2. Process data for each date
+                const dates = Object.keys(logsByDate).sort();
+
+                // Determine date format (Show year only if range spans multiple years)
+                const years = new Set(dates.map(d => d.split('.')[0]));
+                const showYear = years.size > 1;
+                const displayLabels = dates.map(d => showYear ? d : d.substring(5));
+
+                const scoreMap = { 'happy': 2, 'calm': 1, 'neutral': 0, 'anxious': -1, 'sad': -2, 'angry': -2 };
+
+                const chartData = dates.map(date => {
+                    const dayLogs = logsByDate[date].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                    // Calculate average score
+                    const totalScore = dayLogs.reduce((sum, log) => sum + (scoreMap[log.emotion] || 0), 0);
+                    const avgScore = totalScore / dayLogs.length;
+
+                    // Determine transformation string
+                    const emotions = dayLogs.map(l => l.emotion);
+                    const startMood = emotions[0];
+                    const endMood = emotions[emotions.length - 1];
+
+                    // Determine point color based on trend
+                    let pointColor = '#6A82FB'; // Default Blue
+                    if (dayLogs.length > 1) {
+                        const startScore = scoreMap[startMood];
+                        const endScore = scoreMap[endMood];
+                        if (endScore > startScore) pointColor = '#4ECDC4'; // Green/Teal (Improved)
+                        else if (endScore < startScore) pointColor = '#FF6B6B'; // Red (Worsened)
+                    }
+
+                    // Format transformation text
+                    let transformText = '';
+                    if (dayLogs.length === 1) {
+                        transformText = startMood;
+                    } else {
+                        // Show first and last, or full path if short
+                        transformText = dayLogs.map(l => {
+                            const time = new Date(l.time).getHours() + ':' + String(new Date(l.time).getMinutes()).padStart(2, '0');
+                            return `${time} ${l.emotion}`;
+                        }).join(' ➔ ');
+                    }
+
+                    return {
+                        x: date,
+                        y: avgScore,
+                        transform: transformText,
+                        color: pointColor,
+                        count: dayLogs.length
+                    };
+                });
+
+                window.emotionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: displayLabels,
+                        datasets: [{
+                            label: '心情指數',
+                            data: chartData.map(d => d.y),
+                            borderColor: '#6A82FB',
+                            backgroundColor: 'rgba(106, 130, 251, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: chartData.map(d => d.color),
+                            pointBorderColor: chartData.map(d => d.color),
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: -2,
+                                max: 2,
+                                ticks: {
+                                    callback: function (value) {
+                                        if (value >= 1.5) return '快樂';
+                                        if (value >= 0.5) return '平靜';
+                                        if (value >= -0.5) return '一般';
+                                        if (value >= -1.5) return '焦慮';
+                                        return '難過/生氣';
+                                    }
+                                }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return `${label}: ${value}次 (${percentage}%)`;
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const dataIndex = context.dataIndex;
+                                        const dataItem = chartData[dataIndex];
+                                        return `心情軌跡: ${dataItem.transform}`;
+                                    },
+                                    afterLabel: function (context) {
+                                        const value = context.raw;
+                                        return `平均指數: ${value.toFixed(1)}`;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+
+            } else {  // Doughnut Chart Logic (Existing)
+                // 计算情绪分布
+                const emotionCounts = {
+                    'anxious': 0,
+                    'sad': 0,
+                    'neutral': 0,
+                    'happy': 0,
+                    'angry': 0
+                };
+
+                userLogs.forEach(log => {
+                    if (emotionCounts.hasOwnProperty(log.emotion)) {
+                        emotionCounts[log.emotion]++;
+                    }
+                });
+
+                // 创建图表 - 优化移动端交互
+                window.emotionChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['焦慮', '傷心', '平靜', '快樂', '生氣'],
+                        datasets: [{
+                            data: [
+                                emotionCounts.anxious,
+                                emotionCounts.sad,
+                                emotionCounts.neutral,
+                                emotionCounts.happy,
+                                emotionCounts.angry
+                            ],
+                            backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
+                            borderWidth: 0,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        animation: { duration: 2000, easing: 'easeInOutQuart' }, // 奢華動畫
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 14
+                                    },
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    color: '#FFD700' // 金色
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return `${label}: ${value}次 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // 初始化 - 添加更多移动端适配和PWA支持
         function init() {
             console.log('开始初始化应用 - 增强PWA支持');
-            
+
             // 禁用iOS双击缩放
             document.addEventListener('touchstart', function preventZoom(e) {
                 if (e.touches.length === 2) {
                     e.preventDefault();
                 }
             }, { passive: false });
-            
+
             // 存储初始触摸位置以检测双击
             let lastTouchEnd = 0;
             document.addEventListener('touchend', function preventDoubleTapZoom(e) {
@@ -1437,10 +1967,10 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 }
                 lastTouchEnd = now;
             }, { passive: false });
-            
+
             // 显示加载指示器
             showLoadingIndicator();
-            
+
             // 清除旧的Service Worker缓存（如果存在）
             if ('caches' in window) {
                 console.log('尝试清除旧缓存...');
@@ -1453,10 +1983,10 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     });
                 });
             }
-            
+
             // 立即注册Service Worker，不再等待load事件
             registerServiceWorker();
-            
+
             // 监听页面可见性变化，确保在页面重新可见时更新数据
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) {
@@ -1471,7 +2001,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     }
                 }
             });
-            
+
             // 检查用户登录状态
             const savedUser = localStorage.getItem('user');
             if (savedUser) {
@@ -1488,7 +2018,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     console.error('用户数据格式不匹配，使用默认值:', e);
                 }
                 console.log('用户信息:', window.currentUser);
-                
+
                 // 延迟切换页面，确保Service Worker有时间初始化
                 setTimeout(() => {
                     switchPage('page2');
@@ -1504,7 +2034,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 console.log('未检测到用户登录信息');
                 hideLoadingIndicator();
             }
-            
+
             // 初始化完成后，检查页面是否正常显示
             setTimeout(() => {
                 console.log('初始化完成，检查页面状态...');
@@ -1521,15 +2051,15 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
         function logout() {
             // 清除localStorage中的用户信息
             localStorage.removeItem('user');
-            
+
             // 重置用户相关变量
             window.currentUser = null;
             currentPackage = null;
             userLogs = [];
-            
+
             // 返回到登录页面
             switchPage('page1');
-            
+
             // 显示登出成功提示
             alert('登出成功');
         }
@@ -1545,7 +2075,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 console.error('保存离线日志失败:', error);
             }
         }
-        
+
         // 同步离线日志到服务器
         async function syncOfflineLogs() {
             try {
@@ -1554,32 +2084,32 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     console.log('当前离线，无法同步日志');
                     return;
                 }
-                
+
                 let offlineLogs = JSON.parse(localStorage.getItem('offline_logs') || '[]');
-                
+
                 if (offlineLogs.length === 0) return;
-                
+
                 // 过滤出当前用户的日志
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 const userLogs = offlineLogs.filter(log => log.email === userEmail);
-                
+
                 if (userLogs.length === 0) return;
-                
+
                 // 尝试同步每条日志
                 const syncedLogs = [];
-                
+
                 for (const log of userLogs) {
                     try {
-                        const response = await fetch('http://localhost:5000/api/add-log', {
+                        const response = await fetch('http://localhost:3000/api/add-log', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(log)
                         });
-                        
+
                         const data = await response.json();
-                        
+
                         if (data.success) {
                             syncedLogs.push(log);
                         }
@@ -1587,17 +2117,17 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                         console.error('同步单条日志失败:', error);
                     }
                 }
-                
+
                 // 从离线存储中移除已同步的日志
-                const remainingLogs = offlineLogs.filter(log => 
-                    !syncedLogs.some(synced => 
-                        synced.email === log.email && 
+                const remainingLogs = offlineLogs.filter(log =>
+                    !syncedLogs.some(synced =>
+                        synced.email === log.email &&
                         synced.timestamp === log.timestamp
                     )
                 );
-                
+
                 localStorage.setItem('offline_logs', JSON.stringify(remainingLogs));
-                
+
                 // 通知Service Worker同步完成
                 if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                     navigator.serviceWorker.controller.postMessage({
@@ -1605,9 +2135,9 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                         data: { synced: syncedLogs.length }
                     });
                 }
-                
+
                 console.log(`成功同步了 ${syncedLogs.length} 条离线日志`);
-                
+
                 // 更新UI显示
                 if (syncedLogs.length > 0) {
                     loadLogs(1);
@@ -1617,33 +2147,33 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 console.error('同步离线日志失败:', error);
             }
         }
-        
+
         // 检查并显示网络状态
         function checkNetworkStatus() {
             const isOnline = navigator.onLine;
             console.log(isOnline ? '网络已连接' : '网络已断开');
             return isOnline;
         }
-        
+
         // 监听在线状态变化
         window.addEventListener('online', () => {
             checkNetworkStatus();
             // 尝试同步离线日志
             syncOfflineLogs();
-            
+
             // 显示在线状态提示
             showToast('网络已恢复，正在同步离线数据...');
         });
-        
+
         window.addEventListener('offline', () => {
             checkNetworkStatus();
             // 显示离线状态提示
             showToast('当前处于离线模式，数据将在网络恢复后同步');
         });
-        
+
         // 初始检查网络状态
         checkNetworkStatus();
-        
+
         // 增强的提示消息函数
         function showToast(message, duration = 3000) {
             // 确保DOM已加载
@@ -1651,7 +2181,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 setTimeout(() => showToast(message, duration), 100);
                 return;
             }
-            
+
             // 检查是否已存在toast元素
             let toast = document.getElementById('toast-message');
             if (!toast) {
@@ -1671,17 +2201,17 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 toast.style.transition = 'opacity 0.3s ease';
                 document.body.appendChild(toast);
             }
-            
+
             // 重置显示
             toast.style.display = 'block';
             toast.style.opacity = '1';
             toast.textContent = message;
-            
+
             // 清除之前的定时器
             if (toast.timer) {
                 clearTimeout(toast.timer);
             }
-            
+
             // 设置新的定时器隐藏
             toast.timer = setTimeout(() => {
                 toast.style.opacity = '0';
@@ -1690,24 +2220,24 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 }, 300);
             }, duration);
         }
-        
+
         // Service Worker注册函数
         function registerServiceWorker() {
             console.log('开始注册Service Worker');
             if ('serviceWorker' in navigator) {
                 // 清除之前可能存在的Service Worker
                 navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for(let registration of registrations) {
+                    for (let registration of registrations) {
                         console.log('注销旧的Service Worker:', registration.scope);
                         registration.unregister();
                     }
-                    
+
                     // 重新注册Service Worker
                     setTimeout(() => {
                         navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                             .then(registration => {
                                 console.log('Service Worker 注册成功:', registration.scope);
-                                
+
                                 // 确保立即控制页面
                                 registration.addEventListener('updatefound', () => {
                                     const newWorker = registration.installing;
@@ -1727,7 +2257,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                                         }
                                     });
                                 });
-                                
+
                                 // 检查后台同步支持并添加更好的错误处理
                                 if ('SyncManager' in window && 'sync' in registration) {
                                     console.log('浏览器支持后台同步');
@@ -1751,7 +2281,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                                 } else {
                                     console.log('浏览器不支持后台同步');
                                 }
-                                
+
                                 // 如果已经有控制的Service Worker，通知它刷新缓存
                                 if (navigator.serviceWorker.controller) {
                                     console.log('发送缓存刷新消息到现有Service Worker');
@@ -1773,7 +2303,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 showToast('您的浏览器不支持离线功能');
             }
         }
-        
+
         // 显示加载指示器
         function showLoadingIndicator(show) {
             let loader = document.getElementById('loading-indicator');
@@ -1791,18 +2321,18 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 loader.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
                 loader.style.zIndex = '9999';
                 loader.innerHTML = '<div style="text-align: center;"><div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #6A82FB; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div><p style="margin-top: 15px;">加载中...</p></div>';
-                
+
                 // 添加旋转动画
                 const style = document.createElement('style');
                 style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
                 document.head.appendChild(style);
-                
+
                 document.body.appendChild(loader);
             } else if (loader) {
                 loader.style.display = show ? 'flex' : 'none';
             }
         }
-        
+
         // 显示加载指示器
         function showLoadingIndicator() {
             let loader = document.getElementById('app-loader');
@@ -1819,7 +2349,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 loader.style.alignItems = 'center';
                 loader.style.justifyContent = 'center';
                 loader.style.zIndex = '9999';
-                
+
                 const spinner = document.createElement('div');
                 spinner.style.width = '50px';
                 spinner.style.height = '50px';
@@ -1827,17 +2357,17 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 spinner.style.borderTop = '5px solid #6A82FB';
                 spinner.style.borderRadius = '50%';
                 spinner.style.animation = 'spin 1s linear infinite';
-                
+
                 const style = document.createElement('style');
                 style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
                 document.head.appendChild(style);
-                
+
                 loader.appendChild(spinner);
                 document.body.appendChild(loader);
             }
             loader.style.display = 'flex';
         }
-        
+
         // 隐藏加载指示器
         function hideLoadingIndicator() {
             const loader = document.getElementById('app-loader');
@@ -1847,12 +2377,12 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 }, 300);
             }
         }
-        
+
         // 监听Service Worker消息
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data) {
-                    switch(event.data.type) {
+                    switch (event.data.type) {
                         case 'SYNC_COMPLETED':
                             console.log('离线日志同步完成');
                             showToast('数据同步完成');
@@ -1870,24 +2400,24 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 }
             });
         }
-        
+
         // 页面加载完成后初始化
         window.addEventListener('DOMContentLoaded', init);
-        
+
         // 添加设备方向变化时重新渲染图表
-        window.addEventListener('orientationchange', function() {
+        window.addEventListener('orientationchange', function () {
             if (userLogs.length > 0) {
                 setTimeout(drawChart, 300);
             }
         });
-        
+
         // 移除重复的visibilitychange监听器，避免重复请求
-        
+
         // 徽章浮動（SVG 波浪靈感）
         function animateWave(element) {
             element.style.animation = 'wave 2s ease-in-out infinite';
         }
-        
+
         // 添加波浪动画样式
         const waveStyle = document.createElement('style');
         waveStyle.textContent = `
@@ -1897,12 +2427,12 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             }
         `;
         document.head.appendChild(waveStyle);
-        
+
         // 呼叫：document.querySelectorAll('.emotion-badge').forEach(animateWave);
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.emotion-badge').forEach(animateWave);
         });
-        
+
         // 监听beforeinstallprompt事件，允许自定义安装提示
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -1914,27 +2444,27 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
             console.log('应用可以被安装');
         });
         // Bar UX: 登入後顯示 + active 
-        function onLoginSuccess() { 
-            document.getElementById('navBar').style.display = 'flex'; 
-        } 
+        function onLoginSuccess() {
+            document.getElementById('navBar').style.display = 'flex';
+        }
         // 擴充 switchPage 
-        function switchPage(id, event = null) { 
+        function switchPage(id, event = null) {
             // 先关闭所有菜单
             document.querySelectorAll('.menu-dropdown').forEach(menu => {
                 menu.classList.remove('show');
             });
-            
+
             // 隐藏所有页面
             document.querySelectorAll('.page').forEach(p => {
                 p.classList.remove('active');
             });
-            
+
             // 显示目标页面
             document.getElementById(id).classList.add('active');
-            
+
             // 重置滚动位置
             document.getElementById(id).scrollTop = 0;
-            
+
             // 如果是主页，更新用户名显示
             if (id === 'page2' && currentUser) {
                 const welcomeMessage = document.getElementById('welcomeMessage');
@@ -1942,26 +2472,26 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     welcomeMessage.textContent = `嗨，${currentUser.user_name}！`;
                 }
             }
-            
+
             // 如果是用户中心页面，更新用户信息
             if (id === 'userCenter' && currentUser) {
                 const userName = document.getElementById('userName');
                 const userEmail = document.getElementById('userEmail');
                 const userInitial = document.getElementById('userInitial');
-                
+
                 if (userName && currentUser.user_name) {
                     userName.textContent = currentUser.user_name;
                 }
-                
+
                 if (userEmail && currentUser.email) {
                     userEmail.textContent = currentUser.email;
                 }
-                
+
                 if (userInitial && currentUser.user_name) {
                     userInitial.textContent = currentUser.user_name.charAt(0).toUpperCase();
                 }
             }
-            
+
             // 如果切换到日志页，加载数据
             if (id === 'page4') {
                 // 使用setTimeout确保页面完全加载后再执行
@@ -1974,7 +2504,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     }
                 }, 300);
             }
-            
+
             // 导航栏相关逻辑
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             // 修复event对象问题，只有当event和event.target存在时才执行
@@ -1985,9 +2515,9 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 } else if (id === 'page4') {
                     const navItem = event.target.closest('.nav-item');
                     if (navItem) navItem.classList.add('active');
-                } 
+                }
             }
-            
+
             // 只在非登录页面显示导航栏
             if (id !== 'page1') {
                 onLoginSuccess();
@@ -1996,7 +2526,7 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 const navBar = document.getElementById('navBar');
                 if (navBar) navBar.style.display = 'none';
             }
-        } 
+        }
         // 登入函數後呼叫 onLoginSuccess()
     </script>
     <!-- 用户中心页面 -->
@@ -2007,16 +2537,17 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                 <button class="menu-button" onclick="switchPage('page2', event)">←</button>
             </div>
             <h1>用戶中心</h1>
-            
+
             <!-- 用户信息卡片 -->
             <div class="card" style="margin-bottom: 20px; text-align: center; padding: 20px;">
-                <div style="width: 80px; height: 80px; background-color: #6A82FB; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">
+                <div
+                    style="width: 80px; height: 80px; background-color: #6A82FB; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">
                     <span id="userInitial">👤</span>
                 </div>
                 <h3 id="userName">用户名</h3>
                 <p id="userEmail" style="color: #666; font-size: 14px;">user@example.com</p>
             </div>
-            
+
             <!-- 用户中心选项 -->
             <div class="card">
                 <div class="menu-item" onclick="showVersionInfo()">
@@ -2049,31 +2580,33 @@ let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(userEma
                     <span class="menu-arrow">›</span>
                 </div>
             </div>
-            
+
             <!-- 登出按钮 -->
-            <button onclick="logout()" style="width: 100%; margin-top: 20px; background-color: #ff4d4f; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);">
+            <button onclick="logout()"
+                style="width: 100%; margin-top: 20px; background-color: #ff4d4f; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);">
                 登出賬號
             </button>
         </div>
     </div>
-    
+
     <!-- 3 表情 Bar (登入後顯示) -->
     <div class="nav-bar" id="navBar" style="display: none;">
         <!-- Angry: 主頁 -->
         <div class="nav-item" onclick="switchPage('page2', event)" title="主頁">
-            <img src="/icons/MoodMend_Angry_Emotion.svg" alt="Angry" class="mood-icon">
+            <img src="./icons/MoodMend_Angry_Emotion.svg" alt="Angry" class="mood-icon">
             <span class="nav-label"></span>
         </div>
         <!-- Happy: 中間放大，情緒輸入 -->
         <div class="nav-item active" onclick="switchPage('page3', event);" title="情緒輸入">
-            <img src="/icons/MoodMend_Happy_Emotion.svg" alt="Happy" class="mood-icon mood-icon-center">
+            <img src="./icons/MoodMend_Happy_Emotion.svg" alt="Happy" class="mood-icon mood-icon-center">
             <span class="nav-label"></span>
         </div>
         <!-- Calm: Log 頁 -->
         <div class="nav-item" onclick="switchPage('page4', event); loadLogs(1);" title="Log">
-            <img src="/icons/MoodMend_Calm_Emotion.svg" alt="Calm" class="mood-icon">
+            <img src="./icons/MoodMend_Calm_Emotion.svg" alt="Calm" class="mood-icon">
             <span class="nav-label"></span>
         </div>
     </div>
 </body>
+
 </html>

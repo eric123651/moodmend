@@ -11,11 +11,8 @@
 
 ## 项目结构
 
-## 项目结构
-
-- `moodmend_ui_demo.html` - 前端界面文件
-- `moodmend_backend.py` - 后端API服务
-- `moodmend_demo.html` - 日志显示演示页面
+- `src/frontend/moodmend_ui_demo.html` - 前端界面文件
+- `src/backend/moodmend_backend.py` - 后端API服务
 - `moodmend.db` - SQLite数据库文件
 - `init_test_data.py` - 测试数据初始化脚本
 - `requirements.txt` - 项目依赖
@@ -24,15 +21,20 @@
 
 ### 1. 启动后端服务
 
-后端服务已成功启动在 http://127.0.0.1:5000，它只提供API接口，不包含用户界面。
+```bash
+cd src/backend
+python moodmend_backend.py
+```
+
+后端服务已成功启动在 http://127.0.0.1:3000，它只提供API接口，不包含用户界面。
 
 ### 2. 访问前端界面
 
-**不要在浏览器中直接访问 http://127.0.0.1:5000，因为这只是API服务！**
+**不要在浏览器中直接访问 http://127.0.0.1:3000，因为这只是API服务！**
 
 要访问互动界面，请按照以下步骤操作：
 
-1. 在文件资源管理器中找到 `moodmend_ui_demo.html` 文件
+1. 在文件资源管理器中找到 `src/frontend/moodmend_ui_demo.html` 文件
 2. 双击该文件直接在浏览器中打开，或
 3. 右键点击文件，选择「打开方式」→ 选择你的浏览器
 
@@ -126,7 +128,7 @@ MoodMend使用SQLite作为数据库存储，通过Flask后端提供API接口供�
        const emotion = document.getElementById('emotionFilter').value;
        
        // 构建查询URL
-       let url = `http://localhost:5000/api/get-logs?email=${encodeURIComponent(email)}`;
+       let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(email)}`;
        url += `&page=${page}&page_size=10`;
        if (period && period !== 'all') url += `&period=${period}`;
        if (emotion && emotion !== 'all') url += `&emotion=${emotion}`;
@@ -149,10 +151,10 @@ MoodMend使用SQLite作为数据库存储，通过Flask后端提供API接口供�
 
 ### 演示页面使用
 
-我们提供了一个专门的演示页面 `moodmend_demo.html`，展示如何正确实现"我的療癒紀錄"功能：
+我们提供了一个专门的演示页面 `src/frontend/moodmend_ui_demo.html`，展示如何正确实现"我的療癒紀錄"功能：
 
 1. 确保后端服务正在运行
-2. 打开 `moodmend_demo.html` 文件
+2. 打开 `src/frontend/moodmend_ui_demo.html` 文件
 3. 使用测试账号登录
 4. 查看日志列表和统计数据
 
