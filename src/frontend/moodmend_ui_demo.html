@@ -874,15 +874,258 @@
         .interval-btn.active {
             background: #6A82FB;
             color: white;
-            border-color: #6A82FB;
-            box-shadow: 0 2px 8px rgba(106, 130, 251, 0.3);
+            margin: 0;
         }
 
-        .toggle-btn {
-            transition: all 0.2s;
+        .mic-btn:hover {
+            background-color: #f0f2f5;
+            color: #6A82FB;
+            transform: scale(1.1);
+        }
+
+        .mic-btn.listening {
+            color: #FF6B6B;
+            background-color: rgba(255, 107, 107, 0.1);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #6A82FB;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 1s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+        }
+
+        /* Page 3 Specific Styles */
+        #page3 {
+            position: relative;
+            overflow: hidden;
+            /* Prevent scrollbars from decorations */
+            background: linear-gradient(135deg, #f6f8fd 0%, #f1f4f9 100%);
+            /* Subtle gradient */
+        }
+
+        #page3 .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 80vh;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            /* Add padding to prevent edge touching */
+            position: relative;
+            z-index: 2;
+            /* Ensure content is above decorations */
+        }
+
+        #page3 h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #2D3436;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .modern-input-container {
+            position: relative;
+            width: 100%;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-sizing: border-box;
+            /* Ensure padding doesn't overflow width */
+        }
+
+        .modern-input-container:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(106, 130, 251, 0.15);
+            border-color: rgba(106, 130, 251, 0.3);
+        }
+
+        #emotionInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            padding: 15px 10px;
+            outline: none;
+            color: #2D3436;
+            width: 100%;
+        }
+
+        #emotionInput::placeholder {
+            color: #B2BEC3;
+        }
+
+        .modern-mic-btn {
+            background: #F0F2F5;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            width: auto;
-            /* Override global button width */
+            color: #6A82FB;
+            /* Explicit color */
+            transition: all 0.2s ease;
+            margin-left: 10px;
+            flex-shrink: 0;
+            /* Prevent button from shrinking */
+            padding: 0;
+            /* Remove padding to center icon */
+        }
+
+        .modern-mic-btn svg {
+            display: block;
+            /* Remove extra space */
+            width: 24px;
+            height: 24px;
+            fill: #6A82FB;
+            /* Hardcode fill to ensure visibility */
+        }
+
+        .modern-mic-btn:hover {
+            background: #E1E8ED;
+            color: #6A82FB;
+            transform: scale(1.05);
+        }
+
+        .modern-mic-btn.listening {
+            background: #FF6B6B;
+            color: white;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .modern-mic-btn.listening svg {
+            fill: white;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+
+        /* Background Decorations */
+        .bg-decoration {
+            position: absolute;
+            opacity: 0.1;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .bg-decoration.top-left {
+            top: 10%;
+            left: 5%;
+            width: 120px;
+            height: 120px;
+            transform: rotate(-15deg);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .bg-decoration.bottom-right {
+            bottom: 15%;
+            right: 5%;
+            width: 150px;
+            height: 150px;
+            transform: rotate(10deg);
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        .bg-decoration.middle-right {
+            top: 30%;
+            right: 10%;
+            width: 80px;
+            height: 80px;
+            transform: rotate(25deg);
+            animation: float 7s ease-in-out infinite 1s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        .analyze-btn {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #6A82FB 0%, #FC5C7D 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(106, 130, 251, 0.3);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(106, 130, 251, 0.4);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(1px);
         }
     </style>
 </head>
@@ -960,15 +1203,43 @@
 
     <!-- 頁3: 情緒輸入 -->
     <div id="page3" class="page">
+        <!-- Background Decorations -->
+        <img src="./icons/MoodMend_Happy_Emotion.svg" class="bg-decoration top-left" alt="decoration">
+        <img src="./icons/MoodMend_Calm_Emotion.svg" class="bg-decoration bottom-right" alt="decoration">
+        <img src="./icons/MoodMend_Logo_Option4.svg" class="bg-decoration middle-right" alt="decoration">
+
         <div class="container">
             <!-- 用户中心 -->
-            <div class="menu-container">
+            <div class="menu-container" style="position: absolute; top: 20px; right: 20px;">
                 <button id="userButton3" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="./icons/MoodMend_Happy_Emotion.svg" alt="Happy Emotion"
+                    style="width: 120px; height: 120px; animation: float 6s ease-in-out infinite;">
+            </div>
+
             <h1>今天的心情？</h1>
-            <input type="text" id="emotionInput" placeholder="例如：我感到焦慮">
-            <button onclick="processEmotion()">開始調節</button>
-            <div id="packageCard" class="card" style="display: none;"></div>
+
+            <div class="modern-input-container">
+                <input type="text" id="emotionInput" placeholder="告訴我，你現在感覺如何？...">
+                <button id="micBtn" onclick="toggleVoiceInput()" class="modern-mic-btn" title="語音輸入">
+                    <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                        <path
+                            d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="listeningIndicator"
+                style="display: none; color: #6A82FB; margin-top: 15px; font-size: 14px; align-items: center; justify-content: center; gap: 8px;">
+                <span class="pulse-dot"></span> 正在聆聽...
+            </div>
+
+            <button onclick="processEmotion()" class="analyze-btn">開始調節</button>
+
+            <div id="packageCard" class="card" style="display: none; margin-top: 30px;"></div>
             <div style="display: none;" id="taskSection">
                 <h3 style="color: #6A82FB; margin-top: 30px; margin-bottom: 20px;">今天的任務</h3>
                 <div class="todo-item">
@@ -977,7 +1248,6 @@
                 </div>
                 <button onclick="showNFT()" id="nftButton" style="margin-top: 20px;">生成徽章</button>
             </div>
-            <!-- 移除底部的查看Log按钮，功能已整合到顶部菜单 -->
         </div>
     </div>
 
@@ -1408,6 +1678,16 @@
                     document.getElementById('taskText').textContent = pkg.daily_task;
                     document.getElementById('packageCard').style.display = 'block';
                     document.getElementById('taskSection').style.display = 'block';
+
+                    // Scroll to results
+                    document.getElementById('packageCard').scrollIntoView({ behavior: 'smooth' });
+
+                    // Auto-redirect to Mood Log after 3 seconds
+                    setTimeout(() => {
+                        if (confirm('分析完成！是否前往查看心情日誌？')) {
+                            switchPage('page4');
+                        }
+                    }, 1500);
                 } else {
                     alert(data.message);
                 }
@@ -1416,8 +1696,79 @@
             }
         }
 
-        // 检查任务完成状态，启用/禁用生成徽章按钮
-        function checkCompletion() {
+        // Voice Input Logic
+        let recognition = null;
+        let isListening = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'zh-TW'; // Default to Traditional Chinese
+
+            recognition.onstart = function () {
+                isListening = true;
+                document.getElementById('micBtn').classList.add('listening');
+                document.getElementById('listeningIndicator').style.display = 'flex';
+                document.getElementById('emotionInput').placeholder = "正在聆聽...";
+            };
+
+            recognition.onend = function () {
+                isListening = false;
+                document.getElementById('micBtn').classList.remove('listening');
+                document.getElementById('listeningIndicator').style.display = 'none';
+                document.getElementById('emotionInput').placeholder = "例如：我感到焦慮";
+            };
+
+            recognition.onresult = function (event) {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    const input = document.getElementById('emotionInput');
+                    const currentText = input.value;
+                    // Append text with a space if needed
+                    input.value = currentText + (currentText && !currentText.endsWith(' ') ? ' ' : '') + finalTranscript;
+                }
+            };
+
+            recognition.onerror = function (event) {
+                console.error('Speech recognition error', event.error);
+                isListening = false;
+                document.getElementById('micBtn').classList.remove('listening');
+                document.getElementById('listeningIndicator').style.display = 'none';
+
+                let msg = '語音識別錯誤';
+                if (event.error === 'not-allowed') msg = '請允許麥克風權限';
+                else if (event.error === 'no-speech') msg = '未檢測到語音';
+
+                alert(msg);
+            };
+        } else {
+            console.log('Web Speech API not supported');
+            document.getElementById('micBtn').style.display = 'none';
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert('您的瀏覽器不支持語音輸入功能');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // 檢查輸入內容，啟用/禁用提交按鈕
+        function checkInput() {
             const completed = document.getElementById('taskComplete').checked;
             const nftButton = document.getElementById('nftButton');
 
@@ -2536,6 +2887,14 @@
             <div class="menu-container">
                 <button class="menu-button" onclick="switchPage('page2', event)">←</button>
             </div>
+            <div class="input-container">
+                <textarea id="moodInput" placeholder="告訴我，你現在感覺如何？..." oninput="checkInput()"></textarea>
+            </div>
+            <div id="listeningIndicator"
+                style="display: none; color: #6A82FB; margin-top: 8px; font-size: 14px; align-items: center; justify-content: center; gap: 8px;">
+                <span class="pulse-dot"></span> 正在聆聽...
+            </div>
+            <button class="submit-btn" onclick="analyzeMood()" id="submitBtn" disabled>開始療癒分析</button>
             <h1>用戶中心</h1>
 
             <!-- 用户信息卡片 -->
