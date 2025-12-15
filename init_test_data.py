@@ -8,48 +8,59 @@ db_path = 'moodmend.db'
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# 创建users表
+# 清理旧数据（如果存在schema不匹配的表）
+print("清理旧数据...")
+cursor.execute("DROP TABLE IF EXISTS user_emotions")
+cursor.execute("DROP TABLE IF EXISTS logs")
+cursor.execute("DROP TABLE IF EXISTS users")
+
+# 创建users表 - 使用TEXT类型的UUID作为主键（匹配后端）
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     user_name TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_login TEXT
 )
 ''')
 
-# 创建logs表
+# 创建logs表 - user_id改为TEXT类型
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS logs (
     log_id TEXT PRIMARY KEY,
+    user_id TEXT,
     email TEXT NOT NULL,
-    time TIMESTAMP NOT NULL,
+    time TEXT NOT NULL,
     emotion TEXT NOT NULL,
     task TEXT NOT NULL,
     nft TEXT NOT NULL,
     completed INTEGER DEFAULT 0,
-    FOREIGN KEY (email) REFERENCES users (email)
-)
-''')
-
-# 创建user_emotions表
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS user_emotions (
-    user_id INTEGER,
-    email TEXT NOT NULL,
-    emotion TEXT NOT NULL,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (email) REFERENCES users (email),
     FOREIGN KEY (user_id) REFERENCES users (user_id)
 )
 ''')
 
-# 插入测试用户
+# 创建user_emotions表 - 匹配后端schema (user_id, last_emotion, last_update)
 cursor.execute('''
-INSERT OR IGNORE INTO users (email, password, user_name) 
-VALUES (?, ?, ?)
-''', ('test@test.com', '123', '测试用户'))
+CREATE TABLE IF NOT EXISTS user_emotions (
+    user_id TEXT PRIMARY KEY,
+    last_emotion TEXT,
+    last_update TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+)
+''')
+
+# 生成测试用户的UUID
+test_user_id = str(uuid.uuid4())
+
+# 插入测试用户 - 使用UUID
+cursor.execute('''
+INSERT OR REPLACE INTO users (user_id, email, password, user_name, created_at) 
+VALUES (?, ?, ?, ?, ?)
+''', (test_user_id, 'test@test.com', '123', '测试用户', datetime.datetime.now().isoformat()))
+
+print(f"创建测试用户: {test_user_id}")
 
 # 准备情绪类型和对应的任务和NFT徽章
 emotions = {
@@ -72,6 +83,7 @@ emotions = {
 }
 
 # 生成29条测试日志
+print("生成测试日志...")
 for i in range(29):
     # 随机选择情绪
     emotion_type = random.choice(list(emotions.keys()))
@@ -91,21 +103,18 @@ for i in range(29):
     # 生成唯一的log_id
     log_id = str(uuid.uuid4())
     
-    # 插入日志
+    # 插入日志 - 包含user_id
     cursor.execute('''
-    INSERT OR IGNORE INTO logs (log_id, email, time, emotion, task, nft, completed)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (log_id, 'test@test.com', log_time.isoformat(), emotion_type, task, nft, completed))
-    
-    # 获取用户ID
-    cursor.execute('SELECT user_id FROM users WHERE email = ?', ('test@test.com',))
-    user_id = cursor.fetchone()[0]
-    
-    # 插入情绪记录
-    cursor.execute('''
-    INSERT OR REPLACE INTO user_emotions (user_id, last_emotion, last_update)
-    VALUES (?, ?, ?)
-    ''', (user_id, emotion_type, datetime.datetime.now().isoformat()))
+    INSERT INTO logs (log_id, user_id, email, time, emotion, task, nft, completed)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (log_id, test_user_id, 'test@test.com', log_time.isoformat(), emotion_type, task, nft, completed))
+
+# 插入最后一次情绪记录
+last_emotion = random.choice(list(emotions.keys()))
+cursor.execute('''
+INSERT OR REPLACE INTO user_emotions (user_id, last_emotion, last_update)
+VALUES (?, ?, ?)
+''', (test_user_id, last_emotion, datetime.datetime.now().isoformat()))
 
 # 提交事务并关闭连接
 conn.commit()
@@ -115,3 +124,4 @@ print("测试数据初始化完成！")
 print("测试账号：")
 print("邮箱: test@test.com")
 print("密码: 123")
+print(f"用户ID: {test_user_id}")

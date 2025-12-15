@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  moodmend:
+    build: .
+    container_name: moodmend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DEBUG=False
+      - DATABASE_PATH=/app/data/moodmend.db
+      - LOG_FILE=/app/data/moodmend.log
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  data:
+  backups:

@@ -21,4 +21,5 @@ ENV FLASK_APP=src/backend/moodmend_backend.py
 EXPOSE 3000
 
 # Run the application
-CMD ["python", "src/backend/moodmend_backend.py"]
+# Run the application with Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:3000", "--workers", "4", "--access-logfile", "-", "--error-logfile", "-", "src.backend.moodmend_backend:app"]

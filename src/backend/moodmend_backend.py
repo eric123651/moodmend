@@ -15,6 +15,10 @@ import bcrypt
 import sqlite3
 import threading
 from functools import wraps
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # 配置日志
 # 设置默认编码为UTF-8
@@ -40,20 +44,36 @@ class UnicodeStreamHandler(logging.StreamHandler):
             stream.write(msg + self.terminator)
             self.flush()
 
-logging.basicConfig(level=logging.INFO, 
+# Get log configuration from environment
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+LOG_FILE = os.getenv('LOG_FILE', 'moodmend.log')
+
+logging.basicConfig(level=getattr(logging, LOG_LEVEL), 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('moodmend.log', encoding='utf-8'),
+                    handlers=[logging.FileHandler(LOG_FILE, encoding='utf-8'),
                               UnicodeStreamHandler()])
 logger = logging.getLogger('moodmend_backend')
 
 # Flask应用配置
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)  # 为会话生成随机密钥
-# 启用CORS，支持所有来源，允许所有方法和头部
-CORS(app, origins='*', methods=['GET', 'POST', 'OPTIONS'], allow_headers=['*'])
+
+# Get configuration from environment
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    logger.warning("SECRET_KEY not set in environment, using random key (not suitable for production)")
+    SECRET_KEY = os.urandom(24)
+else:
+    SECRET_KEY = SECRET_KEY.encode('utf-8')
+
+app.config['SECRET_KEY'] = SECRET_KEY
+
+# CORS configuration
+CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*')
+CORS(app, origins=CORS_ORIGINS, methods=['GET', 'POST', 'OPTIONS'], allow_headers=['*'])
 
 # 数据库配置
-DB_NAME = 'moodmend.db'
+DB_NAME = os.getenv('DATABASE_PATH', 'moodmend.db')
+logger.info(f"Using database: {DB_NAME}")
 
 # 线程锁，用于并发安全
 db_lock = threading.RLock()
@@ -875,12 +895,15 @@ def load_users_from_db():
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute('SELECT user_id, email, password FROM users')
-        for row in cursor.fetchall():
-            users_db[row[1]] = {
-                'user_id': row[0],
-                'password': row[2]
-            }
+        cursor.execute('SELECT user_id, email, password, user_name FROM users')
+        rows = cursor.fetchall()
+        for row in rows:
+            if row[0]:  # Only load users with valid user_id
+                users_db[row[1]] = {
+                    'user_id': row[0],
+                    'password': row[2],
+                    'user_name': row[3]
+                }
         conn.close()
         logger.info(f"从数据库加载用户成功，共{len(users_db)}个用户")
     except Exception as e:
@@ -1008,6 +1031,36 @@ def schedule_cleanup():
     t = Timer(3600, schedule_cleanup)
     t.daemon = True
     t.start()
+
+# API: Health Check (for monitoring)
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring service status"""
+    try:
+        # Check database connectivity
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM users')
+        user_count = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM logs')
+        log_count = cursor.fetchone()[0]
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'connected',
+            'users': user_count,
+            'logs': log_count,
+            'version': '1.2.1'
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     try:
