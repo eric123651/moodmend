@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#6A82FB">
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
-    <link rel="manifest" href="../config/manifest.json">
+    <!-- Manifest is loaded from manifest.json below -->
     <link rel="apple-touch-icon" href="./icons/icon-moodmend.svg">
     <link rel="mask-icon" href="./icons/icon-moodmend.svg" color="#6A0DAD">
     <link rel="shortcut icon" href="./icons/icon-moodmend.svg">
@@ -2585,7 +2585,7 @@
 
                     // 重新注册Service Worker
                     setTimeout(() => {
-                        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                        navigator.serviceWorker.register('/sw.js', { scope: '/' })
                             .then(registration => {
                                 console.log('Service Worker 注册成功:', registration.scope);
 
