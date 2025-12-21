@@ -129,6 +129,27 @@
             }
         }
 
+        /* Mood icon bounce animation */
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
         /* 基础重置和APP样式 */
         * {
             -webkit-tap-highlight-color: transparent;
@@ -1668,11 +1689,56 @@
                     currentPackage = data;
                     const pkg = data.package;
 
+                    // Map emotions to icon files
+                    const emotionIcons = {
+                        'happy': 'icons/MoodMend_Happy_Emotion.svg',
+                        'sad': 'icons/MoodMend_Sad_Emotion.svg',
+                        'angry': 'icons/MoodMend_Angry_Emotion.svg',
+                        'anxious': 'icons/MoodMend_Anxious_Emotion.png', // New unique icon
+                        'neutral': 'icons/MoodMend_Calm_Emotion.svg'
+                    };
+
+                    // Get the appropriate icon
+                    const iconPath = emotionIcons[data.emotion] || emotionIcons['neutral'];
+
+                    // Map emotion to Chinese display name
+                    const emotionNames = {
+                        'happy': '開心',
+                        'sad': '難過',
+                        'angry': '生氣',
+                        'anxious': '焦慮',
+                        'neutral': '平靜'
+                    };
+
+                    // Map intensity to Chinese display
+                    const intensityNames = {
+                        'mild': '輕微',
+                        'moderate': '中等',
+                        'severe': '強烈'
+                    };
+
+                    // Build context tips HTML if available
+                    let contextTipsHtml = '';
+                    if (pkg.context_tips && pkg.context_tips.length > 0) {
+                        contextTipsHtml = `
+                            <div class="context-tips-section" style="margin-top: 15px; padding: 12px; background: linear-gradient(135deg, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.1)); border-radius: 12px;">
+                                <p style="margin: 0; font-weight: 600; color: #6a11cb;">💡 針對你的情況：</p>
+                                ${pkg.context_tips.map(tip => `<p style="margin: 8px 0 0 0; font-size: 0.95em;">${tip}</p>`).join('')}
+                            </div>
+                        `;
+                    }
+
                     document.getElementById('packageCard').innerHTML = `
-                        <h3><span class="emotion-badge ${pkg.color}">${data.emotion}</span></h3>
-                        <p><strong>技巧：</strong>${pkg.tips}</p>
-                        <p><strong>建議：</strong>${pkg.advice}</p>
-                        <p><small>${pkg.resources}</small></p>
+                        <div class="mood-result-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <img src="${iconPath}" alt="${data.emotion}" class="mood-icon" style="width: 120px; height: 120px; margin-right: 15px; border-radius: 50%; box-shadow: 0 8px 25px rgba(0,0,0,0.15); animation: bounceIn 0.6s ease-out;">
+                            <div>
+                                <h3 style="margin: 0;"><span class="emotion-badge ${pkg.color}">${emotionNames[data.emotion] || data.emotion}</span></h3>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">情緒強度：${intensityNames[pkg.intensity] || pkg.intensity}</p>
+                            </div>
+                        </div>
+                        <p><strong>💆 調節技巧：</strong>${pkg.tips}</p>
+                        <p><strong>💭 給你的建議：</strong>${pkg.advice}</p>
+                        ${contextTipsHtml}
                     `;
                     // 更新任务文本
                     document.getElementById('taskText').textContent = pkg.daily_task;

@@ -142,73 +142,219 @@ def init_db():
     except Exception as e:
         logger.error(f"資料庫初始化失敗: {e}")
 
-# 增强的情緒關鍵字字典 (包含强度权重)
+# ==============================
+# 增強版情緒分析系統 v2.0
+# ==============================
+
+# 擴展的情緒關鍵字字典 (中英文支持，包含強度權重)
 EMOTION_KEYWORDS = {
     'anxious': [
-        ('焦慮', 2), ('擔心', 1), ('壓力', 2), ('緊張', 1), ('不安', 1), 
-        ('害怕', 2), ('恐慌', 3), ('慌張', 1), ('緊繃', 1), ('坐立不安', 2),
-        ('忐忑', 1), ('煩憂', 1), ('煩惱', 1), ('憂慮', 1), ('焦慮不安', 2)
+        # 中文關鍵詞
+        ('焦慮', 3), ('擔心', 2), ('壓力', 3), ('緊張', 2), ('不安', 2),
+        ('害怕', 3), ('恐慌', 4), ('慌張', 2), ('緊繃', 2), ('坐立不安', 3),
+        ('忐忑', 2), ('煩憂', 2), ('煩惱', 2), ('憂慮', 2), ('焦慮不安', 3),
+        ('心慌', 3), ('惶恐', 3), ('擔憂', 2), ('心煩', 2), ('煩躁不安', 3),
+        ('壓力大', 3), ('喘不過氣', 4), ('快窒息', 4), ('好怕', 3), ('很怕', 3),
+        ('有點怕', 1), ('有點緊張', 1), ('有點擔心', 1), ('很焦慮', 4), ('超焦慮', 4),
+        # 英文關鍵詞
+        ('anxious', 3), ('worried', 2), ('stressed', 3), ('nervous', 2), ('panic', 4),
+        ('scared', 3), ('afraid', 3), ('tense', 2), ('uneasy', 2), ('restless', 2)
     ],
     'sad': [
-        ('傷心', 2), ('難過', 2), ('沮喪', 2), ('孤單', 1), ('悲傷', 2), 
-        ('失落', 1), ('絕望', 3), ('惆悵', 1), ('憂鬱', 2), ('傷感', 1),
-        ('空虛', 2), ('鬱悶', 1), ('難受', 1), ('想哭', 1), ('寂寞', 1)
+        # 中文關鍵詞
+        ('傷心', 3), ('難過', 3), ('沮喪', 3), ('孤單', 2), ('悲傷', 3),
+        ('失落', 2), ('絕望', 4), ('惆悵', 2), ('憂鬱', 3), ('傷感', 2),
+        ('空虛', 3), ('鬱悶', 2), ('難受', 2), ('想哭', 3), ('寂寞', 2),
+        ('心痛', 3), ('心碎', 4), ('無助', 3), ('悲觀', 3), ('低落', 2),
+        ('不開心', 2), ('不快樂', 2), ('失望', 2), ('灰心', 2), ('很難過', 4),
+        ('好難過', 4), ('超難過', 4), ('有點難過', 1), ('有點傷心', 1),
+        ('哭了', 3), ('淚流', 3), ('眼淚', 2), ('痛苦', 4), ('心酸', 3),
+        # 英文關鍵詞
+        ('sad', 3), ('depressed', 4), ('lonely', 2), ('hopeless', 4), ('heartbroken', 4),
+        ('disappointed', 2), ('upset', 2), ('crying', 3), ('grief', 4), ('sorrow', 3)
     ],
     'angry': [
-        ('生氣', 2), ('憤怒', 3), ('煩躁', 1), ('氣憤', 2), ('不滿', 1),
-        ('惱火', 2), ('惱怒', 2), ('暴跳如雷', 3), ('氣炸', 3), ('憤慨', 2),
-        ('不悅', 1), ('不爽', 1), ('討厭', 1), ('厭煩', 1), ('惱恨', 2)
+        # 中文關鍵詞
+        ('生氣', 3), ('憤怒', 4), ('煩躁', 2), ('氣憤', 3), ('不滿', 2),
+        ('惱火', 3), ('惱怒', 3), ('暴跳如雷', 4), ('氣炸', 4), ('憤慨', 3),
+        ('不悅', 1), ('不爽', 2), ('討厭', 2), ('厭煩', 2), ('惱恨', 3),
+        ('火大', 3), ('很氣', 3), ('超氣', 4), ('氣死', 4), ('受夠', 3),
+        ('煩死', 3), ('抓狂', 4), ('崩潰', 4), ('爆炸', 4), ('忍不住', 2),
+        ('不公平', 2), ('被欺負', 3), ('被冤枉', 3), ('有點生氣', 1),
+        # 英文關鍵詞
+        ('angry', 3), ('furious', 4), ('frustrated', 2), ('annoyed', 2), ('mad', 3),
+        ('pissed', 3), ('irritated', 2), ('hate', 3), ('rage', 4), ('outraged', 4)
     ],
     'happy': [
-        ('快樂', 2), ('開心', 2), ('興奮', 2), ('愉快', 1), ('滿足', 1),
-        ('開朗', 1), ('欣喜', 2), ('高興', 2), ('歡喜', 1), ('雀躍', 2),
-        ('愉悅', 1), ('欣慰', 1), ('幸福', 2), ('開懷', 1), ('喜悅', 2)
+        # 中文關鍵詞
+        ('快樂', 3), ('開心', 3), ('興奮', 3), ('愉快', 2), ('滿足', 2),
+        ('開朗', 2), ('欣喜', 3), ('高興', 3), ('歡喜', 2), ('雀躍', 3),
+        ('愉悅', 2), ('欣慰', 2), ('幸福', 3), ('開懷', 2), ('喜悅', 3),
+        ('感恩', 2), ('感謝', 2), ('太棒', 3), ('太好', 2), ('真好', 2),
+        ('好開心', 4), ('超開心', 4), ('很開心', 4), ('好幸福', 4), ('很幸福', 4),
+        ('謝謝', 1), ('棒', 2), ('讚', 2), ('爽', 2), ('期待', 2),
+        # 英文關鍵詞
+        ('happy', 3), ('excited', 3), ('joyful', 3), ('grateful', 2), ('blessed', 2),
+        ('wonderful', 2), ('amazing', 3), ('great', 2), ('awesome', 3), ('love', 2)
     ],
     'neutral': [
-        ('平靜', 1), ('正常', 1), ('沒事', 1), ('ok', 1), ('一般', 1),
-        ('平常', 1), ('普通', 1), ('淡定', 1), ('無感', 1), ('穩定', 1)
+        # 中文關鍵詞
+        ('平靜', 2), ('正常', 1), ('沒事', 1), ('一般', 1), ('平常', 1),
+        ('普通', 1), ('淡定', 2), ('無感', 1), ('穩定', 2), ('還好', 1),
+        ('可以', 1), ('沒什麼', 1), ('一般般', 1), ('馬馬虎虎', 1),
+        # 英文關鍵詞
+        ('ok', 1), ('okay', 1), ('fine', 1), ('normal', 1), ('calm', 2), ('peaceful', 2)
     ]
 }
 
-# 負面情緒定義 (用於轉移偵測)
-NEGATIVE_EMOTIONS = {'anxious', 'sad', 'angry'}
-POSITIVE_EMOTIONS = {'happy', 'neutral'}
+# 情境觸發詞 (用於生成針對性建議)
+CONTEXT_TRIGGERS = {
+    'work_stress': {
+        'keywords': ['工作', '老闆', '同事', '加班', '開會', '報告', 'deadline', '專案', '客戶', '業績', '績效', '上班'],
+        'tips': [
+            '工作壓力需要適當釋放，試著設定明確的下班時間，不帶工作回家。',
+            '列出今天最重要的3件事，專注完成它們，其他的可以等明天。',
+            '每工作50分鐘，起來走動5分鐘，看看窗外或做簡單伸展。'
+        ]
+    },
+    'study_pressure': {
+        'keywords': ['考試', '讀書', '功課', '學校', '老師', '作業', '成績', '分數', '大學', '研究所'],
+        'tips': [
+            '學習需要休息，試試番茄工作法：25分鐘專注學習，5分鐘休息。',
+            '把大任務分解成小步驟，完成一個就給自己一個小獎勵。',
+            '找一個安靜的環境，把手機調成飛航模式，專注30分鐘。'
+        ]
+    },
+    'relationship': {
+        'keywords': ['吵架', '分手', '感情', '男友', '女友', '老公', '老婆', '伴侶', '朋友', '家人', '父母', '失戀'],
+        'tips': [
+            '關係中的衝突需要雙方冷靜後再溝通，先給彼此一些空間。',
+            '試著用「我覺得...因為...」的句型表達感受，避免指責。',
+            '不管結果如何，照顧好自己的情緒是最重要的。'
+        ]
+    },
+    'sleep_issues': {
+        'keywords': ['失眠', '睡不著', '睡不好', '做惡夢', '早醒', '很累', '好累', '沒精神', '疲憊'],
+        'tips': [
+            '睡前1小時放下手機，做些放鬆的事如閱讀或泡腳。',
+            '試試4-7-8呼吸法：吸氣4秒、憋氣7秒、呼氣8秒，重複3次。',
+            '房間保持涼爽、黑暗，睡眠品質會更好。'
+        ]
+    },
+    'health': {
+        'keywords': ['生病', '身體', '不舒服', '頭痛', '胃痛', '感冒', '發燒', '看醫生', '醫院'],
+        'tips': [
+            '身體不適時要多休息，不要硬撐，健康最重要。',
+            '多喝溫水，讓身體有足夠的水分來恢復。',
+            '如果持續不適，建議諮詢專業醫療人員。'
+        ]
+    },
+    'financial': {
+        'keywords': ['錢', '薪水', '經濟', '負債', '貸款', '房租', '物價', '太貴', '省錢'],
+        'tips': [
+            '記錄每日開銷，了解錢都花在哪裡，是改善財務的第一步。',
+            '把必要支出和想要的東西分開，優先處理必要的。',
+            '財務壓力需要時間解決，先專注在能控制的事情上。'
+        ]
+    }
+}
 
-# 調節建議模板 (基於情緒生成，新增daily_task)
+# 強度程度詞
+INTENSITY_MODIFIERS = {
+    'high': ['很', '非常', '超', '太', '極', '好', '超級', '特別', '真的很', '實在太', '快', '要', '受不了'],
+    'low': ['有點', '有些', '稍微', '一點', '一些', '略微']
+}
+
+# 調節建議模板 (移除網站推薦，更豐富的建議)
 SUGGESTIONS = {
     'anxious': {
-        'tips': '深呼吸練習：吸氣4秒，憋氣4秒，吐氣4秒，重複5次。',
-        'daily_task': '去做一件放鬆的事，例如聽音樂或散步。',
-        'advice': '試著列出3件今天感恩的事，轉移焦點。',
-        'resources': '資源連結：https://www.headspace.com/meditation/anxiety (免費冥想App)',
+        'tips': [
+            '深呼吸練習：吸氣4秒，憋氣4秒，吐氣4秒，重複5次。',
+            '試試「5-4-3-2-1」練習：說出5個看到的、4個聽到的、3個摸到的、2個聞到的、1個嚐到的。',
+            '把擔心的事寫下來，區分「能控制」和「不能控制」的，專注在能控制的部分。'
+        ],
+        'daily_task': [
+            '今天花10分鐘做一件讓你放鬆的事，例如聽音樂或散步。',
+            '列出3件今天感恩的小事，轉移注意力。',
+            '找一個安靜的地方，閉眼休息5分鐘，什麼都不想。'
+        ],
+        'advice': [
+            '焦慮是身體想保護你的信號，但你可以告訴自己：「這只是感覺，它會過去的。」',
+            '試著問自己：「這件事最壞的結果是什麼？我能應對嗎？」通常答案是肯定的。',
+            '把大問題拆解成小步驟，一次只處理一步，會感覺更有掌控感。'
+        ],
         'color': 'anxious'
     },
     'sad': {
-        'tips': '聽一首喜歡的歌，或散步10分鐘接觸陽光。',
-        'daily_task': '寫下3件讓你微笑的小事。',
-        'advice': '寫日記：今天有什麼小事讓你微笑？',
-        'resources': '資源連結：https://www.helpguide.org/articles/depression/coping-with-grief-and-loss.htm',
+        'tips': [
+            '聽一首喜歡的歌，或散步10分鐘接觸陽光。',
+            '給自己一個溫暖的擁抱（真的抱自己），這能釋放安慰的荷爾蒙。',
+            '如果想哭，就哭吧。眼淚是釋放情緒的方式，哭完會輕鬆一些。'
+        ],
+        'daily_task': [
+            '今天和一個關心你的人說說話，不一定要聊煩惱，只是聊聊也好。',
+            '做一件以前讓你開心的事，即使現在沒那麼開心，也給自己機會。',
+            '寫下3件讓你微笑的小事，可以是回憶也可以是期待的事。'
+        ],
+        'advice': [
+            '難過是正常的情緒，不需要假裝沒事。給自己時間和空間去感受。',
+            '記住：這個感覺是暫時的，就像天氣會變化，心情也會慢慢好轉。',
+            '照顧好基本需求：吃飽、睡夠、喝水，身體狀態會影響心情。'
+        ],
         'color': 'sad'
     },
     'angry': {
-        'tips': '拳擊枕頭或快走5分鐘釋放能量。',
-        'daily_task': '做5分鐘運動來釋放怒氣。',
-        'advice': '問自己：這件事10年後還重要嗎？',
-        'resources': '資源連結：https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/anger-management/art-20045434',
+        'tips': [
+            '快走5分鐘或做20個開合跳，用運動釋放身體裡的能量。',
+            '拿張紙把氣話寫下來，然後撕掉或揉成一團丟掉，象徵性地放下。',
+            '用力握拳10秒，然後慢慢鬆開，重複3次，感受從緊繃到放鬆的變化。'
+        ],
+        'daily_task': [
+            '今天做5分鐘運動來釋放積壓的能量。',
+            '如果對某人生氣，等24小時再決定要不要說什麼，給自己冷靜的時間。',
+            '問自己：「現在最重要的是什麼？」幫自己回到當下。'
+        ],
+        'advice': [
+            '生氣是正常的，但我們可以選擇如何表達它。給自己一些時間再反應。',
+            '試著理解是什麼讓你生氣——是事件本身，還是它觸發了某個敏感點？',
+            '問自己：「這件事10年後還重要嗎？」很多事情其實沒那麼大不了。'
+        ],
         'color': 'angry'
     },
     'happy': {
-        'tips': '記錄這一刻，分享給朋友！',
-        'daily_task': '計劃一個小慶祝活動。',
-        'advice': '延續正面：計劃下一個小目標。',
-        'resources': '資源連結：https://positivepsychology.com/happiness-activities-exercises-tools/',
+        'tips': [
+            '記錄這一刻！寫下或拍照，以後回顧時會更加珍惜。',
+            '分享你的喜悅給一個人，快樂會因分享而加倍。',
+            '趁著好心情，完成一件一直拖延的小事。'
+        ],
+        'daily_task': [
+            '計劃一個小慶祝活動，犒賞自己。',
+            '寫下今天讓你開心的事，建立「快樂存摺」。',
+            '趁心情好，給未來的自己寫一封鼓勵的信。'
+        ],
+        'advice': [
+            '好好享受這份快樂，你值得開心！',
+            '思考是什麼帶來了這份快樂，以後可以創造更多這樣的時刻。',
+            '保持這份正能量，它會感染身邊的人。'
+        ],
         'color': 'happy'
     },
     'neutral': {
-        'tips': '維持平衡：喝杯水，伸展身體。',
-        'daily_task': '反思一天的正面時刻。',
-        'advice': '反思一天：什麼讓你感覺好？',
-        'resources': '資源連結：https://www.mind.org.uk/information-support/tips-for-everyday-living/wellbeing/',
+        'tips': [
+            '維持平衡：喝杯水，伸展身體，呼吸新鮮空氣。',
+            '這是很好的狀態，趁現在做些自我照顧的事。',
+            '可以做個簡單的冥想，保持這份平靜。'
+        ],
+        'daily_task': [
+            '反思一下：今天有什麼值得感謝的？',
+            '趁著心情平穩，整理一下待辦事項。',
+            '做一件小事讓自己開心，例如吃喜歡的點心。'
+        ],
+        'advice': [
+            '平靜是很棒的狀態，好好珍惜。',
+            '趁現在思考一下，有沒有什麼目標想達成？',
+            '保持規律作息，維持這份平衡的感覺。'
+        ],
         'color': 'neutral'
     }
 }
@@ -222,51 +368,146 @@ NFT_BADGES = {
     'neutral': '⚖️ 平衡徽章 - 平靜之源'
 }
 
-# 增强的情緒偵測函數
+# 負面情緒定義 (用於轉移偵測)
+NEGATIVE_EMOTIONS = {'anxious', 'sad', 'angry'}
+POSITIVE_EMOTIONS = {'happy', 'neutral'}
+
+# 增强的情緒偵測函數 v2.0
 def detect_emotion(text):
+    """偵測文本中的主要情緒，使用加權評分系統"""
     if not text or not isinstance(text, str):
-        return 'neutral'
+        return 'neutral', 0
     
     text_lower = text.lower()
     scores = {emotion: 0 for emotion in EMOTION_KEYWORDS}
+    matched_keywords = []
     
     # 计算基础分数
     for emotion, keyword_list in EMOTION_KEYWORDS.items():
         for kw, weight in keyword_list:
             if kw.lower() in text_lower:
                 scores[emotion] += weight
+                matched_keywords.append((kw, emotion, weight))
     
     # 计算总分数
     total_score = sum(scores.values())
     
     if total_score == 0:
         # 没有匹配到关键词，尝试二次分析
-        # 检查否定词和程度词
-        negations = ['不', '沒有', '不是', '並非', '不覺得']
-        has_negation = any(neg in text_lower for neg in negations)
+        # 检查否定词模式 (如 "不開心" 應該是 sad)
+        negation_patterns = [
+            ('不開心', 'sad', 2), ('不快樂', 'sad', 2), ('不高興', 'sad', 2),
+            ('不想', 'sad', 1), ('不好', 'sad', 1), ('不行', 'anxious', 1),
+            ('受不了', 'angry', 3), ('忍不住', 'angry', 2)
+        ]
+        for pattern, emotion, weight in negation_patterns:
+            if pattern in text_lower:
+                scores[emotion] += weight
+                matched_keywords.append((pattern, emotion, weight))
         
-        # 检查情感词密集度
-        emotion_words = []
-        for emotion, keyword_list in EMOTION_KEYWORDS.items():
-            emotion_words.extend([kw for kw, _ in keyword_list])
+        # 重新计算总分
+        total_score = sum(scores.values())
         
-        # 计算文本长度和情感词数量
-        char_count = len(text)
-        emotion_word_count = sum(1 for word in emotion_words if word.lower() in text_lower)
-        
-        # 如果有否定词或者情感词密度很低，返回neutral
-        if has_negation or (char_count > 20 and emotion_word_count == 0):
-            return 'neutral'
-        
-        # 最后尝试一些常见的中性表达
-        neutral_phrases = ['沒什麼', '還好', '一般般', '普通', '正常', '可以']
-        for phrase in neutral_phrases:
-            if phrase.lower() in text_lower:
-                return 'neutral'
+        if total_score == 0:
+            # 最后尝试一些常见的中性表达
+            neutral_phrases = ['沒什麼', '還好', '一般般', '普通', '正常', '可以', '還行']
+            for phrase in neutral_phrases:
+                if phrase.lower() in text_lower:
+                    return 'neutral', 1
+            return 'neutral', 0
     
-    # 返回得分最高的情绪
+    # 返回得分最高的情绪及其分数
     dominant = max(scores, key=scores.get)
-    return dominant if scores[dominant] > 0 else 'neutral'
+    return dominant, scores[dominant]
+
+def detect_intensity(text, emotion_score):
+    """檢測情緒強度：mild(輕微), moderate(中等), severe(嚴重)"""
+    if not text:
+        return 'moderate'
+    
+    text_lower = text.lower()
+    
+    # 檢查高強度詞
+    high_intensity_count = sum(1 for mod in INTENSITY_MODIFIERS['high'] if mod in text_lower)
+    
+    # 檢查低強度詞
+    low_intensity_count = sum(1 for mod in INTENSITY_MODIFIERS['low'] if mod in text_lower)
+    
+    # 根據分數和修飾詞判斷強度
+    if high_intensity_count > 0 or emotion_score >= 6:
+        return 'severe'
+    elif low_intensity_count > 0 or emotion_score <= 2:
+        return 'mild'
+    else:
+        return 'moderate'
+
+def detect_context(text):
+    """檢測文本中的情境觸發詞，返回相關情境列表"""
+    if not text:
+        return []
+    
+    text_lower = text.lower()
+    detected_contexts = []
+    
+    for context_name, context_data in CONTEXT_TRIGGERS.items():
+        for keyword in context_data['keywords']:
+            if keyword.lower() in text_lower:
+                detected_contexts.append(context_name)
+                break  # 一個情境只需匹配一次
+    
+    return detected_contexts
+
+def generate_personalized_feedback(emotion, intensity, contexts, original_text):
+    """根據情緒、強度和情境生成個性化回饋"""
+    import random
+    
+    pkg = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+    
+    # 從列表中隨機選擇建議（如果是列表）
+    def get_suggestion(field):
+        value = pkg.get(field, '')
+        if isinstance(value, list) and len(value) > 0:
+            return random.choice(value)
+        return value
+    
+    tips = get_suggestion('tips')
+    daily_task = get_suggestion('daily_task')
+    advice = get_suggestion('advice')
+    
+    # 如果有情境觸發，添加情境特定建議
+    context_tips = []
+    for context in contexts[:2]:  # 最多取2個情境
+        if context in CONTEXT_TRIGGERS:
+            context_tip = random.choice(CONTEXT_TRIGGERS[context]['tips'])
+            context_tips.append(context_tip)
+    
+    # 根據強度調整語氣
+    intensity_prefix = ''
+    if intensity == 'severe':
+        intensity_prefixes = [
+            '我理解你現在感受很強烈。',
+            '聽起來你正在經歷困難的時刻。',
+            '這種感覺確實很不容易。'
+        ]
+        intensity_prefix = random.choice(intensity_prefixes)
+    elif intensity == 'mild':
+        intensity_prefixes = [
+            '這是很正常的感受。',
+            '小小的情緒波動很正常。',
+            '這種感覺會過去的。'
+        ]
+        intensity_prefix = random.choice(intensity_prefixes)
+    
+    return {
+        'tips': tips,
+        'daily_task': daily_task,
+        'advice': (intensity_prefix + ' ' + advice).strip() if intensity_prefix else advice,
+        'context_tips': context_tips,
+        'intensity': intensity,
+        'detected_contexts': contexts,
+        'color': pkg.get('color', 'neutral')
+    }
+
 
 # 生成基本NFT徽章
 def generate_nft_badge(emotion):
@@ -529,9 +770,17 @@ def process_emotion():
                 'message': '無效的用戶信息'
             }), 401
         
-        # 偵測情緒
-        emotion = detect_emotion(user_input)
-        pkg = SUGGESTIONS.get(emotion, SUGGESTIONS['neutral'])
+        # 偵測情緒 (v2.0 - 返回情緒和分數)
+        emotion, emotion_score = detect_emotion(user_input)
+        
+        # 偵測情緒強度
+        intensity = detect_intensity(user_input, emotion_score)
+        
+        # 偵測情境觸發詞
+        contexts = detect_context(user_input)
+        
+        # 生成個性化回饋
+        pkg = generate_personalized_feedback(emotion, intensity, contexts, user_input)
         
         # 生成基本NFT
         nft = generate_nft_badge(emotion)
@@ -571,7 +820,7 @@ def process_emotion():
         # 更新内存中的上次情绪
         user_last_emotion[email] = emotion
         
-        logger.info(f"處理情緒成功: 用戶={email}, 輸入='{user_input[:30]}...', 檢測情緒={emotion}")
+        logger.info(f"處理情緒成功: 用戶={email}, 輸入='{user_input[:30]}...', 情緒={emotion}, 強度={intensity}, 情境={contexts}")
         
         return jsonify({
             'success': True,
@@ -580,7 +829,8 @@ def process_emotion():
                 'tips': pkg['tips'],
                 'daily_task': pkg['daily_task'],
                 'advice': pkg['advice'],
-                'resources': pkg['resources'],
+                'context_tips': pkg.get('context_tips', []),
+                'intensity': pkg.get('intensity', 'moderate'),
                 'color': pkg['color']
             },
             'nft': nft,
