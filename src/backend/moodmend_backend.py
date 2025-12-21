@@ -1032,35 +1032,16 @@ def schedule_cleanup():
     t.daemon = True
     t.start()
 
-# API: Health Check (for monitoring)
+# API: Health Check (simple, for Railway monitoring)
 @app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint for monitoring service status"""
-    try:
-        # Check database connectivity
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM users')
-        user_count = cursor.fetchone()[0]
-        
-        cursor.execute('SELECT COUNT(*) FROM logs')
-        log_count = cursor.fetchone()[0]
-        
-        return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'database': 'connected',
-            'users': user_count,
-            'logs': log_count,
-            'version': '1.2.1'
-        }), 200
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'timestamp': datetime.now().isoformat(),
-            'error': str(e)
-        }), 500
+def health_check_simple():
+    """Simple health check endpoint for Railway/cloud monitoring"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'version': '1.2.1'
+    }), 200
+
 
 if __name__ == '__main__':
     try:
