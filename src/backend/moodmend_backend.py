@@ -1087,3 +1087,16 @@ if __name__ == '__main__':
     except Exception as e:
         logger.critical(f"服務啟動失敗: {e}")
         raise e
+else:
+    # For production (Gunicorn), initialize on import
+    try:
+        init_db()
+        load_users_from_db()
+        load_recent_logs_from_db()
+        load_user_emotions_from_db()
+        schedule_cleanup()
+        atexit.register(cleanup_memory_cache)
+        logger.info("MoodMend後端服務啟動 (via Gunicorn)")
+    except Exception as e:
+        logger.critical(f"服務啟動失敗: {e}")
+        raise e
