@@ -2,10 +2,12 @@
   "name": "MoodMend",
   "short_name": "MoodMend",
   "description": "心靈療癒追蹤應用 - 用心記錄，用愛療癒",
-  "start_url": "/src/frontend/moodmend_ui_demo.html",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#FF69B4",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icons/icon-moodmend.svg",
