@@ -54,8 +54,15 @@ logging.basicConfig(level=getattr(logging, LOG_LEVEL),
                               UnicodeStreamHandler()])
 logger = logging.getLogger('moodmend_backend')
 
-# Flask应用配置
-app = Flask(__name__)
+# Flask应用配置 - serve frontend from same app
+# Get the path to frontend directory (relative to backend)
+import os.path
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+app = Flask(__name__, 
+            static_folder=FRONTEND_DIR,
+            static_url_path='',
+            template_folder=FRONTEND_DIR)
+
 
 # Get configuration from environment
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -972,10 +979,12 @@ def close_db(error):
     if 'db' in g:
         g.db.close()
 
-# 根路徑
+# 根路徑 - serve frontend UI
 @app.route('/')
 def index():
-    return "MoodMend 後端服務正在運行"  
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder, 'moodmend_ui_demo.html')
+  
 
 # 健康检查端点
 @app.route('/api/health', methods=['GET'])

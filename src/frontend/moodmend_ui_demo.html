@@ -1405,7 +1405,7 @@
         async function showVersionInfo() {
             try {
                 // 从后端获取版本信息
-                const response = await fetch('http://localhost:3000/api/health');
+                const response = await fetch('/api/health');
                 const data = await response.json();
 
                 if (data.version) {
@@ -1538,7 +1538,7 @@
                 loginButton.disabled = true;
 
                 console.log('正在发送登录请求:', email);
-                const response = await fetch('http://localhost:3000/api/login', {
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1601,7 +1601,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:3000/api/register', {
+                const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1650,7 +1650,7 @@
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/api/process-emotion', {
+                const response = await fetch('/api/process-emotion', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1834,7 +1834,7 @@
                 // 检查网络连接
                 if (navigator.onLine) {
                     // 在线模式 - 直接保存到服务器
-                    const response = await fetch('http://localhost:3000/api/add-log', {
+                    const response = await fetch('/api/add-log', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -1902,7 +1902,7 @@
                 const offset = (page - 1) * limit; // 计算偏移量
 
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-                let url = `http://localhost:3000/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
+                let url = `/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
 
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
@@ -2052,7 +2052,7 @@
 
                 const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 const response = await fetch(
-                    `http://localhost:3000/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
+                    `/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
                     {
                         method: 'GET'
                     }
@@ -2451,7 +2451,7 @@
 
                 for (const log of userLogs) {
                     try {
-                        const response = await fetch('http://localhost:3000/api/add-log', {
+                        const response = await fetch('/api/add-log', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
