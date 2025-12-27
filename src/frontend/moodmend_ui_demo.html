@@ -12,20 +12,21 @@
     <meta name="theme-color" content="#6A82FB">
     <meta name="description" content="MoodMend 幫助你記錄和管理情緒，提供个性化的情緒調整方案">
     <!-- PWA配置 -->
-    <!-- Manifest is loaded from manifest.json below -->
-    <link rel="apple-touch-icon" href="./icons/icon-moodmend.svg">
-    <link rel="mask-icon" href="./icons/icon-moodmend.svg" color="#6A0DAD">
-    <link rel="shortcut icon" href="./icons/icon-moodmend.svg">
-    <!-- 预加载核心资源 -->
+    <link rel="apple-touch-icon" href="/icons/icon-moodmend.png">
+    <link rel="mask-icon" href="/icons/icon-moodmend.svg" color="#6A0DAD">
+    <link rel="shortcut icon" href="/icons/icon-moodmend.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icons/icon-moodmend.png">
+    <meta name="theme-color" content="#FF69B4">
     <title>MoodMend</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PWA 整合 (v1.0.3 擴充) -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icons/MoodMend_Logo_Option4.svg">
-    <meta name="theme-color" content="#FF69B4"> <!-- SVG 粉色 -->
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => console.log('Service Worker registered with scope:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
         }
     </script>
     <style>
@@ -485,6 +486,7 @@
         #page1 h1 {
             background: linear-gradient(135deg, #FF69B4, #8A2BE2);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
             font-size: 28px;
@@ -1157,20 +1159,21 @@
         <div class="container">
             <div class="hero-section" style="text-align: center; padding: 20px;">
                 <img src="./icons/MoodMend_Logo_Option4.svg" alt="MoodMend" class="hero-logo">
-                <h1>讓每一次情緒，都成為療癒起點</h1>
+                <h1 data-i18n="login_slogan">讓每一次情緒，都成為療癒起點</h1>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
                 <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
                     style="width: 160px; height: 160px; object-fit: contain;">
             </div>
-            <h1>MoodMend 歡迎</h1>
+            <h1 data-i18n="login_welcome">MoodMend 歡迎</h1>
             <div class="card">
-                <input type="email" id="loginEmail" placeholder="Email">
-                <input type="password" id="loginPassword" placeholder="Password">
-                <button onclick="login()">登錄</button>
-                <button onclick="switchPage('pageRegister', event)"
+                <input type="email" id="loginEmail" data-i18n-placeholder="email_placeholder" placeholder="Email">
+                <input type="password" id="loginPassword" data-i18n-placeholder="password_placeholder"
+                    placeholder="Password">
+                <button onclick="login()" data-i18n="login_btn">登錄</button>
+                <button onclick="switchPage('pageRegister', event)" data-i18n="register_btn"
                     style="background-color: #6A82FB; box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);">註冊新帳號</button>
-                <p style="text-align: center; font-size: 12px;">Demo: 用 test@test.com / 123 登入</p>
+                <p style="text-align: center; font-size: 12px;" data-i18n="demo_info">Demo: 用 test@test.com / 123 登入</p>
             </div>
         </div>
     </div>
@@ -1182,14 +1185,17 @@
                 <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
                     style="width: 160px; height: 160px; object-fit: contain;">
             </div>
-            <h1>創建新帳號</h1>
+            <h1 data-i18n="register_title">創建新帳號</h1>
             <div class="card">
-                <input type="text" id="registerUserName" placeholder="用户名 (2-20个字符)">
-                <input type="email" id="registerEmail" placeholder="Email">
-                <input type="password" id="registerPassword" placeholder="密碼 (至少6位)">
-                <input type="password" id="confirmPassword" placeholder="確認密碼">
-                <button onclick="register()">註冊</button>
-                <button onclick="switchPage('page1', event)"
+                <input type="text" id="registerUserName" data-i18n-placeholder="user_name_placeholder"
+                    placeholder="用户名 (2-20个字符)">
+                <input type="email" id="registerEmail" data-i18n-placeholder="email_placeholder" placeholder="Email">
+                <input type="password" id="registerPassword" data-i18n-placeholder="password_placeholder"
+                    placeholder="密碼 (至少6位)">
+                <input type="password" id="confirmPassword" data-i18n-placeholder="confirm_password_placeholder"
+                    placeholder="確認密碼">
+                <button onclick="register()" data-i18n="register_btn">註冊</button>
+                <button onclick="switchPage('page1', event)" data-i18n="back_to_login"
                     style="background-color: #666; box-shadow: 0 4px 12px rgba(102, 102, 102, 0.3);">返回登錄</button>
             </div>
         </div>
@@ -1206,18 +1212,19 @@
                 <img src="./icons/icon-moodmend.svg" alt="MoodMend Logo"
                     style="width: 120px; height: 120px; object-fit: contain;">
             </div>
-            <h1>歡迎來到 MoodMend</h1>
+            <h1 data-i18n="welcome_title">歡迎來到 MoodMend</h1>
             <p id="welcomeMessage" class="welcome-message"
                 style="text-align: center; font-size: 18px; color: #6A82FB; margin-bottom: 20px;"></p>
             <div class="card" style="text-align: center; padding: 30px 15px; margin-top: 40px;">
-                <p style="font-size: 18px; margin-bottom: 30px; font-weight: 500;">「每一種情緒都值得被理解和關照」</p>
-                <p style="margin-bottom: 40px; line-height: 1.6; font-size: 16px;">
+                <p style="font-size: 18px; margin-bottom: 30px; font-weight: 500;" data-i18n="welcome_slogan">
+                    「每一種情緒都值得被理解和關照」</p>
+                <p style="margin-bottom: 40px; line-height: 1.6; font-size: 16px;" data-i18n="welcome_desc">
                     在這裡，我們將一起探索你的情緒世界，提供專屬的調適方案，幫助你度過每一個心情時刻。</p>
-                <button onclick="switchPage('page3', event)"
+                <button onclick="switchPage('page3', event)" data-i18n="start_journey"
                     style="margin-top: 20px; font-size: 18px; padding: 16px;">開始調適之旅</button>
             </div>
             <div style="text-align: center; margin-top: 40px; padding: 0 20px;">
-                <p style="color: #666; font-size: 14px;">今天，你想如何照顧自己的心情？</p>
+                <p style="color: #666; font-size: 14px;" data-i18n="today_question">今天，你想如何照顧自己的心情？</p>
             </div>
         </div>
     </div>
@@ -1240,10 +1247,11 @@
                     style="width: 120px; height: 120px; animation: float 6s ease-in-out infinite;">
             </div>
 
-            <h1>今天的心情？</h1>
+            <h1 data-i18n="how_are_you">今天的心情？</h1>
 
             <div class="modern-input-container">
-                <input type="text" id="emotionInput" placeholder="告訴我，你現在感覺如何？...">
+                <input type="text" id="emotionInput" data-i18n-placeholder="emotion_placeholder"
+                    placeholder="告訴我，你現在感覺如何？...">
                 <button id="micBtn" onclick="toggleVoiceInput()" class="modern-mic-btn" title="語音輸入">
                     <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
@@ -1258,16 +1266,24 @@
                 <span class="pulse-dot"></span> 正在聆聽...
             </div>
 
-            <button onclick="processEmotion()" class="analyze-btn">開始調節</button>
+            <button onclick="processEmotion()" class="analyze-btn" data-i18n="analyze_btn">開始調節</button>
 
             <div id="packageCard" class="card" style="display: none; margin-top: 30px;"></div>
             <div style="display: none;" id="taskSection">
-                <h3 style="color: #6A82FB; margin-top: 30px; margin-bottom: 20px;">今天的任務</h3>
+                <h3 style="color: #6A82FB; margin-top: 30px; margin-bottom: 20px;" data-i18n="today_task">今天的任務</h3>
                 <div class="todo-item">
                     <input type="checkbox" id="taskComplete" class="todo-checkbox" onchange="checkCompletion()">
-                    <span class="todo-text" id="taskText">正在加載任務...</span>
+                    <span class="todo-text" id="taskText" data-i18n="loading_task">正在加載任務...</span>
                 </div>
-                <button onclick="showNFT()" id="nftButton" style="margin-top: 20px;">生成徽章</button>
+                <button onclick="showNFT()" id="nftButton" style="margin-top: 20px;"
+                    data-i18n="generate_badge">生成徽章</button>
+
+                <div id="postActions" style="display: none; margin-top: 25px; gap: 15px; flex-direction: column;">
+                    <button onclick="switchPage('page4', event)" class="btn" style="background-color: #6A82FB;"
+                        data-i18n="view_logs_btn">查看紀錄</button>
+                    <button onclick="resetMoodAnalysis()" class="btn" style="background-color: #f0f2f5; color: #666;"
+                        data-i18n="log_another_btn">再記一筆</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1279,18 +1295,19 @@
             <div class="menu-container">
                 <button id="userButton4" class="menu-button" onclick="switchPage('userCenter', event)">👤</button>
             </div>
-            <h1>我的療癒紀錄</h1>
+            <h1 data-i18n="log_title">我的療癒紀錄</h1>
             <div class="filter-bar">
                 <select id="emotionFilter" style="flex: 1;">
-                    <option value="">所有情緒</option>
-                    <option value="anxious">焦慮</option>
-                    <option value="sad">傷心</option>
-                    <option value="neutral">平靜</option>
-                    <option value="happy">快樂</option>
-                    <option value="angry">生氣</option>
+                    <option value="" data-i18n="all_emotions">所有情緒</option>
+                    <option value="anxious" data-i18n="anxious">焦慮</option>
+                    <option value="sad" data-i18n="sad">傷心</option>
+                    <option value="neutral" data-i18n="neutral">平靜</option>
+                    <option value="happy" data-i18n="happy">快樂</option>
+                    <option value="angry" data-i18n="angry">生氣</option>
                 </select>
                 <input type="date" id="dateFilter" style="flex: 1;">
-                <button onclick="filterLogs()" style="flex-shrink: 0; min-width: 80px;">過濾</button>
+                <button onclick="filterLogs()" style="flex-shrink: 0; min-width: 80px;"
+                    data-i18n="filter_btn">過濾</button>
             </div>
             <div class="stats" id="stats">本週完成率：0% | 轉移成就：0</div>
 
@@ -1327,6 +1344,202 @@
     </div>
 
     <script>
+        // 多語言翻譯系統
+        const translations = {
+            'zh-CN': {
+                'app_title': 'MoodMend',
+                'login_slogan': '讓每一次情緒，都成為療癒起點',
+                'login_welcome': 'MoodMend 歡迎',
+                'login_btn': '登錄',
+                'register_btn': '註冊新帳號',
+                'demo_info': 'Demo: 用 test@test.com / 123 登入',
+                'register_title': '創建新帳號',
+                'user_name_placeholder': '用户名 (2-20个字符)',
+                'email_placeholder': 'Email',
+                'password_placeholder': '密碼 (至少6位)',
+                'confirm_password_placeholder': '確認密碼',
+                'back_to_login': '返回登錄',
+                'welcome_title': '歡迎來到 MoodMend',
+                'welcome_slogan': '「每一種情緒都值得被理解和關照顧」',
+                'welcome_desc': '在這裡，我們將一起探索你的情緒世界，提供專屬的調適方案，幫助你度過每一個心情時刻。',
+                'start_journey': '開始調適之旅',
+                'today_question': '今天，你想如何照顧自己的心情？',
+                'how_are_you': '今天的心情？',
+                'emotion_placeholder': '告訴我，你現在感覺如何？...',
+                'analyze_btn': '開始調節',
+                'today_task': '今天的任務',
+                'loading_task': '正在加載任務...',
+                'generate_badge': '生成徽章',
+                'log_title': '我的療癒紀錄',
+                'all_emotions': '所有情緒',
+                'anxious': '焦慮',
+                'sad': '傷心',
+                'neutral': '平靜',
+                'happy': '快樂',
+                'angry': '生氣',
+                'filter_btn': '過濾',
+                'stats_completion': '完成率',
+                'stats_transitions': '轉移成就',
+                'chart_mood_trend': '心情趨勢',
+                'chart_mood_dist': '情緒比例',
+                'interval_1w': '1週',
+                'interval_1m': '1月',
+                'interval_3m': '3月',
+                'interval_6m': '6月',
+                'interval_1y': '1年',
+                'interval_all': '全部',
+                'user_center_title': '個人中心',
+                'language_setting': '語言設置',
+                'privacy_policy': '隱私政策',
+                'terms_service': '服務條款',
+                'about_moodmend': '關於 MoodMend',
+                'logout_btn': '登出帳號',
+                'ai_growth_title': 'AI 成長進度',
+                'personal_contribution': '個人貢獻',
+                'model_accuracy': '模型準確度',
+                'ai_model_status': 'AI 模型狀態',
+                'ai_status_learning': '已載入 (學習中)',
+                'ai_status_rules': '規則模式 (資料收集)',
+                'feedback_accurate': '分析準確嗎？',
+                'accurate_btn': '準確',
+                'inaccurate_btn': '不準確',
+                'choose_correct_mood': '選擇正確的情緒...',
+                'submit_feedback': '提交正確情緒',
+                'toast_lang_set': '語言已設置為：繁體中文',
+                'login_success': '登錄成功！',
+                'logout_success': '登出成功',
+                'processing': '處理中...',
+                'listening': '正在聆聽...',
+                'unsupported_speech': '您的瀏覽器不支持語音輸入功能',
+                'mic_permission': '請允許麥克風權限',
+                'no_speech': '未檢測到語音',
+                'fill_login': '請填寫完整的登錄資訊',
+                'fill_register': '請填寫完整的註冊資訊',
+                'password_mismatch': '兩次輸入的密碼不一致',
+                'view_logs_btn': '查看紀錄',
+                'log_another_btn': '再記一筆',
+                'badge_generated_title': '🏆 療癒徽章已獲得',
+                'feedback_thanks': '感謝您的回饋！這將幫助我們變得更專業。',
+                'intensity_mild': '輕微',
+                'intensity_moderate': '中等',
+                'intensity_severe': '強烈',
+                'tips_title': '💆 調節技巧：',
+                'advice_title': '💭 給你的建議：',
+                'context_tips_title': '💡 針對你的情況：'
+            },
+            'en-US': {
+                'app_title': 'MoodMend',
+                'login_slogan': 'Let every emotion be a starting point for healing',
+                'login_welcome': 'Welcome to MoodMend',
+                'login_btn': 'Login',
+                'register_btn': 'Register New Account',
+                'demo_info': 'Demo: Login with test@test.com / 123',
+                'register_title': 'Create New Account',
+                'user_name_placeholder': 'Username (2-20 chars)',
+                'email_placeholder': 'Email',
+                'password_placeholder': 'Password (min 6)',
+                'confirm_password_placeholder': 'Confirm Password',
+                'back_to_login': 'Back to Login',
+                'welcome_title': 'Welcome to MoodMend',
+                'welcome_slogan': '"Every emotion deserves to be understood and cared for"',
+                'welcome_desc': 'Here, we will explore your emotional world together, providing personalized adjustment plans to help you through every mood moment.',
+                'start_journey': 'Start Your Journey',
+                'today_question': 'How would you like to take care of your mood today?',
+                'how_are_you': 'How are you today?',
+                'emotion_placeholder': 'Tell me, how do you feel now?...',
+                'analyze_btn': 'Start Analysis',
+                'today_task': 'Today\'s Task',
+                'loading_task': 'Loading task...',
+                'generate_badge': 'Generate Badge',
+                'log_title': 'My Healing Logs',
+                'all_emotions': 'All Emotions',
+                'anxious': 'Anxious',
+                'sad': 'Sad',
+                'neutral': 'Calm',
+                'happy': 'Happy',
+                'angry': 'Angry',
+                'filter_btn': 'Filter',
+                'stats_completion': 'Completion Rate',
+                'stats_transitions': 'Transitions',
+                'chart_mood_trend': 'Mood Trend',
+                'chart_mood_dist': 'Mood Distribution',
+                'interval_1w': '1W',
+                'interval_1m': '1M',
+                'interval_3m': '3M',
+                'interval_6m': '6M',
+                'interval_1y': '1Y',
+                'interval_all': 'ALL',
+                'user_center_title': 'User Center',
+                'language_setting': 'Language',
+                'privacy_policy': 'Privacy Policy',
+                'terms_service': 'Terms of Service',
+                'about_moodmend': 'About MoodMend',
+                'logout_btn': 'Logout',
+                'ai_growth_title': 'AI Growth Progress',
+                'personal_contribution': 'Personal Contribution',
+                'model_accuracy': 'Model Accuracy',
+                'ai_model_status': 'AI Model Status',
+                'ai_status_learning': 'Loaded (Learning)',
+                'ai_status_rules': 'Rule Mode (Data Collection)',
+                'feedback_accurate': 'Is the analysis accurate?',
+                'accurate_btn': 'Accurate',
+                'inaccurate_btn': 'Inaccurate',
+                'choose_correct_mood': 'Choose correct mood...',
+                'submit_feedback': 'Submit Correct Mood',
+                'toast_lang_set': 'Language set to: English',
+                'login_success': 'Login successful!',
+                'logout_success': 'Logged out successfully',
+                'processing': 'Processing...',
+                'listening': 'Listening...',
+                'unsupported_speech': 'Your browser does not support speech input',
+                'mic_permission': 'Please allow microphone permission',
+                'no_speech': 'No speech detected',
+                'fill_login': 'Please fill in complete login info',
+                'fill_register': 'Please fill in complete registration info',
+                'password_mismatch': 'Passwords do not match',
+                'view_logs_btn': 'View My Logs',
+                'log_another_btn': 'Log Another',
+                'badge_generated_title': '🏆 Badge Earned',
+                'feedback_thanks': 'Thanks for your feedback! This helps us improve.',
+                'intensity_mild': 'Mild',
+                'intensity_moderate': 'Moderate',
+                'intensity_severe': 'Severe',
+                'tips_title': '💆 Adjustment Tips:',
+                'advice_title': '💭 Advice for you:',
+                'context_tips_title': '💡 For your situation:'
+            }
+        };
+
+        function applyLanguage(lang) {
+            const t = translations[lang] || translations['zh-CN'];
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
+            });
+
+            // Update placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) {
+                    el.placeholder = t[key];
+                }
+            });
+
+            // Update special cases
+            if (lang === 'en-US') {
+                document.documentElement.lang = 'en';
+                // Update charts if they exist
+                if (window.emotionChart) drawChart();
+            } else {
+                document.documentElement.lang = 'zh-TW';
+                if (window.emotionChart) drawChart();
+            }
+        }
+
         // 全局变量定义 - 确保在所有使用前初始化
         window.currentUser = null;
         let currentPackage = null;
@@ -1338,6 +1551,13 @@
         // 请求锁，避免重复请求
         let isLoadingLogs = false;
         let isUpdatingStats = false;
+
+        // 保存最后的日志状态用于快速渲染
+        let lastLogState = {
+            totalPages: 0,
+            currentPage: 1,
+            totalLogs: 0
+        };
 
         // Chart Control Functions
         function setChartType(type) {
@@ -1397,6 +1617,35 @@
             document.documentElement.style.paddingTop = env(safe - area - inset - top) + 'px';
         }
 
+        async function updateAIStats() {
+            try {
+                const response = await fetch('/api/ai-stats');
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('aiContributionCount').textContent = stats.total_contributions;
+                    document.getElementById('aiAccuracyRate').textContent = stats.accuracy + '%';
+
+                    // Update model status
+                    const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                    const t = translations[currentLang] || translations['zh-CN'];
+                    const statusText = stats.model_loaded ? t['ai_status_learning'] : t['ai_status_rules'];
+                    const statusColor = stats.model_loaded ? '#4CAF50' : '#FF9800';
+                    document.getElementById('aiModelStatus').textContent = statusText;
+                    document.getElementById('aiModelStatus').style.color = statusColor;
+
+                    // Progress bar
+                    const progress = Math.min((stats.total_contributions / stats.next_milestone) * 100, 100);
+                    document.getElementById('aiProgressBar').style.width = progress + '%';
+                    const contributionText = currentLang === 'en-US' ? 'Contribution' : '貢獻度';
+                    document.getElementById('aiContributionInfo').textContent = `${stats.total_contributions} / ${stats.next_milestone} ${contributionText}`;
+                }
+            } catch (error) {
+                console.error('Error fetching AI stats:', error);
+            }
+        }
+
         // 功能菜单切换
         function toggleMenu(buttonId) {
             // 关闭所有其他菜单
@@ -1441,6 +1690,9 @@
         }
 
         function showLanguageSelection() {
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const t = translations[currentLang] || translations['zh-CN'];
+
             // 创建语言选择对话框
             const dialog = document.createElement('div');
             dialog.className = 'card';
@@ -1455,20 +1707,20 @@
 
             dialog.innerHTML = `
                 <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                    <h3>選擇語言</h3>
+                    <h3>${t['select_language']}</h3>
                 </div>
                 <div style="padding: 10px 0;">
                     <div class="language-option" onclick="setLanguage('zh-CN')">
                         <span>繁體中文</span>
-                        <span class="checkmark">✓</span>
+                        <span class="checkmark">${currentLang === 'zh-CN' ? '✓' : ''}</span>
                     </div>
                     <div class="language-option" onclick="setLanguage('en-US')">
                         <span>English</span>
-                        <span class="checkmark"></span>
+                        <span class="checkmark">${currentLang === 'en-US' ? '✓' : ''}</span>
                     </div>
                 </div>
                 <div style="padding: 15px; text-align: center;">
-                    <button onclick="this.parentNode.parentNode.remove()">確定</button>
+                    <button onclick="this.parentNode.parentNode.remove()">${t['confirm_btn']}</button>
                 </div>
             `;
 
@@ -1476,9 +1728,11 @@
         }
 
         function setLanguage(lang) {
-            // 这里可以实现语言切换逻辑
             localStorage.setItem('appLanguage', lang);
-            showToast('語言已設置為：' + (lang === 'zh-CN' ? '繁體中文' : 'English'));
+            applyLanguage(lang);
+
+            const t = translations[lang] || translations['zh-CN'];
+            showToast(t['toast_lang_set']);
 
             // 更新选中状态
             document.querySelectorAll('.language-option').forEach(option => {
@@ -1488,21 +1742,29 @@
         }
 
         function showPrivacyPolicy() {
-            showToast('隱私政策頁面將在未來版本開放');
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const msg = currentLang === 'en-US' ? 'Privacy policy page will be available in future versions' : '隱私政策頁面將在未來版本開放';
+            showToast(msg);
         }
 
         function showTermsOfService() {
-            showToast('服務條款頁面將在未來版本開放');
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const msg = currentLang === 'en-US' ? 'Terms of service page will be available in future versions' : '服務條款頁面將在未來版本開放';
+            showToast(msg);
         }
 
         function showAbout() {
-            showToast('MoodMend - 您的心情調適助手');
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const msg = currentLang === 'en-US' ? 'MoodMend - Your Mood Adjustment Assistant' : 'MoodMend - 您的心情調適助手';
+            showToast(msg);
         }
 
         // 显示加载中 - 改进加载动画
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
-            element.innerHTML = '<div style="text-align: center; padding: 20px; color: #6A82FB;"><div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(106, 130, 251, 0.3); border-radius: 50%; border-top-color: #6A82FB; animation: spin 1s ease-in-out infinite;"></div><p style="margin-top: 10px;">加載中...</p></div>';
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const loadingText = currentLang === 'en-US' ? 'Loading...' : '加載中...';
+            element.innerHTML = `<div style="text-align: center; padding: 20px; color: #6A82FB;"><div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(106, 130, 251, 0.3); border-radius: 50%; border-top-color: #6A82FB; animation: spin 1s ease-in-out infinite;"></div><p style="margin-top: 10px;">${loadingText}</p></div>`;
         }
 
         // 添加旋转动画
@@ -1581,10 +1843,15 @@
                     // 清空输入框
                     document.getElementById('loginEmail').value = '';
                     document.getElementById('loginPassword').value = '';
-                    alert('登錄成功！');
+
+                    const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                    const successMsg = currentLang === 'en-US' ? 'Login successful!' : '登錄成功！';
+                    alert(successMsg);
                     switchPage('page2');
                 } else {
-                    alert(data.message || '登錄失敗，請檢查帳號密碼');
+                    const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                    const failMsg = currentLang === 'en-US' ? (data.message || 'Login failed, please check your credentials') : (data.message || '登錄失敗，請檢查帳號密碼');
+                    alert(failMsg);
                 }
             } catch (error) {
                 console.error('登錄错误:', error);
@@ -1679,7 +1946,8 @@
                     body: JSON.stringify({
                         input,
                         email: window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser,
-                        task_completed: taskCompleted
+                        task_completed: taskCompleted,
+                        lang: localStorage.getItem('appLanguage') || 'zh-CN'
                     })
                 });
 
@@ -1689,32 +1957,37 @@
                     currentPackage = data;
                     const pkg = data.package;
 
+                    const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                    const t = translations[currentLang] || translations['zh-CN'];
+
                     // Map emotions to icon files
                     const emotionIcons = {
                         'happy': 'icons/MoodMend_Happy_Emotion.svg',
                         'sad': 'icons/MoodMend_Sad_Emotion.svg',
                         'angry': 'icons/MoodMend_Angry_Emotion.svg',
-                        'anxious': 'icons/MoodMend_Anxious_Emotion.png', // New unique icon
+                        'anxious': 'icons/MoodMend_Anxious_Emotion.png',
                         'neutral': 'icons/MoodMend_Calm_Emotion.svg'
                     };
 
                     // Get the appropriate icon
                     const iconPath = emotionIcons[data.emotion] || emotionIcons['neutral'];
 
-                    // Map emotion to Chinese display name
-                    const emotionNames = {
-                        'happy': '開心',
-                        'sad': '難過',
-                        'angry': '生氣',
-                        'anxious': '焦慮',
-                        'neutral': '平靜'
+                    // Map emotion to localized display name
+                    const displayNames = {
+                        'happy': { name: t['happy'], icon: '😊' },
+                        'sad': { name: t['sad'], icon: '😢' },
+                        'angry': { name: t['angry'], icon: '😠' },
+                        'anxious': { name: t['anxious'], icon: '😰' },
+                        'neutral': { name: t['neutral'], icon: '😌' }
                     };
 
-                    // Map intensity to Chinese display
+                    const displayName = displayNames[data.emotion] || { name: data.emotion, icon: '✨' };
+
+                    // Map intensity to localized display
                     const intensityNames = {
-                        'mild': '輕微',
-                        'moderate': '中等',
-                        'severe': '強烈'
+                        'mild': t['intensity_mild'],
+                        'moderate': t['intensity_moderate'],
+                        'severe': t['intensity_severe']
                     };
 
                     // Build context tips HTML if available
@@ -1722,7 +1995,7 @@
                     if (pkg.context_tips && pkg.context_tips.length > 0) {
                         contextTipsHtml = `
                             <div class="context-tips-section" style="margin-top: 15px; padding: 12px; background: linear-gradient(135deg, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.1)); border-radius: 12px;">
-                                <p style="margin: 0; font-weight: 600; color: #6a11cb;">💡 針對你的情況：</p>
+                                <p style="margin: 0; font-weight: 600; color: #6a11cb;">${t['context_tips_title']}</p>
                                 ${pkg.context_tips.map(tip => `<p style="margin: 8px 0 0 0; font-size: 0.95em;">${tip}</p>`).join('')}
                             </div>
                         `;
@@ -1732,13 +2005,33 @@
                         <div class="mood-result-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
                             <img src="${iconPath}" alt="${data.emotion}" class="mood-icon" style="width: 120px; height: 120px; margin-right: 15px; border-radius: 50%; box-shadow: 0 8px 25px rgba(0,0,0,0.15); animation: bounceIn 0.6s ease-out;">
                             <div>
-                                <h3 style="margin: 0;"><span class="emotion-badge ${pkg.color}">${emotionNames[data.emotion] || data.emotion}</span></h3>
-                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">情緒強度：${intensityNames[pkg.intensity] || pkg.intensity}</p>
+                                <h3 style="margin: 0;"><span class="emotion-badge ${pkg.color}">${displayName.icon} ${displayName.name}</span></h3>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">${currentLang === 'en-US' ? 'Intensity: ' : '情緒強度：'}${intensityNames[pkg.intensity] || pkg.intensity}</p>
                             </div>
                         </div>
-                        <p><strong>💆 調節技巧：</strong>${pkg.tips}</p>
-                        <p><strong>💭 給你的建議：</strong>${pkg.advice}</p>
+                        <p><strong>${t['tips_title']}</strong>${pkg.tips}</p>
+                        <p><strong>${t['advice_title']}</strong>${pkg.advice}</p>
                         ${contextTipsHtml}
+                        
+                        <!-- ML Feedback Section -->
+                        <div class="feedback-section" id="feedbackSection" style="margin-top: 20px; padding: 15px; border-top: 1px solid #eee; text-align: center;">
+                            <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">${t['feedback_accurate']}</p>
+                            <div style="display: flex; justify-content: center; gap: 10px;">
+                                <button onclick="handleFeedback(true)" class="btn-secondary" style="padding: 5px 15px; font-size: 0.85em; background: #96CEB4; color: white;">${t['accurate_btn']}</button>
+                                <button onclick="showFeedbackCorrection()" class="btn-secondary" style="padding: 5px 15px; font-size: 0.85em; background: #FF6B6B; color: white;">${t['inaccurate_btn']}</button>
+                            </div>
+                            <div id="correctionArea" style="display: none; margin-top: 15px; animation: fadeIn 0.3s;">
+                                <select id="correctMoodSelect" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd; width: 100%; margin-bottom: 10px;">
+                                    <option value="">${t['choose_correct_mood']}</option>
+                                    <option value="happy">${t['happy']} 😊</option>
+                                    <option value="sad">${t['sad']} 😢</option>
+                                    <option value="angry">${t['angry']} 😠</option>
+                                    <option value="anxious">${t['anxious']} 😰</option>
+                                    <option value="neutral">${t['neutral']} 😌</option>
+                                </select>
+                                <button onclick="handleFeedback(false)" class="btn-primary" style="width: 100%; padding: 8px;">${t['submit_feedback']}</button>
+                            </div>
+                        </div>
                     `;
                     // 更新任务文本
                     document.getElementById('taskText').textContent = pkg.daily_task;
@@ -1748,17 +2041,58 @@
                     // Scroll to results
                     document.getElementById('packageCard').scrollIntoView({ behavior: 'smooth' });
 
-                    // Auto-redirect to Mood Log after 3 seconds
-                    setTimeout(() => {
-                        if (confirm('分析完成！是否前往查看心情日誌？')) {
-                            switchPage('page4');
-                        }
-                    }, 1500);
+                    // Auto-redirect removed for better UX
                 } else {
                     alert(data.message);
                 }
             } catch (error) {
                 showError('處理情緒失敗');
+            }
+        }
+
+        // ML Feedback Functions
+        function showFeedbackCorrection() {
+            document.getElementById('correctionArea').style.display = 'block';
+            document.getElementById('feedbackSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        async function handleFeedback(isCorrect) {
+            const userInput = document.getElementById('emotionInput').value;
+            const predictedMood = currentPackage ? currentPackage.emotion : '';
+            let actualMood = predictedMood;
+
+            if (!isCorrect) {
+                actualMood = document.getElementById('correctMoodSelect').value;
+                if (!actualMood) return alert('請選擇正確的情緒');
+            }
+
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_input: userInput,
+                        predicted_mood: predictedMood,
+                        actual_mood: actualMood
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                    const t = translations[currentLang] || translations['zh-CN'];
+
+                    document.getElementById('feedbackSection').innerHTML = `
+                        <p style="color: #4CAF50; font-weight: 600; margin: 0;">✅ ${t['feedback_thanks'] || '感謝您的回饋！這將幫助我們變得更專業。'}</p>
+                    `;
+
+                    // Trigger AI Stats refresh
+                    updateAIStats();
+
+                    showToast(t['feedback_thanks'] || '感謝參與 AI 訓練！', 2000);
+                }
+            } catch (error) {
+                console.error('Feedback error:', error);
             }
         }
 
@@ -1854,39 +2188,7 @@
             const completed = document.getElementById('taskComplete').checked;
             const badge = currentPackage.nft;
 
-            // 移动端友好的提示
-            const notification = document.createElement('div');
-            notification.className = 'card';
-            notification.style.backgroundColor = '#e8f5e9';
-            notification.style.color = '#2e7d32';
-            notification.style.position = 'fixed';
-            notification.style.top = '50%';
-            notification.style.left = '50%';
-            notification.style.transform = 'translate(-50%, -50%)';
-            notification.style.zIndex = '1000';
-            notification.style.padding = '20px';
-            notification.style.boxShadow = '0 8px 30px rgba(0,0,0,0.3)';
-            notification.style.textAlign = 'center';
-            notification.innerHTML = `<h3 style="margin-top: 0;">🏆 恭喜！</h3><p style="font-size: 18px; margin-bottom: 20px;">${badge}</p>`;
-
-            const okButton = document.createElement('button');
-            okButton.textContent = '太棒了！';
-            okButton.style.maxWidth = '200px';
-            okButton.style.margin = '0 auto';
-            okButton.style.display = 'block';
-
-            document.body.appendChild(notification);
-            notification.appendChild(okButton);
-
-            // 等待用户点击确认
-            await new Promise(resolve => {
-                okButton.onclick = () => {
-                    document.body.removeChild(notification);
-                    resolve();
-                };
-            });
-
-            // 准备日志数据
+            // 準備日誌數據
             const logData = {
                 email: window.currentUser?.email || window.currentUser,
                 emotion: currentPackage.emotion,
@@ -1897,61 +2199,124 @@
             };
 
             try {
-                // 检查网络连接
+                // 檢查網絡連接
                 if (navigator.onLine) {
-                    // 在线模式 - 直接保存到服务器
                     const response = await fetch('/api/add-log', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(logData)
                     });
 
                     const data = await response.json();
 
-                    if (!data.success) {
-                        // 保存失败，尝试保存到本地
+                    if (data.success) {
+                        if (lastLogState.currentPage === 1) {
+                            const newLog = {
+                                log_id: data.log?.log_id || Date.now().toString(),
+                                time: logData.timestamp.replace('T', ' ').substring(0, 19),
+                                emotion: logData.emotion,
+                                task: logData.task,
+                                nft: logData.nft,
+                                completed: logData.completed
+                            };
+                            userLogs.unshift(newLog);
+                            lastLogState.totalLogs++;
+                        }
+                    } else {
                         saveLogToOffline(logData);
-                        showError('保存到服务器失败，记录已保存到本地。');
+                        showError('保存到服務器失敗，記錄已保存到本地。');
                     }
                 } else {
-                    // 离线模式 - 保存到本地
                     saveLogToOffline(logData);
-                    showError('当前处于离线状态，记录已保存，将在网络恢复后同步。');
+                    if (lastLogState.currentPage === 1) {
+                        const newLog = {
+                            log_id: 'offline-' + Date.now(),
+                            time: logData.timestamp.replace('T', ' ').substring(0, 19),
+                            emotion: logData.emotion,
+                            task: logData.task,
+                            nft: logData.nft,
+                            completed: logData.completed
+                        };
+                        userLogs.unshift(newLog);
+                        lastLogState.totalLogs++;
+                    }
+                    showError('目前處於離線狀態，記錄已保存，將在網絡恢復後同步。');
 
-                    // 注册后台同步
                     if ('serviceWorker' in navigator && 'SyncManager' in window) {
                         const sw = await navigator.serviceWorker.ready;
                         try {
                             await sw.sync.register('sync-logs');
                         } catch (err) {
-                            console.error('后台同步注册失败:', err);
+                            console.error('後台同步註冊失敗:', err);
                         }
                     }
                 }
 
-                // 重置界面
-                document.getElementById('emotionInput').value = '';
-                document.getElementById('taskComplete').checked = false;
-                document.getElementById('taskText').textContent = '正在加載任務...';
-                const nftButton = document.getElementById('nftButton');
-                nftButton.style.backgroundColor = '#FC5C7D';
-                nftButton.style.boxShadow = '0 4px 12px rgba(252, 92, 125, 0.3)';
-                document.getElementById('packageCard').style.display = 'none';
-                document.getElementById('taskSection').style.display = 'none';
-                currentPackage = null;
+                // --- UX 優化：不自動跳轉，顯示後續操作 ---
+                const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                const t = translations[currentLang] || translations['zh-CN'];
 
-                switchPage('page4');
+                // 隱藏生成按鈕，顯示後續動作
+                document.getElementById('nftButton').style.display = 'none';
+                const postActions = document.getElementById('postActions');
+                postActions.style.display = 'flex';
+
+                // 視覺反饋：更新標題或顯示成功訊息
+                const taskTitle = document.querySelector('#taskSection h3');
+                if (taskTitle) {
+                    taskTitle.textContent = t['badge_generated_title'] || '🏆 療癒徽章已獲得';
+                    taskTitle.style.color = '#4CAF50';
+                }
+
+                // 禁用 checkbox 防止重複提交
+                document.getElementById('taskComplete').disabled = true;
+
+                showToast(t['badge_generated_title'] || '🏆 徽章已生成並保存', 3000);
+
             } catch (error) {
-                // 保存失败，尝试保存到本地
+                console.error('保存日誌出錯:', error);
                 saveLogToOffline(logData);
-                showError('保存日誌失敗，已尝试保存到本地。');
+                showError('保存日誌失敗，已嘗試保存到本地。');
             }
         }
 
+        // 重置情緒分析界面
+        function resetMoodAnalysis() {
+            // 清除輸入
+            document.getElementById('emotionInput').value = '';
+
+            // 重置任務區塊
+            document.getElementById('taskComplete').checked = false;
+            document.getElementById('taskComplete').disabled = false;
+            document.getElementById('taskText').textContent = translations[localStorage.getItem('appLanguage') || 'zh-CN']['loading_task'];
+
+            // 重置按鈕狀態
+            const nftButton = document.getElementById('nftButton');
+            nftButton.style.display = 'block';
+            nftButton.style.backgroundColor = '#FC5C7D';
+            nftButton.style.boxShadow = '0 4px 12px rgba(252, 92, 125, 0.3)';
+
+            // 隱藏結果區塊
+            document.getElementById('packageCard').style.display = 'none';
+            document.getElementById('taskSection').style.display = 'none';
+            document.getElementById('postActions').style.display = 'none';
+
+            // 重置標題顏色
+            const taskTitle = document.querySelector('#taskSection h3');
+            if (taskTitle) {
+                taskTitle.textContent = translations[localStorage.getItem('appLanguage') || 'zh-CN']['today_task'];
+                taskTitle.style.color = '#6A82FB';
+            }
+
+            // 重置數據
+            currentPackage = null;
+
+            // 滾動回頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // 加載日誌
-        async function loadLogs(page = 1) {
+        async function loadLogs(page = 1, silent = false) {
             // 避免重复请求
             if (isLoadingLogs) {
                 console.log('日志加载已在进行中，跳过重复请求');
@@ -1960,12 +2325,16 @@
 
             try {
                 isLoadingLogs = true;
-                showLoading('logSection');
+
+                // 只有在非静默加载且当前没数据时才显示加载状态
+                if (!silent || userLogs.length === 0) {
+                    showLoading('logSection');
+                }
 
                 const emotionFilter = document.getElementById('emotionFilter').value;
                 const dateFilter = document.getElementById('dateFilter').value;
-                const limit = 50; // 每页显示50条记录
-                const offset = (page - 1) * limit; // 计算偏移量
+                const limit = 50;
+                const offset = (page - 1) * limit;
 
                 const userEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
                 let url = `/api/get-logs?email=${encodeURIComponent(userEmail)}&limit=${limit}&offset=${offset}`;
@@ -1973,15 +2342,12 @@
                 if (emotionFilter) url += `&emotion=${encodeURIComponent(emotionFilter)}`;
                 if (dateFilter) url += `&date=${encodeURIComponent(dateFilter)}`;
 
-                // Add interval filtering
                 const { start, end } = getDateRange(currentTimeInterval);
                 if (start) url += `&start_date=${start}`;
                 if (end) url += `&end_date=${end}`;
 
                 console.log('Loading logs from:', url);
-                const response = await fetch(url, {
-                    method: 'GET'
-                });
+                const response = await fetch(url, { method: 'GET' });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1990,102 +2356,113 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // 检查数据是否有变化
+                    const newDataStr = JSON.stringify(data.logs);
+                    const oldDataStr = JSON.stringify(userLogs);
+
                     userLogs = data.logs;
                     const totalPages = Math.ceil(data.total / limit);
-                    renderLogs(totalPages, page, data.total);
-                    updateStats();
+
+                    // 保存状态用于快速渲染
+                    lastLogState = {
+                        totalPages: totalPages,
+                        currentPage: page,
+                        totalLogs: data.total
+                    };
+
+                    // 只有在数据变动或非静默模式下才重新渲染列表
+                    if (!silent || newDataStr !== oldDataStr) {
+                        renderLogs(totalPages, page, data.total);
+                    }
+
+                    // 始终更新统计数据
+                    if (!isUpdatingStats) {
+                        updateStats(silent);
+                    }
                 }
             } catch (error) {
-                console.error('加載日誌錯誤詳細信息:', error);
-                console.error('錯誤名稱:', error.name);
-                console.error('錯誤堆棧:', error.stack);
-                console.error('網絡狀態:', navigator.onLine);
-                if (error.name === 'AbortError') {
-                    showError('加載日誌超時，請檢查網絡連接');
-                } else {
+                console.error('加載日誌錯誤:', error);
+                if (!silent) {
                     showError(`加載日誌失敗: ${error.message || '未知錯誤'}`);
                 }
             } finally {
-                // 确保请求锁被释放
                 isLoadingLogs = false;
             }
         }
 
         // 渲染日誌
         function renderLogs(totalPages, currentPage, totalLogs) {
+            // 如果没传参数，试着从全局状态取
+            if (totalPages === undefined) {
+                totalPages = lastLogState.totalPages;
+                currentPage = lastLogState.currentPage;
+                totalLogs = lastLogState.totalLogs;
+            }
+
             const section = document.getElementById('logSection');
-            section.innerHTML = '';
+            if (!section) return;
+
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const t = translations[currentLang] || translations['zh-CN'];
+
+            // 使用字符串构建以提高性能
+            let html = '';
 
             // 显示日志总数
-            const logCount = document.createElement('div');
-            logCount.className = 'log-count';
-            logCount.innerHTML = `<p style="text-align: center; color: #666; margin-bottom: 15px;">共 ${totalLogs} 條記錄</p>`;
-            section.appendChild(logCount);
+            const recordText = currentLang === 'en-US' ? `Total ${totalLogs} records` : `共 ${totalLogs} 條記錄`;
+            html += `<div class="log-count"><p style="text-align: center; color: #666; margin-bottom: 15px;">${recordText}</p></div>`;
 
             if (userLogs.length === 0) {
-                section.innerHTML += '<p style="text-align: center; color: #666;">此頁面沒有記錄</p>';
+                const emptyText = currentLang === 'en-US' ? 'No records on this page' : '此頁面沒有記錄';
+                html += `<p style="text-align: center; color: #666;">${emptyText}</p>`;
             } else {
                 // 按時間倒序排列
                 userLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
 
+                const emotionColors = {
+                    'anxious': 'anxious',
+                    'sad': 'sad',
+                    'neutral': 'neutral',
+                    'happy': 'happy',
+                    'angry': 'angry'
+                };
+
+                const taskLabel = currentLang === 'en-US' ? 'Task' : '任務';
+                const badgeLabel = currentLang === 'en-US' ? 'Badge' : '徽章';
+
                 userLogs.forEach(log => {
-                    const entry = document.createElement('div');
-                    entry.className = 'log-entry card';
-
-                    // 情緒顏色映射
-                    const emotionColors = {
-                        'anxious': 'anxious',
-                        'sad': 'sad',
-                        'neutral': 'neutral',
-                        'happy': 'happy',
-                        'angry': 'angry'
-                    };
-
                     const colorClass = emotionColors[log.emotion] || 'neutral';
-
-                    entry.innerHTML = `
-                        <strong>${log.time}:</strong> <span class="emotion-badge ${colorClass}">${log.emotion}</span>
-                        | 任務: ${log.task} ${log.completed ? '✅' : ''} | 徽章: ${log.nft}
+                    const localizedEmotion = t[log.emotion] || log.emotion;
+                    html += `
+                        <div class="log-entry card">
+                            <strong>${log.time}:</strong> <span class="emotion-badge ${colorClass}">${localizedEmotion}</span>
+                            | ${taskLabel}: ${log.task} ${log.completed ? '✅' : ''} | ${badgeLabel}: ${log.nft}
+                        </div>
                     `;
-                    section.appendChild(entry);
                 });
-
-                drawChart();
             }
 
             // 添加分页控件
             if (totalPages > 1) {
-                const pagination = document.createElement('div');
-                pagination.className = 'pagination';
-                pagination.style.textAlign = 'center';
-                pagination.style.marginTop = '20px';
+                const prevText = currentLang === 'en-US' ? 'Prev' : '上一頁';
+                const nextText = currentLang === 'en-US' ? 'Next' : '下一頁';
+                const prevDisabled = currentPage === 1 ? 'disabled' : '';
+                const nextDisabled = currentPage === totalPages ? 'disabled' : '';
 
-                // 上一页按钮
-                const prevButton = document.createElement('button');
-                prevButton.textContent = '上一頁';
-                prevButton.disabled = currentPage === 1;
-                prevButton.onclick = () => loadLogs(currentPage - 1);
-                prevButton.className = 'btn';
-                prevButton.style.marginRight = '10px';
+                html += `
+                    <div class="pagination" style="text-align: center; margin-top: 20px;">
+                        <button class="btn" style="margin-right: 10px;" ${prevDisabled} onclick="loadLogs(${currentPage - 1})">${prevText}</button>
+                        <span style="margin: 0 15px; line-height: 36px;">${currentPage} / ${totalPages}</span>
+                        <button class="btn" style="margin-left: 10px;" ${nextDisabled} onclick="loadLogs(${currentPage + 1})">${nextText}</button>
+                    </div>
+                `;
+            }
 
-                // 页码显示
-                const pageInfo = document.createElement('span');
-                pageInfo.textContent = `${currentPage} / ${totalPages}`;
-                pageInfo.style.margin = '0 15px';
-                pageInfo.style.lineHeight = '36px';
+            section.innerHTML = html;
 
-                // 下一页按钮
-                const nextButton = document.createElement('button');
-                nextButton.textContent = '下一頁';
-                nextButton.disabled = currentPage === totalPages;
-                nextButton.onclick = () => loadLogs(currentPage + 1);
-                nextButton.className = 'btn';
-                nextButton.style.marginLeft = '10px';
-
-                pagination.appendChild(prevButton);
-                pagination.appendChild(pageInfo);
-                pagination.appendChild(nextButton);
-                section.appendChild(pagination);
+            // 只有在非空时才画图
+            if (userLogs.length > 0) {
+                drawChart();
             }
         }
 
@@ -2095,7 +2472,7 @@
         }
 
         // 更新統計信息
-        async function updateStats() {
+        async function updateStats(silent = false) {
             // 避免重复请求
             if (isUpdatingStats) {
                 console.log('统计更新已在进行中，跳过重复请求');
@@ -2104,64 +2481,46 @@
 
             try {
                 isUpdatingStats = true;
+
                 // 首先检查网络状态
                 if (!navigator.onLine) {
-                    // 离线模式：尝试使用本地缓存的统计数据
                     const cachedStats = localStorage.getItem('cached_stats');
                     if (cachedStats) {
                         document.getElementById('stats').innerText = cachedStats;
-                    } else {
+                    } else if (!silent) {
                         document.getElementById('stats').innerText = '離線模式：無法更新統計';
                     }
                     return;
                 }
 
                 const userStatsEmail = window.currentUser && window.currentUser.email ? window.currentUser.email : window.currentUser;
-                const response = await fetch(
-                    `/api/get-stats?email=${encodeURIComponent(userStatsEmail)}`,
-                    {
-                        method: 'GET'
+                const { start, end } = getDateRange(currentTimeInterval);
+                let url = `/api/update-stats?email=${encodeURIComponent(userStatsEmail)}`;
+                if (start) url += `&start_date=${start}`;
+                if (end) url += `&end_date=${end}`;
+
+                const response = await fetch(url, { method: 'GET' });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                        const t = translations[currentLang] || translations['zh-CN'];
+                        const completionLabel = t['stats_completion'] || '完成率';
+                        const transitionsLabel = t['stats_transitions'] || '轉移成就';
+                        const statsText = `${completionLabel}：${data.completion_rate}% | ${transitionsLabel}：${data.transitions}`;
+                        document.getElementById('stats').innerText = statsText;
+                        localStorage.setItem('cached_stats', statsText);
                     }
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const statsText = `完成率：${data.completion_rate}% | 轉移成就：${data.transitions}`;
-                    document.getElementById('stats').innerText = statsText;
-                    // 缓存统计数据用于离线查看
-                    localStorage.setItem('cached_stats', statsText);
-                } else if (data.offline) {
-                    // 显示离线提示
-                    document.getElementById('stats').innerText = '離線模式：無法更新統計';
                 }
             } catch (error) {
-                console.error('更新統計失敗詳細信息:', error);
-                console.error('錯誤名稱:', error.name);
-                console.error('錯誤堆棧:', error.stack);
-                console.error('網絡狀態:', navigator.onLine);
-                // 错误时尝试使用缓存或显示离线消息
+                console.error('更新統計失敗:', error);
                 const cachedStats = localStorage.getItem('cached_stats');
-                if (error.name === 'AbortError') {
-                    console.error('更新統計超時');
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
-                    } else {
-                        document.getElementById('stats').innerText = '統計更新超時，請檢查網絡連接';
-                    }
-                } else {
-                    if (cachedStats) {
-                        document.getElementById('stats').innerText = cachedStats + ' (已缓存)';
-                    } else {
-                        document.getElementById('stats').innerText = `暫時無法更新統計數據: ${error.message || '未知錯誤'}`;
-                    }
+                if (cachedStats) {
+                    document.getElementById('stats').innerText = cachedStats + (silent ? '' : ' (已缓存)');
                 }
             } finally {
-                // 确保请求锁被释放
                 isUpdatingStats = false;
             }
         }
@@ -2245,7 +2604,7 @@
                     data: {
                         labels: displayLabels,
                         datasets: [{
-                            label: '心情指數',
+                            label: translations[localStorage.getItem('appLanguage') || 'zh-CN']['chart_mood_index'],
                             data: chartData.map(d => d.y),
                             borderColor: '#6A82FB',
                             backgroundColor: 'rgba(106, 130, 251, 0.1)',
@@ -2267,11 +2626,13 @@
                                 max: 2,
                                 ticks: {
                                     callback: function (value) {
-                                        if (value >= 1.5) return '快樂';
-                                        if (value >= 0.5) return '平靜';
-                                        if (value >= -0.5) return '一般';
-                                        if (value >= -1.5) return '焦慮';
-                                        return '難過/生氣';
+                                        const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                                        const t = translations[currentLang] || translations['zh-CN'];
+                                        if (value >= 1.5) return t['happy'];
+                                        if (value >= 0.5) return t['neutral'];
+                                        if (value >= -0.5) return currentLang === 'en-US' ? 'Neutral' : '一般';
+                                        if (value >= -1.5) return t['anxious'];
+                                        return currentLang === 'en-US' ? 'Sad/Angry' : '難過/生氣';
                                     }
                                 }
                             }
@@ -2281,13 +2642,17 @@
                             tooltip: {
                                 callbacks: {
                                     label: function (context) {
+                                        const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
                                         const dataIndex = context.dataIndex;
                                         const dataItem = chartData[dataIndex];
-                                        return `心情軌跡: ${dataItem.transform}`;
+                                        const labelText = currentLang === 'en-US' ? 'Mood Path' : '心情軌跡';
+                                        return `${labelText}: ${dataItem.transform}`;
                                     },
                                     afterLabel: function (context) {
+                                        const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
                                         const value = context.raw;
-                                        return `平均指數: ${value.toFixed(1)}`;
+                                        const labelText = currentLang === 'en-US' ? 'Avg Index' : '平均指數';
+                                        return `${labelText}: ${value.toFixed(1)}`;
                                     }
                                 }
                             }
@@ -2295,7 +2660,6 @@
                     }
                 });
 
-            } else {  // Doughnut Chart Logic (Existing)
                 // 计算情绪分布
                 const emotionCounts = {
                     'anxious': 0,
@@ -2311,11 +2675,14 @@
                     }
                 });
 
+                const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+                const t = translations[currentLang] || translations['zh-CN'];
+
                 // 创建图表 - 优化移动端交互
                 window.emotionChart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: ['焦慮', '傷心', '平靜', '快樂', '生氣'],
+                        labels: [t['anxious'], t['sad'], t['neutral'], t['happy'], t['angry']],
                         datasets: [{
                             data: [
                                 emotionCounts.anxious,
@@ -2325,29 +2692,34 @@
                                 emotionCounts.angry
                             ],
                             backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-                            borderWidth: 0,
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
                             hoverOffset: 15
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '60%',
-                        animation: { duration: 2000, easing: 'easeInOutQuart' }, // 奢華動畫
+                        cutout: '70%',
+                        animation: { duration: 1500, easing: 'easeOutElastic' },
                         plugins: {
                             legend: {
                                 position: 'bottom',
                                 labels: {
                                     padding: 20,
-                                    font: {
-                                        size: 14
-                                    },
+                                    font: { size: 12, weight: 'bold' },
                                     usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    color: '#FFD700' // 金色
+                                    pointStyle: 'circle'
                                 }
                             },
                             tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                titleColor: '#333',
+                                bodyColor: '#666',
+                                borderColor: '#eee',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: true,
                                 callbacks: {
                                     label: function (context) {
                                         const label = context.label || '';
@@ -2366,6 +2738,9 @@
 
         // 初始化 - 添加更多移动端适配和PWA支持
         function init() {
+            const lang = localStorage.getItem('appLanguage') || 'zh-CN';
+            applyLanguage(lang);
+            console.log('App language initialized:', lang);
             console.log('开始初始化应用 - 增强PWA支持');
 
             // 禁用iOS双击缩放
@@ -2478,7 +2853,9 @@
             switchPage('page1');
 
             // 显示登出成功提示
-            alert('登出成功');
+            const currentLang = localStorage.getItem('appLanguage') || 'zh-CN';
+            const logoutMsg = currentLang === 'en-US' ? 'Logged out successfully' : '登出成功';
+            alert(logoutMsg);
         }
 
         // 保存日志到离线存储
@@ -2907,19 +3284,22 @@
                 if (userInitial && currentUser.user_name) {
                     userInitial.textContent = currentUser.user_name.charAt(0).toUpperCase();
                 }
+
+                // Fetch AI Stats
+                updateAIStats();
             }
 
             // 如果切换到日志页，加载数据
             if (id === 'page4') {
-                // 使用setTimeout确保页面完全加载后再执行
-                setTimeout(() => {
-                    if (!isLoadingLogs) {
-                        loadLogs();
-                    }
-                    if (!isUpdatingStats) {
-                        updateStats();
-                    }
-                }, 300);
+                // 立即渲染缓存的数据（如果存在）
+                if (userLogs.length > 0) {
+                    renderLogs(); // 假设已经计算好分页或整体渲染
+                }
+
+                // 立即静默加载最新数据
+                if (!isLoadingLogs) {
+                    loadLogs(1, true);
+                }
             }
 
             // 导航栏相关逻辑
@@ -2953,15 +3333,7 @@
             <div class="menu-container">
                 <button class="menu-button" onclick="switchPage('page2', event)">←</button>
             </div>
-            <div class="input-container">
-                <textarea id="moodInput" placeholder="告訴我，你現在感覺如何？..." oninput="checkInput()"></textarea>
-            </div>
-            <div id="listeningIndicator"
-                style="display: none; color: #6A82FB; margin-top: 8px; font-size: 14px; align-items: center; justify-content: center; gap: 8px;">
-                <span class="pulse-dot"></span> 正在聆聽...
-            </div>
-            <button class="submit-btn" onclick="analyzeMood()" id="submitBtn" disabled>開始療癒分析</button>
-            <h1>用戶中心</h1>
+            <h1 data-i18n="user_center_title">用戶中心</h1>
 
             <!-- 用户信息卡片 -->
             <div class="card" style="margin-bottom: 20px; text-align: center; padding: 20px;">
@@ -2971,6 +3343,41 @@
                 </div>
                 <h3 id="userName">用户名</h3>
                 <p id="userEmail" style="color: #666; font-size: 14px;">user@example.com</p>
+            </div>
+
+            <!-- AI 成長進度 (ML Phase 2) -->
+            <div class="card" style="margin-bottom: 20px; padding: 20px;">
+                <h4 style="margin-top: 0; color: #6A82FB; display: flex; align-items: center;"
+                    data-i18n="ai_growth_title">
+                    <span style="font-size: 1.2em; margin-right: 8px;">🧠</span> AI 成長進度
+                </h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="text-align: center; flex: 1;">
+                        <p style="margin: 0; font-size: 0.8em; color: #666;" data-i18n="personal_contribution">個人貢獻</p>
+                        <h2 id="aiContributionCount" style="margin: 5px 0; color: #6A11CB;">0</h2>
+                    </div>
+                    <div style="width: 1px; background: #eee; margin: 0 15px;"></div>
+                    <div style="text-align: center; flex: 1;">
+                        <p style="margin: 0; font-size: 0.8em; color: #666;" data-i18n="model_accuracy">模型準確度</p>
+                        <h2 id="aiAccuracyRate" style="margin: 5px 0; color: #2575FC;">0%</h2>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 5px;">
+                        <span id="aiModelStatus" style="font-weight: 600; color: #FF9800;"
+                            data-i18n="ai_status_rules">規則模式 (資料收集)</span>
+                        <span id="aiContributionInfo" style="color: #999;">0 / 100 貢獻度</span>
+                    </div>
+                    <div style="height: 8px; background: #eee; border-radius: 4px; overflow: hidden;">
+                        <div id="aiProgressBar"
+                            style="width: 0%; height: 100%; background: linear-gradient(90deg, #6A11CB, #2575FC); transition: width 0.5s ease;">
+                        </div>
+                    </div>
+                </div>
+                <p style="margin: 10px 0 0 0; font-size: 0.75em; color: #999; line-height: 1.4;">
+                    * 透過點擊「不準確」並提供正確結果，您正在親自訓練專屬的回饋模型。
+                </p>
             </div>
 
             <!-- 用户中心选项 -->
@@ -2983,31 +3390,31 @@
                 <div class="menu-divider"></div>
                 <div class="menu-item" onclick="showLanguageSelection()">
                     <span class="menu-icon">🌐</span>
-                    <span class="menu-text">APP語言</span>
+                    <span class="menu-text" data-i18n="language_setting">APP語言</span>
                     <span class="menu-arrow">›</span>
                 </div>
                 <div class="menu-divider"></div>
                 <div class="menu-item" onclick="showPrivacyPolicy()">
                     <span class="menu-icon">🔒</span>
-                    <span class="menu-text">隱私政策</span>
+                    <span class="menu-text" data-i18n="privacy_policy">隱私政策</span>
                     <span class="menu-arrow">›</span>
                 </div>
                 <div class="menu-divider"></div>
                 <div class="menu-item" onclick="showTermsOfService()">
                     <span class="menu-icon">📄</span>
-                    <span class="menu-text">服務條款</span>
+                    <span class="menu-text" data-i18n="terms_service">服務條款</span>
                     <span class="menu-arrow">›</span>
                 </div>
                 <div class="menu-divider"></div>
                 <div class="menu-item" onclick="showAbout()">
                     <span class="menu-icon">🏥</span>
-                    <span class="menu-text">關於MoodMend</span>
+                    <span class="menu-text" data-i18n="about_moodmend">關於MoodMend</span>
                     <span class="menu-arrow">›</span>
                 </div>
             </div>
 
             <!-- 登出按钮 -->
-            <button onclick="logout()"
+            <button onclick="logout()" data-i18n="logout_btn"
                 style="width: 100%; margin-top: 20px; background-color: #ff4d4f; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);">
                 登出賬號
             </button>

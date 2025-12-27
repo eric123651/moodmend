@@ -5,6 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoodMend - Legal Disclaimer</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-moodmend.png">
+    <meta name="theme-color" content="#FF69B4">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            });
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -301,7 +312,7 @@
         function acceptTerms() {
             localStorage.setItem('moodmend_terms_accepted', 'true');
             localStorage.setItem('moodmend_terms_date', new Date().toISOString());
-            window.location.href = 'src/frontend/moodmend_ui_demo.html';
+            window.location.href = 'moodmend_ui_demo.html';
         }
 
         // Check previous acceptance

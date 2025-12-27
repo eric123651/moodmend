@@ -3,3 +3,8 @@ flask-cors
 bcrypt
 python-dotenv
 gunicorn
+textblob
+snownlp
+scikit-learn
+pandas
+joblib
