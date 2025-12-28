@@ -633,6 +633,9 @@ def detect_emotion(text):
         logger.warning(f"NLP 分析失敗 (跳過): {nlp_e}")
 
     # 4. ML 模型預測 (高優先級，如果可用且置信度高)
+    if ML_MODEL is None:
+        load_ml_model()
+
     if ML_MODEL:
         try:
             # Predict labels
@@ -1665,8 +1668,8 @@ if __name__ == '__main__':
         load_recent_logs_from_db()
         load_user_emotions_from_db()
         
-        # 載入 ML 模型
-        load_ml_model()
+        # 載入 ML 模型 (現在改為延遲載入)
+        # load_ml_model()
         
         # 启动定时任务
         schedule_cleanup()
@@ -1691,7 +1694,7 @@ else:
         load_users_from_db()
         load_recent_logs_from_db()
         load_user_emotions_from_db()
-        load_ml_model()
+        # load_ml_model() (現在改為延遲載入)
         schedule_cleanup()
         atexit.register(cleanup_memory_cache)
         logger.info("MoodMend後端服務啟動 (via Gunicorn)")

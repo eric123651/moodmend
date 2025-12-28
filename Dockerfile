@@ -29,4 +29,4 @@ WORKDIR /app/src/backend
 EXPOSE 3000
 
 # Run the application with Gunicorn
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 1 --preload --access-logfile - --error-logfile - moodmend_backend:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 1 --preload --timeout 120 --access-logfile - --error-logfile - moodmend_backend:app"]
