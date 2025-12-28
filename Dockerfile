@@ -22,4 +22,4 @@ EXPOSE 3000
 
 # Run the application
 # Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:3000", "--workers", "4", "--access-logfile", "-", "--error-logfile", "-", "src.backend.moodmend_backend:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 4 --access-logfile - --error-logfile - src.backend.moodmend_backend:app"]
