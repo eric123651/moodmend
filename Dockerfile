@@ -17,9 +17,11 @@ ENV FLASK_APP=src/backend/moodmend_backend.py
 # Initialize database (optional, can be done in entrypoint)
 # RUN python init_secure_db.py
 
+# Set working directory to backend for runtime
+WORKDIR /app/src/backend
+
 # Expose port
 EXPOSE 3000
 
-# Run the application
 # Run the application with Gunicorn
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 4 --access-logfile - --error-logfile - src.backend.moodmend_backend:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 4 --access-logfile - --error-logfile - moodmend_backend:app"]
