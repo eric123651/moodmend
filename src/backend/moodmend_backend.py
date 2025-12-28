@@ -99,6 +99,12 @@ user_last_emotion = {}
 # 初始化数据库
 def init_db():
     try:
+        # 確保資料庫目錄存在
+        db_dir = os.path.dirname(os.path.abspath(DB_NAME))
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            logger.info(f"創建資料庫目錄: {db_dir}")
+
         with db_lock, sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
             # 创建用户表
@@ -1570,6 +1576,11 @@ def cleanup_memory_cache():
 def close_db(error):
     if 'db' in g:
         g.db.close()
+
+# 萬能健康檢查
+@app.route('/health')
+def health():
+    return "OK", 200
 
 # 根路徑 - serve frontend UI
 @app.route('/')
