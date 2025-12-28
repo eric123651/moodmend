@@ -5,6 +5,10 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './icons/icon-moodmend.png',
   './icons/icon-moodmend.svg',
+  './icons/MoodMend_Angry_Emotion.svg',
+  './icons/MoodMend_Happy_Emotion.svg',
+  './icons/MoodMend_Calm_Emotion.svg',
+  './icons/MoodMend_Anxious_Emotion.png',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 

@@ -159,6 +159,16 @@ def init_db():
                     timestamp TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # 建立索引以優化查詢
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_logs_email_time ON logs(email, time DESC)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_logs_emotion ON logs(emotion)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_feedback_predicted ON mood_feedback(predicted_mood)')
+            
+            # 開啟 WAL 模式以優化併發性能
+            cursor.execute('PRAGMA journal_mode=WAL')
+            
             conn.commit()
         logger.info("資料庫初始化成功")
     except Exception as e:
@@ -580,7 +590,10 @@ NFT_BADGES = {
 NEGATIVE_EMOTIONS = {'anxious', 'sad', 'angry'}
 POSITIVE_EMOTIONS = {'happy', 'neutral'}
 
+from functools import lru_cache
+
 # 增强的情緒偵測函數 v2.0
+@lru_cache(maxsize=1000)
 def detect_emotion(text):
     """偵測文本中的主要情緒，使用加權評分系統 + NLP 情感分析"""
     if not text or not isinstance(text, str):
@@ -1584,6 +1597,13 @@ def close_db(error):
 @app.route('/health')
 def health():
     return "OK", 200
+
+@app.after_request
+def add_header(response):
+    # 為靜態資源（特別是那些幾 MB 的圖示）增加快取
+    if request.path.startswith('/icons/') or request.path.endswith(('.svg', '.png', '.jpg', '.ico')):
+        response.cache_control.max_age = 2592000  # 30 days
+    return response
 
 # 根路徑 - serve frontend UI
 @app.route('/')
